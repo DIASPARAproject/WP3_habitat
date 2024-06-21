@@ -47,3 +47,5 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+/DIASPARA_WP3_habitat.Rproj
+/.project
