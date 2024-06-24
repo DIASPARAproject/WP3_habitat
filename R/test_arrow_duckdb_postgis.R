@@ -70,14 +70,7 @@ dbDisconnect(con)
 # UTLISER CETTE FONCTON POUR CONNECTER UNE BASE POSTGRES
 
 ## open a duckdb (I don't know yet how to do this in R)
-.open C:/duckdb/test.duckdb
-LOAD postgres_scanner;
-CALL postgres_attach("host=localhost port=5432 dbname='eda2.3' user='postgres' password='supersecret'", source_schema='france');
-PRAGMA show_tables;
-SELECT * FROM france.rn;
--- using all schema
-COPY (SELECT * FROM postgres_scan("host=localhost port=5432 dbname='eda2.3' user='postgres' password='postgres'", 'france', 'rn')) TO 'francern.parquet' (FORMAT PARQUET);
--- note : this is not a postgis table
+
 
 
 
