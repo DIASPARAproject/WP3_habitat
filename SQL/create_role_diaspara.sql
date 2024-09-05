@@ -9,7 +9,7 @@ CREATE ROLE diaspara_france_admin; -- administrateur pour un schema
 -- TODO ne donner
 -- GRANT { role_name | ALL [ PRIVILEGES ] }     TO { [ GROUP ] role_specification | username | CURRENT_USER | SESSION_USER } [, ...]    [ WITH ADMIN OPTION ]
 
-
+GRANT ALL PRIVILEGES ON SCHEMA public TO diaspara_admin ;
 
 CREATE ROLE jules WITH 
   NOSUPERUSER
@@ -34,10 +34,10 @@ ALTER ROLE cedric WITH password '***************'; --c
 
 
 --- GRANT DBEel_DBManager TO lbeaulaton WITH ADMIN OPTION;
-GRANT diaspara_admin TO jules WITH ADMIN OPTION;
-GRANT diaspara_france_admin TO jules WITH ADMIN OPTION;
-GRANT diaspara_admin TO cedric WITH ADMIN OPTION;
-GRANT diaspara_france_admin TO cedric WITH ADMIN OPTION;
+GRANT diaspara_admin TO jules ;
+GRANT diaspara_france_admin TO jules ;
+GRANT diaspara_admin TO cedric ;
+GRANT diaspara_france_admin TO cedric ;
 
 -- Should be done each time the database is created
 --- role management
