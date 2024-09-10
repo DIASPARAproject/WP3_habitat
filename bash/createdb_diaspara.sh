@@ -12,19 +12,18 @@ psql -U postgres -c "GRANT ALL PRIVILEGES ON SCHEMA ccm TO diaspara_admin ;" dia
 
 
 # test
-env:usercedric
+env:userjules
 # env:test = 'test' -- to set variables before the script without admin access to path
-psql --dbname=postgresql://${env:usercedric}:${env:passcedric}@$env:hostdiaspara/diaspara
+# env:userjules
+psql --dbname=postgresql://${env:userjules}:${env:passjules}@$env:hostdiaspara/diaspara
 
 # dump ccm tables to local
-pg_dump --table ccm21.catchments --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname=postgresql://${env:usercedric}:${env:passcedric}@${env:hostdiaspara}/diaspara  
-pg_dump --table ccm21.coast --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname=postgresql://${env:usercedric}:${env:passcedric}@${env:hostdiaspara}/diaspara 
-pg_dump --table ccm21.islands --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname=postgresql://${env:usercedric}:${env:passcedric}@${env:hostdiaspara}/diaspara 
-pg_dump --table ccm21.lakes --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname=postgresql://${env:usercedric}:${env:passcedric}@${env:hostdiaspara}/diaspara 
-pg_dump --table ccm21.mainrivers --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname=postgresql://${env:usercedric}:${env:passcedric}@${env:hostdiaspara}/diaspara 
-pg_dump --table ccm21.namedrivers --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname=postgresql://${env:usercedric}:${env:passcedric}@${env:hostdiaspara}/diaspara 
-pg_dump --table ccm21.rivernodes --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname=postgresql://${env:usercedric}:${env:passcedric}@${env:hostdiaspara}/diaspara 
-pg_dump --table ccm21.riversegments --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname=postgresql://${env:usercedric}:${env:passcedric}@${env:hostdiaspara}/diaspara 
-pg_dump --table ccm21.seaoutlets --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname=postgresql://${env:usercedric}:${env:passcedric}@${env:hostdiaspara}/diaspara 
-
-
+pg_dump --table ccm21.catchments -Fc -f catchments.dump --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname postgresql://${env:userjules}:${env:passjules}@${env:hostdiaspara}/diaspara
+pg_dump --table ccm21.coast -Fc -f coast.dump --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname postgresql://${env:userjules}:${env:passjules}@${env:hostdiaspara}/diaspara
+pg_dump --table ccm21.islands -Fc -f islands.dump --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname postgresql://${env:userjules}:${env:passjules}@${env:hostdiaspara}/diaspara
+pg_dump --table ccm21.lakes -Fc -f lakes.dump --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname postgresql://${env:userjules}:${env:passjules}@${env:hostdiaspara}/diaspara
+pg_dump --table ccm21.mainrivers -Fc -f mainrivers.dump --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname postgresql://${env:userjules}:${env:passjules}@${env:hostdiaspara}/diaspara
+pg_dump --table ccm21.namedrivers -Fc -f namedrivers.dump --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname postgresql://${env:userjules}:${env:passjules}@${env:hostdiaspara}/diaspara
+pg_dump --table ccm21.rivernodes -Fc -f rivernodes.dump --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname postgresql://${env:userjules}:${env:passjules}@${env:hostdiaspara}/diaspara
+pg_dump --table ccm21.riversegments -Fc -f riversegments.dump --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname postgresql://${env:userjules}:${env:passjules}@${env:hostdiaspara}/diaspara
+pg_dump --table ccm21.seaoutlets -Fc -f seaoutlets.dump --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname postgresql://${env:userjules}:${env:passjules}@${env:hostdiaspara}/diaspara
