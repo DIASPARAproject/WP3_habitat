@@ -40,3 +40,16 @@ pg_restore -v --dbname=postgresql://${env:userjules}:${env:passjules}@$env:hostd
 pg_restore -v --dbname=postgresql://${env:userjules}:${env:passjules}@$env:hostdiaspara/diaspara -n ccm21 riversegments.dump
 pg_restore -v --dbname=postgresql://${env:userjules}:${env:passjules}@$env:hostdiaspara/diaspara -n ccm21 seaoutlets.dump
 psql -U postgres -c "alter schema ccm21 rename to ccm" diaspara
+
+
+# import HydroRIVERS
+
+psql -U postgres -c "create schema hydror" diaspara
+psql -U postgres -c "GRANT USAGE ON SCHEMA public TO diaspara_admin ;" diaspara
+psql -U postgres -c "GRANT ALL PRIVILEGES ON SCHEMA hydror TO diaspara_admin ;" diaspara
+
+# import hotosm
+
+psql -U postgres -c "create schema hotosm" diaspara
+psql -U postgres -c "GRANT USAGE ON SCHEMA public TO diaspara_admin ;" diaspara
+psql -U postgres -c "GRANT ALL PRIVILEGES ON SCHEMA hotosm TO diaspara_admin ;" diaspara
