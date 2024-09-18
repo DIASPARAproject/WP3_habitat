@@ -42,14 +42,8 @@ pg_restore -v --dbname=postgresql://${env:userjules}:${env:passjules}@$env:hostd
 psql -U postgres -c "alter schema ccm21 rename to ccm" diaspara
 
 
-# import HydroRIVERS
+# import HydroATLAS
 
-psql -U postgres -c "create schema hydror" diaspara
+psql -U postgres -c "create schema hydroa" diaspara
 psql -U postgres -c "GRANT USAGE ON SCHEMA public TO diaspara_admin ;" diaspara
-psql -U postgres -c "GRANT ALL PRIVILEGES ON SCHEMA hydror TO diaspara_admin ;" diaspara
-
-# import hotosm
-
-psql -U postgres -c "create schema hotosm" diaspara
-psql -U postgres -c "GRANT USAGE ON SCHEMA public TO diaspara_admin ;" diaspara
-psql -U postgres -c "GRANT ALL PRIVILEGES ON SCHEMA hotosm TO diaspara_admin ;" diaspara
+psql -U postgres -c "GRANT ALL PRIVILEGES ON SCHEMA hydroa TO diaspara_admin ;" diaspara
