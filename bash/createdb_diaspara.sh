@@ -50,7 +50,10 @@ psql -U postgres -c "GRANT ALL PRIVILEGES ON SCHEMA hydroa TO diaspara_admin ;" 
 
 # dump state from JULES
 
-pg_dump --dbname=postgresql://${env:userjules}:${env:passjules}@$env:hostdiaspara/diaspara -Fc -f diaspara_03102024.backup
+# Jules
+pg_dump --dbname=postgresql://${env:userjules}:${env:passjules}@$env:hostdiaspara/diaspara -Fc --create -f diaspara_03102024.backup
 
-pg_restore --help
+# Cedric
+psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/postgres -c "DROP DATABASE diaspara"
+pg_restore --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/diaspara diaspara_03102024.backup
 
