@@ -47,5 +47,5 @@ ALTER DATABASE "diaspara" OWNER TO diaspara_admin;
 --- extension management
 CREATE EXTENSION "uuid-ossp" SCHEMA "public";
 CREATE EXTENSION postgis SCHEMA "public";
-
+CREATE EXTENSION postgis_topology;
  
