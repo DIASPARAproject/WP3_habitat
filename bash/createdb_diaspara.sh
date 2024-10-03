@@ -47,3 +47,10 @@ psql -U postgres -c "alter schema ccm21 rename to ccm" diaspara
 psql -U postgres -c "create schema hydroa" diaspara
 psql -U postgres -c "GRANT USAGE ON SCHEMA public TO diaspara_admin ;" diaspara
 psql -U postgres -c "GRANT ALL PRIVILEGES ON SCHEMA hydroa TO diaspara_admin ;" diaspara
+
+# dump state from JULES
+
+pg_dump --dbname=postgresql://${env:userjules}:${env:passjules}@$env:hostdiaspara/diaspara -Fc -f diaspara_03102024.backup
+
+pg_restore --help
+
