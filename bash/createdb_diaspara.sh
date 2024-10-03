@@ -55,5 +55,8 @@ pg_dump --dbname=postgresql://${env:userjules}:${env:passjules}@$env:hostdiaspar
 
 # Cedric
 psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/postgres -c "DROP DATABASE diaspara"
-pg_restore --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/diaspara diaspara_03102024.backup
+cd "C:\Users\cedric.briand\OneDrive - EPTB Vilaine\partage\diaspara"
+C:\"Program Files"\PostgreSQL\16\bin\pg_restore --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/diaspara diaspara_03102024.backup
+CREATEDB -U ${env:userlocal} diaspara 
+C:\"Program Files"\PostgreSQL\16\bin\pg_restore --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/diaspara diaspara_03102024.backup
 
