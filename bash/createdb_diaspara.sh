@@ -18,6 +18,7 @@ psql --dbname=postgresql://${env:usercedric}:${env:passcedric}@$env:hostdiaspara
 
 
 pg_dump --table ccm21.catchments --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname=postgresql://${env:usercedric}:${env:passcedric}@${env:hostdiaspara}/diaspara  
+#TODO
 coast
 islands
 lakes
