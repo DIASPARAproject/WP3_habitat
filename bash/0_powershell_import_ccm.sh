@@ -19,7 +19,7 @@
 # 2017 tigris Euphrate [keep only mediterranean]
 # 2018 Iceland
 
-[String[]]$windows = "2000","2001","2002","2003","2004","2007","2008","2009","2010","2013","2015","2016","2018"
+[String[]]$windows = "2000","2001","2002","2003","2004","2007","2008","2009","2010","2013","2015","2016","2017","2018"
 $pathccmsource = "D:\eda\ccm21"
 $pathccmout = "D:\eda\"
 foreach ($window in $windows){
