@@ -28,4 +28,4 @@ ogr2ogr.exe -f "PostgreSQL" -a_srs EPSG:4326 PG:"host=localhost port=5432 dbname
 
 ogr2ogr.exe -f "PostgreSQL" -a_srs EPSG:4326 PG:"host=localhost port=5432 dbname=diaspara user=postgres password=postgres" -lco SCHEMA="w2018" D:\eda\ccm21\WGS84_W2018.gdb -overwrite -progress --config PG_USE_COPY YES
 
-ogr2ogr.exe -f "PostgreSQL" -a_srs EPSG:3035 PG:"host=localhost port=5432 dbname=diaspara user=postgres password=postgres" -lco SCHEMA="ccm21" D:\eda\ccm21\CCM21_LAEA_RiverBasins.gdb -overwrite -progress --config PG_USE_COPY YES
+ogr2ogr.exe -f "PostgreSQL" -a_srs EPSG:3035 PG:"host=localhost port=5432 dbname=diaspara user=postgres password=postgres" -lco SCHEMA="ccm21" D:\eda\ccm21\LAEA_RiverBasins.gdb -overwrite -progress --config PG_USE_COPY YES

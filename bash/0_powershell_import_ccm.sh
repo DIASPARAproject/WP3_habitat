@@ -47,3 +47,13 @@ psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/d
 
 
 # Lakes
+
+$pathccmsource = "D:\eda\ccm21"
+$pathccmout = "D:\eda\"
+$path = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/DROUGHTOBS/Hydrology_datasets/CCM2/CCM21_WGS84_Lakes.zip"
+$namefile = "CCM21_LAEA_Lakes"
+$schema="ccm21"
+cd $pathccmsource
+curl -o "$namefile.zip" $path
+Expand-Archive "$namefile.zip" -DestinationPath "$pathccmout"
+psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/diaspara -c "DROP SCHEMA IF EXISTS $schema CASCADE; CREATE SCHEMA $schema;"
