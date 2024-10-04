@@ -19,7 +19,7 @@
 # 2017 tigris Euphrate [keep only mediterranean]
 # 2018 Iceland
 
-[String[]]$windows = "2000","2001","2002","2003","2004","2007","2008","2009","2010","2013","2015","2016","2018"
+[String[]]$windows = "2000","2001","2002","2003","2004","2007","2008","2009","2010","2013","2015","2016","2017","2018"
 $pathccmsource = "D:\eda\ccm21"
 $pathccmout = "D:\eda\"
 foreach ($window in $windows){
@@ -33,3 +33,17 @@ psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/d
 }
 
 
+# Overview riverbasins only available 3035
+
+$pathccmsource = "D:\eda\ccm21"
+$pathccmout = "D:\eda\"
+$path = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/DROUGHTOBS/Hydrology_datasets/CCM2/CCM21_LAEA_RiverBasins.zip"
+$namefile = "CCM21_LAEA_RiverBasins"
+$schema="ccm21"
+cd $pathccmsource
+curl -o "$namefile.zip" $path
+Expand-Archive "$namefile.zip" -DestinationPath "$pathccmout"
+psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/diaspara -c "DROP SCHEMA IF EXISTS $schema CASCADE; CREATE SCHEMA $schema;"
+
+
+# Lakes
