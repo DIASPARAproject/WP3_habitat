@@ -56,4 +56,3 @@ $schema="ccm21"
 cd $pathccmsource
 curl -o "$namefile.zip" $path
 Expand-Archive "$namefile.zip" -DestinationPath "$pathccmout"
-psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/diaspara -c "DROP SCHEMA IF EXISTS $schema CASCADE; CREATE SCHEMA $schema;"

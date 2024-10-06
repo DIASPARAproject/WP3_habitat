@@ -40,19 +40,7 @@ SELECT
 FROM all_columns c;
 
 
--- transforming hydroatlas geom to 3035
-ALTER TABLE hydroa.catchments ADD COLUMN geom_temp geometry(Geometry, 3035);
 
-UPDATE hydroa.catchments
-	SET geom_temp = ST_Transform(geom, 3035)
-	WHERE ST_SRID(geom) = 4326;
-
-ALTER TABLE hydroa.catchments DROP COLUMN geom;
-
-ALTER TABLE hydroa.catchments RENAME COLUMN geom_temp TO geom;
-
-SELECT DISTINCT ST_SRID(geom) AS srid
-	FROM hydroa.catchments;
 
 
 -- selecting polygones with all columns gathered from previous query
@@ -73,6 +61,53 @@ UPDATE hydroa.merging
 	SET geom = COALESCE(geom, the_geom);
 ALTER TABLE hydroa.merging 
 	DROP COLUMN the_geom;
+	
+CREATE SCHEMA tempo;
+
+CREATE TABLE tempo.border_basins AS(
+WITH ccm_contour AS (
+SELECT * FROM ccm21.seaoutlets WHERE "window" = 2017 AND sea_cd=4)
+
+-- we only want an intersection on the edge
+SELECT hc.* FROM ccm_contour cc JOIN
+hydroa.catchments hc 
+ON st_intersects(hc.geom, cc.geom)
+AND NOT st_contains(hc.geom, cc.geom)
+);
+
+-- This table cuts hydroatlas basins according to the border with ccm,
+-- and extracts single geometry polygons
+
+DROP TABLE IF EXISTS tempo.border_basins_cut;
+CREATE TABLE tempo.border_basins_cut AS(
+WITH ccm_contour AS (
+SELECT * FROM ccm21.seaoutlets WHERE "window" = 2017 AND sea_cd=4),
+ccm_difference AS(
+SELECT st_difference(bb.geom,cc.geom) geom, 
+bb."HYBAS_ID" AS hybas_id FROM tempo.border_basins bb, ccm_contour cc)
+SELECT (sub.p_geom).geom AS geom, (sub.p_geom).path AS PATH, hybas_id
+FROM (SELECT (ST_Dump(ccm_difference.geom)) AS p_geom , hybas_id FROM ccm_difference) sub
+); --267
+
+-- Sum of surface of border basins compared to the original
+DROP TABLE IF EXISTS tempo.proportion_cut;
+CREATE TABLE tempo.proportion_cut AS(
+WITH sumareasmallpieces AS(
+  SELECT sum(st_area(bc.geom)) AS areasmallpieces, bc.hybas_id FROM tempo.border_basins_cut bc
+  JOIN 
+  tempo.border_basins ON border_basins."HYBAS_ID"=bc.hybas_id
+  GROUP BY hybas_id
+)
+SELECT areasmallpieces/st_area(geom) AS proportion_cut, hybas_id FROM 
+sumareasmallpieces JOIN 
+tempo.border_basins ON border_basins."HYBAS_ID"=sumareasmallpieces.hybas_id
+); --58
+
+-- Putting the limit at 10 %
+CREATE TABLE tempo.smallpieces AS (
+SELECT border_basins_cut.* FROM tempo.border_basins_cut JOIN tempo.proportion_cut
+ON proportion_cut.hybas_id = border_basins_cut.hybas_id
+WHERE proportion_cut < 0.1);
 
 
 
