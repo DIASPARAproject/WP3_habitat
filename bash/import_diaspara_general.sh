@@ -1,7 +1,0 @@
-
-
-
-
-# Create database server
-
-CRE

@@ -60,3 +60,4 @@ C:\"Program Files"\PostgreSQL\16\bin\pg_restore --dbname=postgresql://${env:user
 CREATEDB -U ${env:userlocal} diaspara 
 C:\"Program Files"\PostgreSQL\16\bin\pg_restore --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/diaspara diaspara_03102024.backup
 
+C:\"Program Files"\PostgreSQL\16\bin\pg_restore --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/hydroatlas.backup
