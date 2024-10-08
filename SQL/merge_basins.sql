@@ -70,30 +70,35 @@ tempo.border_basins ON border_basins.hybas_id=sumareasmallpieces.hybas_id
 -- Putting the limit at 10 %
 DROP TABLE IF EXISTS tempo.smallpieces ;
 CREATE TABLE tempo.smallpieces AS (
-SELECT border_basins_cut.* FROM tempo.border_basins_cut JOIN tempo.proportion_cut
-ON proportion_cut.hybas_id = border_basins_cut.hybas_id
-WHERE proportion_cut < 0.1
-AND border_basins_cut.hybas_id NOT IN (2120000560,2120000570)); --631 --370
+SELECT 
+	ROW_NUMBER() OVER() AS sp_id,
+	border_basins_cut.* 
+	FROM tempo.border_basins_cut 
+	JOIN tempo.proportion_cut
+	ON proportion_cut.hybas_id = border_basins_cut.hybas_id
+	WHERE proportion_cut < 0.1
+	AND border_basins_cut.hybas_id NOT IN (2120000560,2120000570)
+); --631 --370
 
--- TODO generate id for smallpieces
+
 DROP TABLE IF EXISTS tempo.border_length;
+CREATE TABLE tempo.border_length AS (
 SELECT
-    s.hybas_id,
-    w.hybas_id, 
-    CASE
-        WHEN ST_Touches(s.geom, w.geom) THEN 
-            ST_Length(ST_Intersection(s.geom, w.geom))  
-        ELSE 
-            0  
-    END AS shared_border_length 
+	sp_id,
+    s.hybas_id AS s_hybas_id,
+    w.hybas_id AS w_hybas_id,
+    ST_Length(ST_Intersection(s.geom, w.geom)) AS shared_border_length 
 FROM
     tempo.smallpieces s
 JOIN
     hydroatlas.catchments w
 ON
-    ST_Intersects(s.geom, w.geom);
+    ST_Intersects(s.geom, w.geom)
+WHERE
+	ST_Touches(s.geom,w.geom)
+); --120
 
-   
+DROP TABLE IF EXISTS tempo.modified_catchments;
 CREATE TABLE tempo.modified_catchments AS (
 WITH one_row_per_atlas_catchment AS (
 	SELECT
