@@ -80,24 +80,42 @@ SELECT
 	AND border_basins_cut.hybas_id NOT IN (2120000560,2120000570)
 ); --631 --370
 
+DROP TABLE IF EXISTS tempo.selected_smallpieces;
+CREATE TABLE tempo.selected_smallpieces AS (
+    WITH border_length AS (
+        SELECT
+            sp_id,
+            s.hybas_id AS s_hybas_id,
+            w.hybas_id AS w_hybas_id,
+            ST_Length(ST_Intersection(s.geom, w.geom)) AS shared_border_length 
+        FROM
+            tempo.smallpieces s
+        JOIN
+            tempo.border_basins w
+        ON
+            ST_Touches(s.geom, w.geom)
+    ),
+    longest_border_length AS (
+        SELECT 
+            * 
+        FROM 
+            border_length
+        WHERE 
+            shared_border_length > 0
+        ORDER BY 
+            sp_id, shared_border_length DESC
+    )
+    SELECT DISTINCT ON (sp_id) 
+        sp_id, 
+        s_hybas_id, 
+        w_hybas_id, 
+        shared_border_length
+    FROM 
+        longest_border_length
+); --67
 
-DROP TABLE IF EXISTS tempo.border_length;
-CREATE TABLE tempo.border_length AS (
-SELECT
-	sp_id,
-    s.hybas_id AS s_hybas_id,
-    w.hybas_id AS w_hybas_id,
-    ST_Length(ST_Intersection(s.geom, w.geom)) AS shared_border_length 
-FROM
-    tempo.smallpieces s
-JOIN
-    hydroatlas.catchments w
-ON
-    ST_Intersects(s.geom, w.geom)
-WHERE
-	ST_Touches(s.geom,w.geom)
-); --120
 
+		
 DROP TABLE IF EXISTS tempo.modified_catchments;
 CREATE TABLE tempo.modified_catchments AS (
 WITH one_row_per_atlas_catchment AS (
@@ -106,42 +124,16 @@ WITH one_row_per_atlas_catchment AS (
 		ST_Collect(smallpieces.geom) AS geom_smallpieces,
 		catchments.geom
 	FROM tempo.smallpieces
-	JOIN hydroatlas.catchments
-	ON ST_Touches(smallpieces.geom,catchments.geom)
+	INNER JOIN tempo.selected_smallpieces
+	ON smallpieces.sp_id = selected_smallpieces.sp_id
+	INNER JOIN hydroatlas.catchments
+	ON tempo.selected_smallpieces.w_hybas_id = hydroatlas.catchments.hybas_id
 	GROUP BY catchments.hybas_id,catchments.geom)
 	SELECT
 		hybas_id,
 		ST_Multi(ST_Union(geom,geom_smallpieces)) AS geom
 	FROM one_row_per_atlas_catchment
 ); --62
-
-
-CREATE TABLE tempo.merged_catchments AS (
-    WITH longest_border_per_smallpiece AS (
-        SELECT
-            bl.sp_id,
-            bl.s_hybas_id,
-            bl.w_hybas_id,
-            bl.shared_border_length
-        FROM
-            tempo.border_length bl
-        JOIN (
-            SELECT 
-                sp_id, 
-                MAX(shared_border_length) AS max_shared_border_length
-            FROM 
-                tempo.border_length
-            GROUP BY 
-                sp_id
-        ) lb
-        ON bl.sp_id = lb.sp_id 
-        AND bl.shared_border_length = lb.max_shared_border_length
-        WHERE bl.shared_border_length > 0
-    ) --68
-    
-); --68
-
-
 
 ---------- Test 1 : isolating gaps between polygones ----------
 SELECT
