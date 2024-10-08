@@ -113,9 +113,33 @@ WITH one_row_per_atlas_catchment AS (
 		hybas_id,
 		ST_Multi(ST_Union(geom,geom_smallpieces)) AS geom
 	FROM one_row_per_atlas_catchment
-);
+); --62
 
 
+CREATE TABLE tempo.merged_catchments AS (
+    WITH longest_border_per_smallpiece AS (
+        SELECT
+            bl.sp_id,
+            bl.s_hybas_id,
+            bl.w_hybas_id,
+            bl.shared_border_length
+        FROM
+            tempo.border_length bl
+        JOIN (
+            SELECT 
+                sp_id, 
+                MAX(shared_border_length) AS max_shared_border_length
+            FROM 
+                tempo.border_length
+            GROUP BY 
+                sp_id
+        ) lb
+        ON bl.sp_id = lb.sp_id 
+        AND bl.shared_border_length = lb.max_shared_border_length
+        WHERE bl.shared_border_length > 0
+    ) --68
+    
+); --68
 
 
 
