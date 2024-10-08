@@ -201,6 +201,72 @@ WITH one_row_per_smallpiece_within_catchment AS (
 ); --42
 
 
+-- Oh no some small bits remain lonely and crying
+-- they are beyond the polygons selected
+-- we are going to fetch them again
+
+CREATE TABLE tempo.modified_catchments2 AS(
+WITH missing_smallpieces AS (
+SELECT s.sp_id , s.geom FROM tempo.smallpieces s,
+tempo.modified_catchments m
+WHERE st_intersects(s.geom,m.geom)
+AND NOT st_contains(m.geom,s.geom)
+),
+ border_length AS (
+        SELECT
+            sp_id,
+            w.hybas_id AS w_hybas_id,
+            ST_Length(ST_Intersection(s.geom, w.geom)) AS shared_border_length 
+        FROM
+            missing_smallpieces s
+        JOIN
+            tempo.modified_catchments w
+        ON
+            ST_intersects(s.geom, w.geom)
+    ),
+    longest_border_length AS (
+        SELECT 
+            * 
+        FROM 
+            border_length
+        ORDER BY 
+            sp_id, shared_border_length DESC
+    ),
+selected_smallpieces AS(    
+    SELECT DISTINCT ON (sp_id) 
+        sp_id, 
+        w_hybas_id, 
+        shared_border_length
+    FROM 
+        longest_border_length),        
+ one_row_per_smallpiece_within_catchment AS (
+  SELECT
+    modified_catchments.hybas_id,
+    ST_Collect(missing_smallpieces.geom) AS geom_smallpieces,
+    modified_catchments.geom
+  FROM missing_smallpieces
+  INNER JOIN tempo.selected_smallpieces
+  ON missing_smallpieces.sp_id = selected_smallpieces.sp_id
+  INNER JOIN tempo.modified_catchments
+  ON tempo.selected_smallpieces.w_hybas_id = modified_catchments.hybas_id
+
+  GROUP BY modified_catchments.hybas_id,modified_catchments.geom)
+  SELECT
+    hybas_id,
+    ST_Multi(ST_Union(geom,geom_smallpieces)) AS geom
+  FROM  one_row_per_smallpiece_within_catchment);
+
+CREATE TABLE tempo.modified_catchments3 AS SELECT * FROM tempo.modified_catchments;
+
+UPDATE tempo.modified_catchments3 SET geom=modified_catchments2.geom FROM 
+tempo.modified_catchments2 WHERE modified_catchments2.hybas_id=modified_catchments3.hybas_id;
 
 
+-- TODO
+-- modify riveratlas.catchments remove basins fully below 
+-- update geometry of basins according to tempo.modified_catchments3
+-- select only rivers corresponding to catchments
+-- same with lakes
 
+
+SELECT rivers FROM hydroatlas USING basins remaining
