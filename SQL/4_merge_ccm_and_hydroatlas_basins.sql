@@ -263,8 +263,6 @@ CREATE TABLE tempo.modified_catchments3 AS SELECT * FROM tempo.modified_catchmen
 UPDATE tempo.modified_catchments3 SET geom=modified_catchments2.geom FROM 
 tempo.modified_catchments2 WHERE modified_catchments2.hybas_id=modified_catchments3.hybas_id;--21
 
-
--- TODO
 -- modify riveratlas.catchments remove basins fully below 
 DELETE FROM hydroatlas.catchments c
 WHERE EXISTS (
@@ -273,14 +271,12 @@ FROM tempo.enveloppe_ccm e
 WHERE (ST_Area(ST_Intersection(c.geom,e.geom))/ST_Area(c.geom)) >= 0.9
 ); --224
 
---Problem : hybas_id 2121298250 & 2120101330 are deleted
+-- TODO
+--Problem : hybas_id 2121298250 & 2120101330 are deleted between modified_catchments2 and 3
+SELECT * FROM tempo.modified_catchments2
+WHERE modified_catchments2.hybas_id=2121298250
 
 -- update geometry of basins according to tempo.modified_catchments3
 UPDATE hydroatlas.catchments SET geom=modified_catchments3.geom
 FROM tempo.modified_catchments3 WHERE catchments.hybas_id=modified_catchments3.hybas_id; --39
 
-
--- same with lakes
-
-
-SELECT rivers FROM hydroatlas USING basins remaining
