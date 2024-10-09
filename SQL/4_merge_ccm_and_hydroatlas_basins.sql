@@ -279,7 +279,6 @@ WHERE (ST_Area(ST_Intersection(c.geom,e.geom))/ST_Area(c.geom)) >= 0.9
 UPDATE hydroatlas.catchments SET geom=modified_catchments3.geom
 FROM tempo.modified_catchments3 WHERE catchments.hybas_id=modified_catchments3.hybas_id; --39
 
--- select only rivers corresponding to catchments
 
 -- same with lakes
 
