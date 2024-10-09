@@ -96,8 +96,8 @@ SELECT
 -- we had some troubles later, which seem to have fixed themselves 
 -- by changing the scripts
 
-SELECT  DISTINCT  st_isvalid(geom) , count(*) OVER (PARTITION BY st_isvalid(geom) )
-FROM tempo.smallpieces  
+--SELECT  DISTINCT  st_isvalid(geom) , count(*) OVER (PARTITION BY st_isvalid(geom) )
+--FROM tempo.smallpieces  
 
 
 
@@ -109,14 +109,14 @@ FROM tempo.smallpieces
 -- There might have been problems at this stage of polygons attached to the wrong polygons, 
 -- but it's not apparent from our maps.
 
-SELECT ST_Intersection(a.geom, b.geom), 
-st_intersects(a.geom,b.geom),
-st_touches (a.geom, b.geom) ,
-a.geom,
-b.geom
-FROM  
-(SELECT * FROM tempo.smallpieces  WHERE sp_id = 148) a,
-(SELECT * FROM tempo.border_basins  WHERE hybas_id= 2121283180) b
+--SELECT ST_Intersection(a.geom, b.geom), 
+--st_intersects(a.geom,b.geom),
+--st_touches (a.geom, b.geom) ,
+--a.geom,
+--b.geom
+--FROM  
+--(SELECT * FROM tempo.smallpieces  WHERE sp_id = 148) a,
+--(SELECT * FROM tempo.border_basins  WHERE hybas_id= 2121283180) b
 
 
 -- Now we need to select the border catchements, but also some catchement
@@ -205,6 +205,7 @@ WITH one_row_per_smallpiece_within_catchment AS (
 -- they are beyond the polygons selected
 -- we are going to fetch them again
 
+DROP TABLE IF EXISTS tempo.modified_catchments2;
 CREATE TABLE tempo.modified_catchments2 AS(
 WITH missing_smallpieces AS (
 SELECT s.sp_id , s.geom FROM tempo.smallpieces s,
@@ -254,18 +255,32 @@ selected_smallpieces AS(
   SELECT
     hybas_id,
     ST_Multi(ST_Union(geom,geom_smallpieces)) AS geom
-  FROM  one_row_per_smallpiece_within_catchment);
+  FROM  one_row_per_smallpiece_within_catchment); --21
 
-CREATE TABLE tempo.modified_catchments3 AS SELECT * FROM tempo.modified_catchments;
+DROP TABLE IF EXISTS tempo.modified_catchments3;
+CREATE TABLE tempo.modified_catchments3 AS SELECT * FROM tempo.modified_catchments;--42
 
 UPDATE tempo.modified_catchments3 SET geom=modified_catchments2.geom FROM 
-tempo.modified_catchments2 WHERE modified_catchments2.hybas_id=modified_catchments3.hybas_id;
+tempo.modified_catchments2 WHERE modified_catchments2.hybas_id=modified_catchments3.hybas_id;--21
 
 
 -- TODO
 -- modify riveratlas.catchments remove basins fully below 
+DELETE FROM hydroatlas.catchments c
+WHERE EXISTS (
+SELECT 1
+FROM tempo.enveloppe_ccm e
+WHERE (ST_Area(ST_Intersection(c.geom,e.geom))/ST_Area(c.geom)) >= 0.9
+); --224
+
+--Problem : hybas_id 2121298250 & 2120101330 are deleted
+
 -- update geometry of basins according to tempo.modified_catchments3
+UPDATE hydroatlas.catchments SET geom=modified_catchments3.geom
+FROM tempo.modified_catchments3 WHERE catchments.hybas_id=modified_catchments3.hybas_id; --39
+
 -- select only rivers corresponding to catchments
+
 -- same with lakes
 
 
