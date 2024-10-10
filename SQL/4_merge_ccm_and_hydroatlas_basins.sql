@@ -262,10 +262,18 @@ selected_smallpieces AS(
   FROM  one_row_per_smallpiece_within_catchment); --21 --23
 
 DROP TABLE IF EXISTS tempo.modified_catchments3;
-CREATE TABLE tempo.modified_catchments3 AS SELECT * FROM tempo.modified_catchments;--42 --68
+CREATE TABLE tempo.modified_catchments3 AS 
+SELECT
+    hybas_id,
+    ST_Multi(ST_Union(geom)) AS geom
+FROM 
+    tempo.modified_catchments
+GROUP BY 
+    hybas_id; --48
+
 
 UPDATE tempo.modified_catchments3 SET geom=modified_catchments2.geom FROM 
-tempo.modified_catchments2 WHERE modified_catchments2.hybas_id=modified_catchments3.hybas_id;--21 --23
+tempo.modified_catchments2 WHERE modified_catchments2.hybas_id=modified_catchments3.hybas_id;--21 --22
 
 -- modify riveratlas.catchments remove basins fully below 
 DELETE FROM w2020.catchments c
