@@ -9,7 +9,7 @@ CREATE TABLE hydroatlas.riversegments AS(
 		FROM hydroatlas.catchments c 
 		WHERE ST_Intersects(r.geom,c.geom)
 	)
-); --460284
+); --460286
 
 ALTER TABLE lakeatlas.lakeatlas_v10_pol RENAME COLUMN shape TO geom;
 -- select only lakes corresponding to catchments
