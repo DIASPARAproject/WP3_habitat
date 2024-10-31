@@ -24,13 +24,14 @@ DELETE FROM w2017.riversegments WHERE wso_id = ANY(ARRAY[2294495,2294484]); --46
 DELETE FROM w2017.seaoutlets WHERE wso_id = ANY(ARRAY[2294495,2294484]); --2
 
 -- VOLGA into the black sea
-
 DELETE FROM w2013.catchments WHERE wso_id = ANY(ARRAY[1779618,1457128,1457725,1460380,1456942,1457138,1457780,1457789]); --170589
 DELETE FROM w2013.riversegments WHERE wso_id = ANY(ARRAY[1779618,1457128,1457725,1460380,1456942,1457138,1457780,1457789]); --170588
 DELETE FROM w2013.namedrivers WHERE wso_id = ANY(ARRAY[1779618,1457128,1457725,1460380,1456942,1457138,1457780,1457789]); --17
 DELETE FROM w2013.seaoutlets WHERE wso_id = ANY(ARRAY[1779618,1457128,1457725,1460380,1456942,1457138,1457780,1457789]); --8
--- some catchments remain along the black sea
-TODO
+
+-- deleting some remaining catchments along the black sea
+DELETE FROM w2013.catchments WHERE xmin_laea > 7000000; --120
+DELETE FROM w2013.seaoutlets WHERE xmin_laea > 7000000; --120
 
 -- change ownership and permissions to tables, check that indexes exist
 
