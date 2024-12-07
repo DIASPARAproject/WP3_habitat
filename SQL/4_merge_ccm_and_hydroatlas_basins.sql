@@ -35,12 +35,12 @@ WITH ccm_contour AS (
 SELECT * FROM tempo.enveloppe_ccm)
 -- we only want an intersection on the edge
 SELECT hc.* FROM ccm_contour cc JOIN
-hydroatlas.catchments hc 
+w2020.catchments hc 
 ON st_intersects(hc.geom, cc.geom)
 AND NOT st_contains(hc.geom, cc.geom),
 tempo.polygon_east_med
 --WHERE st_intersects(polygon_east_med.geom, hc.geom)
-); --215 --271
+); --271 --206
 
 
 
@@ -60,7 +60,7 @@ SELECT st_difference(bb.geom,cc.geom) geom,
 bb.hybas_id AS hybas_id FROM tempo.border_basins bb, ccm_contour cc)
 SELECT (sub.p_geom).geom AS geom, (sub.p_geom).path AS PATH, hybas_id
 FROM (SELECT (ST_Dump(ccm_difference.geom)) AS p_geom , hybas_id FROM ccm_difference) sub
-); --581 --441
+); --441 --392
 
 -- Now depending on whether the border basin cut correspond to small polygons
 -- or not (we fix the limit at 10 %) we extract them
@@ -75,7 +75,7 @@ WITH sumareasmallpieces AS(
 SELECT areasmallpieces/st_area(geom) AS proportion_cut, border_basins.hybas_id FROM 
 sumareasmallpieces JOIN 
 tempo.border_basins ON border_basins.hybas_id=sumareasmallpieces.hybas_id
-); --31 --110
+); --110 --97
 
 -- so smallpieces correspond to these small parts selected earlier, the
 -- small basins corresponding to bits of ccm catchment at the edge of
@@ -90,14 +90,14 @@ SELECT
 	ON proportion_cut.hybas_id = border_basins_cut.hybas_id
 	WHERE proportion_cut < 0.1
 	AND border_basins_cut.hybas_id NOT IN (2120000560,2120000570)
-); --631 --370
+); --370 --324
 
 -- these geometries are valid ....
 -- we had some troubles later, which seem to have fixed themselves 
 -- by changing the scripts
 
-SELECT  DISTINCT  st_isvalid(geom) , count(*) OVER (PARTITION BY st_isvalid(geom) )
-FROM tempo.smallpieces  
+--SELECT  DISTINCT  st_isvalid(geom) , count(*) OVER (PARTITION BY st_isvalid(geom) )
+--FROM tempo.smallpieces  
 
 
 
@@ -109,14 +109,14 @@ FROM tempo.smallpieces
 -- There might have been problems at this stage of polygons attached to the wrong polygons, 
 -- but it's not apparent from our maps.
 
-SELECT ST_Intersection(a.geom, b.geom), 
-st_intersects(a.geom,b.geom),
-st_touches (a.geom, b.geom) ,
-a.geom,
-b.geom
-FROM  
-(SELECT * FROM tempo.smallpieces  WHERE sp_id = 148) a,
-(SELECT * FROM tempo.border_basins  WHERE hybas_id= 2121283180) b
+--SELECT ST_Intersection(a.geom, b.geom), 
+--st_intersects(a.geom,b.geom),
+--st_touches (a.geom, b.geom) ,
+--a.geom,
+--b.geom
+--FROM  
+--(SELECT * FROM tempo.smallpieces  WHERE sp_id = 148) a,
+--(SELECT * FROM tempo.border_basins  WHERE hybas_id= 2121283180) b
 
 
 -- Now we need to select the border catchements, but also some catchement
@@ -128,7 +128,7 @@ DROP TABLE IF EXISTS tempo.catchments_touching_the_right_side;
 CREATE TABLE tempo.catchments_touching_the_right_side		 AS(
 SELECT  catchments.hybas_id, 
 catchments.geom 
-FROM hydroatlas.catchments ,
+FROM w2020.catchments ,
 tempo.smallpieces,
 tempo.enveloppe_ccm
 WHERE st_intersects (smallpieces.geom, catchments.geom)
@@ -137,7 +137,7 @@ UNION
 SELECT border_basins_cut.hybas_id, geom FROM tempo.border_basins_cut
 JOIN tempo.proportion_cut ON 
 proportion_cut.hybas_id = border_basins_cut.hybas_id
-WHERE proportion_cut >= 0.1); --71
+WHERE proportion_cut >= 0.1); --71 --68
 
 -- smallpieces was dumped to single entities. We join in with
 -- catchments_touching_the_right_side using the largest touching
@@ -173,7 +173,8 @@ CREATE TABLE tempo.selected_smallpieces AS (
         shared_border_length
     FROM 
         longest_border_length
-); --314
+); --314 --284
+
 
 -- here we "merge" the small pieces with atchments_touching_the_right_side
 -- using only the pairs in selected_smallpieces as joining instructions. 
@@ -183,28 +184,31 @@ CREATE TABLE tempo.selected_smallpieces AS (
 DROP TABLE IF EXISTS tempo.modified_catchments;
 CREATE TABLE tempo.modified_catchments AS (
 WITH one_row_per_smallpiece_within_catchment AS (
-	SELECT
-		catchments_touching_the_right_side.hybas_id,
-		ST_Collect(smallpieces.geom) AS geom_smallpieces,
-		catchments_touching_the_right_side.geom
-	FROM tempo.smallpieces
-	INNER JOIN tempo.selected_smallpieces
-	ON smallpieces.sp_id = selected_smallpieces.sp_id
-	INNER JOIN tempo.catchments_touching_the_right_side
-	ON tempo.selected_smallpieces.w_hybas_id = catchments_touching_the_right_side.hybas_id
-
-	GROUP BY catchments_touching_the_right_side.hybas_id,catchments_touching_the_right_side.geom)
-	SELECT
-		hybas_id,
-		ST_Multi(ST_Union(geom,geom_smallpieces)) AS geom
-	FROM  one_row_per_smallpiece_within_catchment
-); --42
+    SELECT
+        catchments_touching_the_right_side.hybas_id,
+        ST_Collect(smallpieces.geom) AS geom_smallpieces,
+        catchments_touching_the_right_side.geom
+    FROM tempo.catchments_touching_the_right_side
+    -- LEFT JOIN to ensure that all catchments are included, even those without corresponding small pieces
+    LEFT JOIN tempo.selected_smallpieces
+        ON selected_smallpieces.w_hybas_id = catchments_touching_the_right_side.hybas_id
+    LEFT JOIN tempo.smallpieces
+        ON smallpieces.sp_id = selected_smallpieces.sp_id
+    GROUP BY catchments_touching_the_right_side.hybas_id, catchments_touching_the_right_side.geom
+)
+SELECT
+    hybas_id,
+    ST_Multi(ST_Union(geom,COALESCE(geom_smallpieces, geom))) AS geom
+    --ST_Multi(ST_Union(geom,geom_smallpieces)) AS geom
+FROM one_row_per_smallpiece_within_catchment
+); --68
 
 
 -- Oh no some small bits remain lonely and crying
 -- they are beyond the polygons selected
 -- we are going to fetch them again
 
+DROP TABLE IF EXISTS tempo.modified_catchments2;
 CREATE TABLE tempo.modified_catchments2 AS(
 WITH missing_smallpieces AS (
 SELECT s.sp_id , s.geom FROM tempo.smallpieces s,
@@ -243,6 +247,7 @@ selected_smallpieces AS(
   SELECT
     modified_catchments.hybas_id,
     ST_Collect(missing_smallpieces.geom) AS geom_smallpieces,
+    --ST_Union(missing_smallpieces.geom) AS geom_smallpieces,
     modified_catchments.geom
   FROM missing_smallpieces
   INNER JOIN tempo.selected_smallpieces
@@ -254,19 +259,32 @@ selected_smallpieces AS(
   SELECT
     hybas_id,
     ST_Multi(ST_Union(geom,geom_smallpieces)) AS geom
-  FROM  one_row_per_smallpiece_within_catchment);
+  FROM  one_row_per_smallpiece_within_catchment); --21 --23
 
-CREATE TABLE tempo.modified_catchments3 AS SELECT * FROM tempo.modified_catchments;
+DROP TABLE IF EXISTS tempo.modified_catchments3;
+CREATE TABLE tempo.modified_catchments3 AS 
+SELECT
+    hybas_id,
+    ST_Multi(ST_Union(geom)) AS geom
+FROM 
+    tempo.modified_catchments
+GROUP BY 
+    hybas_id; --48
+
 
 UPDATE tempo.modified_catchments3 SET geom=modified_catchments2.geom FROM 
-tempo.modified_catchments2 WHERE modified_catchments2.hybas_id=modified_catchments3.hybas_id;
+tempo.modified_catchments2 WHERE modified_catchments2.hybas_id=modified_catchments3.hybas_id;--21 --22
 
-
--- TODO
 -- modify riveratlas.catchments remove basins fully below 
+DELETE FROM w2020.catchments c
+WHERE EXISTS (
+SELECT 1
+FROM tempo.enveloppe_ccm e
+WHERE (ST_Area(ST_Intersection(c.geom,e.geom))/ST_Area(c.geom)) >= 0.9
+); --224 --162
+
+
 -- update geometry of basins according to tempo.modified_catchments3
--- select only rivers corresponding to catchments
--- same with lakes
+UPDATE w2020.catchments SET geom=modified_catchments3.geom
+FROM tempo.modified_catchments3 WHERE catchments.hybas_id=modified_catchments3.hybas_id; --48
 
-
-SELECT rivers FROM hydroatlas USING basins remaining
