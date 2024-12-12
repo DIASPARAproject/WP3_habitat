@@ -59,193 +59,340 @@ WHERE EXISTS (
   WHERE ST_Within(ba.shape,hlce.shape)
   )
 );--77682
+CREATE INDEX idx_tempo_hydro_small_catchments_europe ON tempo.hydro_small_catchments_europe USING GIST(shape);
 
+-- Selecting european data from riveratlas
+CREATE TABLE tempo.hydro_riversegments_europe AS(
+	SELECT * FROM riveratlas.riveratlas_v10 r
+	WHERE EXISTS (
+		SELECT 1
+		FROM tempo.hydro_large_catchments_europe e
+		WHERE ST_Intersects(r.geom,e.shape)
+	)
+); --586605 1h59
 
 -- Creating regional subdivisions following the ccm
-CREATE SCHEMA h2000;
-DROP TABLE IF EXISTS h2000.catchments;
-CREATE TABLE h2000.catchments AS
+-- Step 1 : Selecting the most downstream riversegments
+DROP TABLE IF EXISTS tempo.riveratlas_mds;
+CREATE TABLE tempo.riveratlas_mds AS (
 SELECT *
-FROM tempo.hydro_small_catchments_europe hsce
-WHERE (
-  SELECT SUM(ST_Area(ST_Intersection(hsce.shape, c.shape)))
-  FROM w2000.catchments c
-  WHERE ST_Intersects(hsce.shape, c.shape)
-) / ST_Area(hsce.shape) >= 0.9;--5727
+FROM tempo.hydro_riversegments_europe
+WHERE hydro_riversegments_europe.hyriv_id = hydro_riversegments_europe.main_riv); --16599
 
-CREATE TABLE h2000.catchments AS (
-SELECT * FROM tempo.hydro_small_catchments_europe hsce
-WHERE EXISTS (
-  SELECT 1
-  FROM w2000.catchments c 
-  WHERE ST_Intersects(hsce.shape,c.shape)
-  )
-);--6313
+-- Step 2 : Creating the most downstream point of previous segment
+ALTER TABLE tempo.riveratlas_mds
+ADD COLUMN downstream_point geometry(Point, 4326);
+WITH downstream_points AS (
+    SELECT 
+        hyriv_id,
+        ST_PointN((ST_Dump(geom)).geom, ST_NumPoints((ST_Dump(geom)).geom)) AS downstream_point
+    FROM tempo.riveratlas_mds
+)
+UPDATE tempo.riveratlas_mds AS t
+SET downstream_point = dp.downstream_point
+FROM downstream_points AS dp
+WHERE t.hyriv_id = dp.hyriv_id; --16599
 
-SELECT * FROM h2000.catchments;
-
-CREATE SCHEMA h2001;
-DROP TABLE IF EXISTS h2001.catchments;
-CREATE TABLE h2001.catchments AS (
-SELECT * FROM tempo.hydro_small_catchments_europe hsce
-WHERE EXISTS (
-  SELECT 1
-  FROM w2001.catchments c 
-  WHERE ST_Intersects(hsce.shape,c.shape)
-  )
-);--2404
+CREATE INDEX idx_tempo_riveratlas_mds_dwnstrm ON tempo.riveratlas_mds USING GIST(downstream_point);
 
 
-CREATE SCHEMA h2002;
-DROP TABLE IF EXISTS h2002.catchments;
-CREATE TABLE h2002.catchments AS (
-SELECT * FROM tempo.hydro_small_catchments_europe hsce
-WHERE EXISTS (
-  SELECT 1
-  FROM w2002.catchments c 
-  WHERE ST_Intersects(hsce.shape,c.shape)
-  )
-);--3387
+-- Step 3 : Intersect most downstream points with ices areas and ices ecoregions
+-- ICES Areas for the Baltic
+DROP TABLE IF EXISTS tempo.ices_areas_3031;
+CREATE TABLE tempo.ices_areas_3031 AS (
+SELECT dp.*
+FROM tempo.riveratlas_mds AS dp
+JOIN ices_areas."ICES_Areas_20160601_cut_dense_3857" AS ia
+ON ST_DWithin(
+    dp.downstream_point,
+    ST_Transform(ia.geom,4326),
+    0.04
+)
+WHERE ia.subdivisio=ANY(ARRAY['31','30'])); --323 Still missing some points
+
+DROP TABLE IF EXISTS tempo.ices_areas_3229_27;
+CREATE TABLE tempo.ices_areas_3229_27 AS (
+SELECT dp.*
+FROM tempo.riveratlas_mds AS dp
+JOIN ices_areas."ICES_Areas_20160601_cut_dense_3857" AS ia
+ON ST_DWithin(
+    dp.downstream_point,
+    ST_Transform(ia.geom,4326),
+    0.04
+)
+WHERE ia.subdivisio=ANY(ARRAY['32','29','28','27'])); --584
 
 
-CREATE SCHEMA h2003;
-DROP TABLE IF EXISTS h2003.catchments;
-CREATE TABLE h2003.catchments AS
-SELECT *
-FROM tempo.hydro_small_catchments_europe hsce
-WHERE (
-  SELECT SUM(ST_Area(ST_Intersection(hsce.shape, c.shape)))
-  FROM w2003.catchments c
-  WHERE ST_Intersects(hsce.shape, c.shape)
-) / ST_Area(hsce.shape) >= 0.9;--5602
+DROP TABLE IF EXISTS tempo.ices_areas_26_22;
+CREATE TABLE tempo.ices_areas_26_22 AS (
+SELECT dp.*
+FROM tempo.riveratlas_mds AS dp
+JOIN ices_areas."ICES_Areas_20160601_cut_dense_3857" AS ia
+ON ST_DWithin(
+    dp.downstream_point,
+    ST_Transform(ia.geom,4326),
+    0.04
+)
+WHERE ia.subdivisio=ANY(ARRAY['26','25','24','23','22'])); --507
 
 
-
-CREATE TABLE h2003.catchments AS (
-SELECT * FROM tempo.hydro_small_catchments_europe hsce
-WHERE EXISTS (
-  SELECT 1
-  FROM w2003.catchments c 
-  WHERE ST_Intersects(hsce.shape,c.shape)
-  --AND ST_Area(ST_Intersection(c.shape, hsce.shape)) / ST_Area(c.shape) >= 0.9 --5215, missing polygons
-  )
-);--6051
-
-
-CREATE SCHEMA h2004;
-DROP TABLE IF EXISTS h2004.catchments;
-CREATE TABLE h2004.catchments AS (
-SELECT * FROM tempo.hydro_small_catchments_europe hsce
-WHERE EXISTS (
-  SELECT 1
-  FROM w2004.catchments c 
-  WHERE ST_Intersects(hsce.shape,c.shape)
-  )
-);--4497
-
-CREATE SCHEMA h2007;
-DROP TABLE IF EXISTS h2007.catchments;
-CREATE TABLE h2007.catchments AS (
-SELECT * FROM tempo.hydro_small_catchments_europe hsce
-WHERE EXISTS (
-  SELECT 1
-  FROM w2007.catchments c 
-  WHERE ST_Intersects(hsce.shape,c.shape)
-  )
-);--9751
-
-CREATE SCHEMA h2008;
-DROP TABLE IF EXISTS h2008.catchments;
-CREATE TABLE h2008.catchments AS (
-SELECT * FROM tempo.hydro_small_catchments_europe hsce
-WHERE EXISTS (
-  SELECT 1
-  FROM w2008.catchments c 
-  WHERE ST_Intersects(hsce.shape,c.shape)
-  )
-);--5189
-
-CREATE SCHEMA h2009;
-DROP TABLE IF EXISTS h2009.catchments;
-CREATE TABLE h2009.catchments AS (
-SELECT * FROM tempo.hydro_small_catchments_europe hsce
-WHERE EXISTS (
-  SELECT 1
-  FROM w2009.catchments c 
-  WHERE ST_Intersects(hsce.shape,c.shape)
-  )
-);--6137
+-- ICES Ecoregions
+DROP TABLE IF EXISTS tempo.ices_ecoregions_med_west;
+CREATE TABLE tempo.ices_ecoregions_med_west AS (
+SELECT dp.*
+FROM tempo.riveratlas_mds AS dp
+JOIN ices_ecoregions."ICES_ecoregions_20171207_erase_ESRI" AS er
+ON ST_DWithin(
+    dp.downstream_point,
+    ST_Transform(er.geom,4326),
+    0.04
+)
+WHERE er.objectid = 4);--904
 
 
---CREATE SCHEMA h2010;
---DROP TABLE IF EXISTS h2010.catchments;
---CREATE TABLE h2010.catchments AS (
---SELECT * FROM tempo.hydro_small_catchments_europe hsce
---WHERE EXISTS (
---  SELECT 1
---  FROM w2010.catchments c 
---  WHERE ST_Intersects(hsce.shape,c.shape)
---  )
---); --Canaries
+DROP TABLE IF EXISTS tempo.ices_ecoregions_med_central;
+CREATE TABLE tempo.ices_ecoregions_med_central AS (
+SELECT dp.*
+FROM tempo.riveratlas_mds AS dp
+JOIN ices_ecoregions."ICES_ecoregions_20171207_erase_ESRI" AS er
+ON ST_DWithin(
+    dp.downstream_point,
+    ST_Transform(er.geom,4326),
+    0.04
+)
+WHERE er.objectid = 5);--467
 
 
-CREATE SCHEMA h2013;
-DROP TABLE IF EXISTS h2013.catchments;
-CREATE TABLE h2013.catchments AS (
-SELECT * FROM tempo.hydro_small_catchments_europe hsce
-WHERE EXISTS (
-  SELECT 1
-  FROM w2013.catchments c 
-  WHERE ST_Intersects(hsce.shape,c.shape)
-  )
-);--7593
+DROP TABLE IF EXISTS tempo.ices_ecoregions_med_east;
+CREATE TABLE tempo.ices_ecoregions_med_east AS (
+SELECT dp.*
+FROM tempo.riveratlas_mds AS dp
+JOIN ices_ecoregions."ICES_ecoregions_20171207_erase_ESRI" AS er
+ON ST_DWithin(
+    dp.downstream_point,
+    ST_Transform(er.geom,4326),
+    0.04
+)
+WHERE er.objectid = 8);--1192
 
 
---CREATE SCHEMA h2015;
---DROP TABLE IF EXISTS h2015.catchments;
---CREATE TABLE h2015.catchments AS (
---SELECT * FROM tempo.hydro_small_catchments_europe hsce
---WHERE EXISTS (
---  SELECT 1
---  FROM w2015.catchments c 
---  WHERE ST_Intersects(hsce.shape,c.shape)
---  )
---); --Madeira
+DROP TABLE IF EXISTS tempo.ices_ecoregions_adriatic;
+CREATE TABLE tempo.ices_ecoregions_adriatic AS (
+SELECT dp.*
+FROM tempo.riveratlas_mds AS dp
+JOIN ices_ecoregions."ICES_ecoregions_20171207_erase_ESRI" AS er
+ON ST_DWithin(
+    dp.downstream_point,
+    ST_Transform(er.geom,4326),
+    0.04
+)
+WHERE er.objectid = 7);--528
 
 
-CREATE SCHEMA h2016;
-DROP TABLE IF EXISTS h2016.catchments;
-CREATE TABLE h2016.catchments AS (
-SELECT * FROM tempo.hydro_small_catchments_europe hsce
-WHERE EXISTS (
-  SELECT 1
-  FROM w2016.catchments c 
-  WHERE ST_Intersects(hsce.shape,c.shape)
-  )
-);--11
+DROP TABLE IF EXISTS tempo.ices_ecoregions_biscay_iberian;
+CREATE TABLE tempo.ices_ecoregions_biscay_iberian AS (
+SELECT dp.*
+FROM tempo.riveratlas_mds AS dp
+JOIN ices_ecoregions."ICES_ecoregions_20171207_erase_ESRI" AS er
+ON ST_DWithin(
+    dp.downstream_point,
+    ST_Transform(er.geom,4326),
+    0.04
+)
+WHERE er.objectid = 2);--646
 
 
-CREATE SCHEMA h2017;
-DROP TABLE IF EXISTS h2017.catchments;
-CREATE TABLE h2017.catchments AS (
-SELECT * FROM tempo.hydro_small_catchments_europe hsce
-WHERE EXISTS (
-  SELECT 1
-  FROM w2017.catchments c 
-  WHERE ST_Intersects(hsce.shape,c.shape)
-  )
-);--537
+DROP TABLE IF EXISTS tempo.ices_ecoregions_iceland;
+CREATE TABLE tempo.ices_ecoregions_iceland AS (
+SELECT dp.*
+FROM tempo.riveratlas_mds AS dp
+JOIN ices_ecoregions."ICES_ecoregions_20171207_erase_ESRI" AS er
+ON ST_DWithin(
+    dp.downstream_point,
+    ST_Transform(er.geom,4326),
+    0.04
+)
+WHERE er.objectid = 13);--1030
 
-CREATE SCHEMA h2018;
-DROP TABLE IF EXISTS h2018.catchments;
-CREATE TABLE h2018.catchments AS (
-SELECT * FROM tempo.hydro_small_catchments_europe hsce
-WHERE EXISTS (
-  SELECT 1
-  FROM w2018.catchments c 
-  WHERE ST_Intersects(hsce.shape,c.shape)
-  )
-);--699
+-- Step 4 : Copy all riversegments with the corresponding main_riv
+CREATE SCHEMA h_baltic_3031;
+DROP TABLE IF EXISTS h_baltic_3031.riversegments;
+CREATE TABLE h_baltic_3031.riversegments AS (
+    SELECT hre.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.ices_areas_3031 AS ia
+    ON hre.main_riv = ia.main_riv
+);--27480
+CREATE INDEX idx_h_baltic_3031_riversegments ON h_baltic_3031.riversegments USING GIST(geom);
+
+
+CREATE SCHEMA h_baltic_3229_27;
+DROP TABLE IF EXISTS h_baltic_3229_27.riversegments;
+CREATE TABLE h_baltic_3229_27.riversegments AS (
+    SELECT hre.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.ices_areas_3229_27 AS ia
+    ON hre.main_riv = ia.main_riv
+);--30933
+CREATE INDEX idx_h_baltic_3229_27_riversegments ON h_baltic_3229_27.riversegments USING GIST(geom);
+
+
+CREATE SCHEMA h_baltic_26_22;
+DROP TABLE IF EXISTS h_baltic_26_22.riversegments;
+CREATE TABLE h_baltic_26_22.riversegments AS (
+    SELECT hre.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.ices_areas_26_22 AS ia
+    ON hre.main_riv = ia.main_riv
+);--25539
+CREATE INDEX idx_h_baltic_26_22_riversegments ON h_baltic_26_22.riversegments USING GIST(geom);
+
+
+CREATE SCHEMA h_med_west;
+DROP TABLE IF EXISTS h_med_west.riversegments;
+CREATE TABLE h_med_west.riversegments AS (
+    SELECT hre.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.ices_ecoregions_med_west AS ie
+    ON hre.main_riv = ie.main_riv
+);--25236
+CREATE INDEX idx_h_med_west_riversegments ON h_med_west.riversegments USING GIST(geom);
+
+
+CREATE SCHEMA h_med_central;
+DROP TABLE IF EXISTS h_med_central.riversegments;
+CREATE TABLE h_med_central.riversegments AS (
+    SELECT hre.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.ices_ecoregions_med_central AS ie
+    ON hre.main_riv = ie.main_riv
+);--3749
+CREATE INDEX idx_h_med_central_riversegments ON h_med_central.riversegments USING GIST(geom);
+
+
+CREATE SCHEMA h_med_east;
+DROP TABLE IF EXISTS h_med_east.riversegments;
+CREATE TABLE h_med_east.riversegments AS (
+    SELECT hre.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.ices_ecoregions_med_east AS ie
+    ON hre.main_riv = ie.main_riv
+);--20465
+CREATE INDEX idx_h_med_east_riversegments ON h_med_east.riversegments USING GIST(geom);
+
+
+CREATE SCHEMA h_adriatic;
+DROP TABLE IF EXISTS h_adriatic.riversegments;
+CREATE TABLE h_adriatic.riversegments AS (
+    SELECT hre.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.ices_ecoregions_adriatic AS ie
+    ON hre.main_riv = ie.main_riv
+);--16449
+CREATE INDEX idx_h_adriatic_riversegments ON h_adriatic.riversegments USING GIST(geom);
+
+
+CREATE SCHEMA h_biscay_iberian;
+DROP TABLE IF EXISTS h_biscay_iberian.riversegments;
+CREATE TABLE h_biscay_iberian.riversegments AS (
+    SELECT hre.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.ices_ecoregions_biscay_iberian AS ie
+    ON hre.main_riv = ie.main_riv
+);--39247
+CREATE INDEX idx_h_biscay_iberian_riversegments ON h_biscay_iberian.riversegments USING GIST(geom);
+
+
+CREATE SCHEMA h_iceland;
+DROP TABLE IF EXISTS h_iceland.riversegments;
+CREATE TABLE h_iceland.riversegments AS (
+    SELECT hre.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.ices_ecoregions_iceland AS ie
+    ON hre.main_riv = ie.main_riv
+);--16213
+CREATE INDEX idx_h_iceland_riversegments ON h_iceland.riversegments USING GIST(geom);
+
+
+-- Step 5 : Select all corresponding catchments
+DROP TABLE IF EXISTS h_baltic_3031.catchments;
+CREATE TABLE h_baltic_3031.catchments AS (
+	SELECT hce.*
+	FROM tempo.hydro_small_catchments_europe AS hce
+	JOIN h_baltic_3031.riversegments AS rs
+	ON ST_Intersects(hce.shape,rs.geom)
+); --31437
+
+
+DROP TABLE IF EXISTS h_baltic_3229_27.catchments;
+CREATE TABLE h_baltic_3229_27.catchments AS (
+	SELECT hce.*
+	FROM tempo.hydro_small_catchments_europe AS hce
+	JOIN h_baltic_3229_27.riversegments AS rs
+	ON ST_Intersects(hce.shape,rs.geom)
+);--35969
+
+
+DROP TABLE IF EXISTS h_baltic_26_22.catchments;
+CREATE TABLE h_baltic_26_22.catchments AS (
+	SELECT hce.*
+	FROM tempo.hydro_small_catchments_europe AS hce
+	JOIN h_baltic_26_22.riversegments AS rs
+	ON ST_Intersects(hce.shape,rs.geom)
+);--29510
+
+DROP TABLE IF EXISTS h_med_west.catchments;
+CREATE TABLE h_med_west.catchments AS (
+	SELECT hce.*
+	FROM tempo.hydro_small_catchments_europe AS hce
+	JOIN h_med_west.riversegments AS rs
+	ON ST_Intersects(hce.shape,rs.geom)
+);--28093
+
+
+DROP TABLE IF EXISTS h_med_central.catchments;
+CREATE TABLE h_med_central.catchments AS (
+	SELECT hce.*
+	FROM tempo.hydro_small_catchments_europe AS hce
+	JOIN h_med_central.riversegments AS rs
+	ON ST_Intersects(hce.shape,rs.geom)
+);--4093
+
+
+DROP TABLE IF EXISTS h_med_east.catchments;
+CREATE TABLE h_med_east.catchments AS (
+	SELECT hce.*
+	FROM tempo.hydro_small_catchments_europe AS hce
+	JOIN h_med_east.riversegments AS rs
+	ON ST_Intersects(hce.shape,rs.geom)
+);--23239
+
+
+DROP TABLE IF EXISTS h_adriatic.catchments;
+CREATE TABLE h_adriatic.catchments AS (
+	SELECT hce.*
+	FROM tempo.hydro_small_catchments_europe AS hce
+	JOIN h_adriatic.riversegments AS rs
+	ON ST_Intersects(hce.shape,rs.geom)
+);--17995
+
+
+DROP TABLE IF EXISTS h_biscay_iberian.catchments;
+CREATE TABLE h_biscay_iberian.catchments AS (
+	SELECT hce.*
+	FROM tempo.hydro_small_catchments_europe AS hce
+	JOIN h_biscay_iberian.riversegments AS rs
+	ON ST_Intersects(hce.shape,rs.geom)
+);--44324
+
+
+DROP TABLE IF EXISTS h_iceland.catchments;
+CREATE TABLE h_iceland.catchments AS (
+	SELECT hce.*
+	FROM tempo.hydro_small_catchments_europe AS hce
+	JOIN h_iceland.riversegments AS rs
+	ON ST_Intersects(hce.shape,rs.geom)
+);--16754
 
 
 -- Integrating selected data to the DB
