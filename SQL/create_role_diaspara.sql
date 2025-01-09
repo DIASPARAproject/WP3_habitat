@@ -2,7 +2,7 @@
 -- each role groups will appear and all databases
 CREATE ROLE diaspara_admin;
 CREATE ROLE diaspara_read;
-CREATE ROLE diaspara_france_admin; -- administrateur pour un schema
+
 
 -- Should be done only once
 --- group management
