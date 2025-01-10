@@ -50,3 +50,14 @@ rsconnect/
 /DIASPARA_WP3_habitat.Rproj
 /.project
 /.dbeaver
+
+# Quarto presentations and docs
+
+R/*.html
+R/*.md
+R/*.pdf
+R/*_files/*
+R/data/*.html
+R/data/*_xtml*.*
+R/_extensions/*
+R/assets/*
