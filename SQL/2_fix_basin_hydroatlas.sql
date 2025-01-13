@@ -1915,6 +1915,572 @@ INSERT INTO h_baltic_3229_27.catchments
 SELECT *
 FROM filtered_basin;
 
+
+
+DROP TABLE IF EXISTS tempo.oneendo_2622;
+CREATE TABLE tempo.oneendo_26_22 AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.1,FALSE) geom
+	FROM h_baltic_26_22.catchments AS ha);--93
+CREATE INDEX idx_tempo_oneendo_26_22 ON tempo.oneendo_26_22 USING GIST(geom);
+	
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_26_22
+    ON ba.shape && oneendo_26_22.geom
+    AND ST_Intersects(ba.shape, oneendo_26_22.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_baltic_3229_27.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_black_sea.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_baltic_26_22.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_south.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_north.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_baltic_26_22.catchments
+SELECT *
+FROM filtered_basin;--52
+
+
+
+DROP TABLE IF EXISTS tempo.oneendo_nsean;
+CREATE TABLE tempo.oneendo_nsean AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.1,FALSE) geom
+	FROM h_nsea_north.catchments AS ha);--381
+CREATE INDEX idx_tempo_oneendo_nsean ON tempo.oneendo_nsean USING GIST(geom);
+	
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_nsean
+    ON ba.shape && oneendo_nsean.geom
+    AND ST_Intersects(ba.shape, oneendo_nsean.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_baltic_3229_27.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_baltic_3031.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_baltic_26_22.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_south.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_north.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_norwegian.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_nsea_north.catchments
+SELECT *
+FROM filtered_basin;--28
+
+
+
+DROP TABLE IF EXISTS tempo.oneendo_norwegian;
+CREATE TABLE tempo.oneendo_norwegian AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.1,FALSE) geom
+	FROM h_norwegian.catchments AS ha);--341
+CREATE INDEX idx_tempo_oneendo_norwegian ON tempo.oneendo_norwegian USING GIST(geom);
+	
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_norwegian
+    ON ba.shape && oneendo_norwegian.geom
+    AND ST_Intersects(ba.shape, oneendo_norwegian.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_baltic_3031.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_barent.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_north.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_norwegian.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_norwegian.catchments
+SELECT *
+FROM filtered_basin;--10
+
+
+-- Not going to work, same problem as before
+DROP TABLE IF EXISTS tempo.oneendo_barent;
+CREATE TABLE tempo.oneendo_barent AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.1,FALSE) geom
+	FROM h_barent.catchments AS ha);--351
+CREATE INDEX idx_tempo_oneendo_barent ON tempo.oneendo_barent USING GIST(geom);
+	
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_barent
+    ON ba.shape && oneendo_barent.geom
+    AND ST_Intersects(ba.shape, oneendo_barent.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_baltic_3031.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_barent.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_baltic_3229_27.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_norwegian.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_barent.catchments
+SELECT *
+FROM filtered_basin;
+
+
+DROP TABLE IF EXISTS tempo.oneendo_nseauk;
+CREATE TABLE tempo.oneendo_nseauk AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.1,FALSE) geom
+	FROM h_nsea_uk.catchments AS ha);--32
+CREATE INDEX idx_tempo_oneendo_nseauk ON tempo.oneendo_nseauk USING GIST(geom);
+	
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_nseauk
+    ON ba.shape && oneendo_nseauk.geom
+    AND ST_Intersects(ba.shape, oneendo_nseauk.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_celtic.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_uk.catchments
+    ),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_nsea_uk.catchments
+SELECT *
+FROM filtered_basin;--35
+
+
+-- still missing a few islands
+DROP TABLE IF EXISTS tempo.oneendo_celtic;
+CREATE TABLE tempo.oneendo_celtic AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.1,FALSE) geom
+	FROM h_celtic.catchments AS ha);--327
+CREATE INDEX idx_tempo_oneendo_celtic ON tempo.oneendo_celtic USING GIST(geom);
+	
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_celtic
+    ON ba.shape && oneendo_celtic.geom
+    AND ST_Intersects(ba.shape, oneendo_celtic.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_celtic.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_uk.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_celtic.catchments
+SELECT *
+FROM filtered_basin;--57
+
+
+-- few islands missing
+DROP TABLE IF EXISTS tempo.oneendo_iceland;
+CREATE TABLE tempo.oneendo_iceland AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.1,FALSE) geom
+	FROM h_iceland.catchments AS ha);--108
+CREATE INDEX idx_tempo_oneendo_iceland ON tempo.oneendo_iceland USING GIST(geom);
+	
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_iceland
+    ON ba.shape && oneendo_iceland.geom
+    AND ST_Intersects(ba.shape, oneendo_iceland.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_iceland.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_iceland.catchments
+SELECT *
+FROM filtered_basin;--11
+
+
+-- still missing some (NL)
+DROP TABLE IF EXISTS tempo.oneendo_nseas;
+CREATE TABLE tempo.oneendo_nseas AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.1,FALSE) geom
+	FROM h_nsea_south.catchments AS ha);--91
+CREATE INDEX idx_tempo_oneendo_nseas ON tempo.oneendo_nseas USING GIST(geom);
+	
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_nseas
+    ON ba.shape && oneendo_nseas.geom
+    AND ST_Intersects(ba.shape, oneendo_nseas.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_baltic_26_22.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_north.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_black_sea.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_adriatic.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_biscay_iberian.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_west.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_south.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_nsea_south.catchments
+SELECT *
+FROM filtered_basin;--95
+
+
+
+DROP TABLE IF EXISTS tempo.oneendo_bisciber;
+CREATE TABLE tempo.oneendo_bisciber AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.1,FALSE) geom
+	FROM h_biscay_iberian.catchments AS ha);--67
+CREATE INDEX idx_tempo_oneendo_bisciber ON tempo.oneendo_bisciber USING GIST(geom);
+	
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_bisciber
+    ON ba.shape && oneendo_bisciber.geom
+    AND ST_Intersects(ba.shape, oneendo_bisciber.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_biscay_iberian.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_west.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_south.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_biscay_iberian.catchments
+SELECT *
+FROM filtered_basin;--65
+
+
+
+DROP TABLE IF EXISTS tempo.oneendo_medw;
+CREATE TABLE tempo.oneendo_medw AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.05,FALSE) geom
+	FROM h_med_west.catchments AS ha);--75
+CREATE INDEX idx_tempo_oneendo_medw ON tempo.oneendo_medw USING GIST(geom);
+	
+-- oneendo is too big, problem with adriatic. I'll have to run it again with a smaller indice.
+-- Maybe to do before biscay as well
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_medw
+    ON ba.shape && oneendo_medw.geom
+    AND ST_Intersects(ba.shape, oneendo_medw.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_biscay_iberian.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_west.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_south.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_adriatic.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_central.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_med_west.catchments
+SELECT *
+FROM filtered_basin;--150
+
+
+
+DROP TABLE IF EXISTS tempo.oneendo_medc;
+CREATE TABLE tempo.oneendo_medc AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.05,FALSE) geom
+	FROM h_med_central.catchments AS ha);--65
+CREATE INDEX idx_tempo_oneendo_medc ON tempo.oneendo_medc USING GIST(geom);
+
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_medc
+    ON ba.shape && oneendo_medc.geom
+    AND ST_Intersects(ba.shape, oneendo_medc.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_med_west.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_adriatic.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_central.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_east.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_med_central.catchments
+SELECT *
+FROM filtered_basin;--84
+
+
+DROP TABLE IF EXISTS tempo.oneendo_mede;
+CREATE TABLE tempo.oneendo_mede AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.5,FALSE) geom
+	FROM h_med_east.catchments AS ha);--226
+CREATE INDEX idx_tempo_oneendo_mede ON tempo.oneendo_mede USING GIST(geom);
+
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_mede
+    ON ba.shape && oneendo_mede.geom
+    AND ST_Intersects(ba.shape, oneendo_mede.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_black_sea.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_adriatic.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_central.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_east.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_med_east.catchments
+SELECT *
+FROM filtered_basin;
+
+
+DROP TABLE IF EXISTS tempo.oneendo_bsea;
+CREATE TABLE tempo.oneendo_bsea AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.01,FALSE) geom
+	FROM h_black_sea.catchments AS ha);--38
+CREATE INDEX idx_tempo_oneendo_bsea ON tempo.oneendo_bsea USING GIST(geom);
+
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_bsea
+    ON ba.shape && oneendo_bsea.geom
+    AND ST_Intersects(ba.shape, oneendo_bsea.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_black_sea.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_adriatic.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_central.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_east.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_black_sea.catchments
+SELECT *
+FROM filtered_basin;
+
+
+-- hmmmmmmmmmmm
+DROP TABLE IF EXISTS tempo.oneendo_adriatic;
+CREATE TABLE tempo.oneendo_adriatic AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.05,FALSE) geom
+	FROM h_adriatic.catchments AS ha);--152
+CREATE INDEX idx_tempo_oneendo_adriatic ON tempo.oneendo_adriatic USING GIST(geom);
+
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_adriatic
+    ON ba.shape && oneendo_adriatic.geom
+    AND ST_Intersects(ba.shape, oneendo_adriatic.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_med_west.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_south.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_adriatic.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_central.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_east.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_black_sea.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_adriatic.catchments
+SELECT *
+FROM filtered_basin;
+
+
+
+
+
 -- Donc la je teste l'intéraction et tout pour récupérer les basins manquants. MAIS il en manque quand même
 -- C'est chiant
 
