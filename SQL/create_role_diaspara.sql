@@ -37,7 +37,7 @@ ALTER ROLE cedric WITH password '***************'; --c
 GRANT diaspara_admin TO jules ;
 GRANT diaspara_france_admin TO jules ;
 GRANT diaspara_admin TO cedric ;
-GRANT diaspara_france_admin TO cedric ;
+
 
 -- Should be done each time the database is created
 --- role management

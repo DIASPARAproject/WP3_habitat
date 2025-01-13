@@ -28,7 +28,7 @@ psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/d
 
 
 # dump ccm tables to local
-# catchments
+# catchments (mémoire insuffisante)
 pg_dump --table ccm21.catchments --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara
 # coast OK
 pg_dump --table ccm21.coast --dbname postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/eda2.0 |psql --dbname postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara
