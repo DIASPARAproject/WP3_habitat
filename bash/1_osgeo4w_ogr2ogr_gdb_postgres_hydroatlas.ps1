@@ -5,3 +5,6 @@ ogr2ogr.exe -f "PostgreSQL" -a_srs EPSG:4326 PG:"host=localhost port=5432 dbname
 ogr2ogr.exe -f "PostgreSQL" -a_srs EPSG:4326 PG:"host=localhost port=5432 dbname=diaspara user=postgres password=postgres" -lco SCHEMA="riveratlas" D:\eda\RiverATLAS_v10.gdb -overwrite -progress --config PG_USE_COPY YES
 
 ogr2ogr.exe -f "PostgreSQL" -a_srs EPSG:4326 PG:"host=localhost port=5432 dbname=diaspara user=postgres password=postgres" -lco SCHEMA="lakeatlas" D:\eda\LakeATLAS_v10.gdb   -overwrite -progress --config PG_USE_COPY YES
+
+psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/diaspara -c "
+"ALTER TABLE riveratlas.riveratlas_v10 RENAME COLUMN shape TO geom;"

@@ -58,4 +58,3 @@ DELETE FROM w2013.seaoutlets WHERE xmin_laea > 7000000; --120
 -- change ownership and permissions to tables, check that indexes exist
 
 
-TODO

@@ -1,20 +1,13 @@
 
 -- Modifying SRID
-ALTER TABLE ices_areas.ices_areas_20160601_cut_dense_3857
-RENAME COLUMN wkb_geometry TO geom;
-ALTER TABLE ices_areas."ices_areas_20160601_cut_dense_3857"
-	ALTER COLUMN geom TYPE geometry(MultiPolygon, 4326)
-	USING ST_Transform(geom, 4326);
-DROP INDEX IF EXISTS ices_areas.ices_areas_wkb_geometry_geom_idx;
-CREATE INDEX ices_areas_wkb_geometry_geom_idx
+
+DROP INDEX IF EXISTS ices_areas.ices_areas_geom_idx;
+CREATE INDEX ices_areas_geom_idx
 	ON ices_areas."ices_areas_20160601_cut_dense_3857"
 	USING GIST(geom);
 
-ALTER TABLE ices_ecoregions.ices_ecoregions_20171207_erase_esri
-RENAME COLUMN wkb_geometry TO geom;
-ALTER TABLE ices_ecoregions."ices_ecoregions_20171207_erase_esri"
-	ALTER COLUMN geom TYPE geometry(MultiPolygon, 4326)
-	USING ST_Transform(geom, 4326);
+
+
 DROP INDEX IF EXISTS ices_ecoregions.ices_ecoregions_wkb_geometry_geom_idx;
 CREATE INDEX ices_ecoregions_wkb_geometry_geom_idx
 	ON ices_ecoregions."ices_ecoregions_20171207_erase_esri"
