@@ -1,0 +1,170 @@
+---
+title: "diaspara habitat database creation script"
+subtitle: "DIASPARA WP3.1 working document"
+author: "Briand Cédric, Oliviéro Jules, Helminen Jani"
+date: last-modified
+date-format: "DD-MM-YYYY"
+description: "Design an international database of habitat of migratory fish, version = build"
+title-block-banner: "images/diaspara_bandeau.png"
+title-block-banner-color: "white"
+format:
+ html:
+  code-fold: true
+  code-tools: true
+  self-contained: true
+  theme: styles.scss
+  smooth-scroll: true
+  fontcolor: black
+  toc: true
+  toc-location: left
+  toc-title: Summary
+  toc-depth: 3
+execute: 
+ keep-md: true
+filters:
+  - include-code-files
+reference-location: document
+bibliography: diaspara.bib
+include-after-body: "footer.html"
+---
+
+
+# Choice of 2 river networks
+
+# Data description
+## HydroShed
+HydroSHEDS (Hydrological data and maps based on SHuttle Elevation Derivatives at 
+multiple Scales) is a global database providing high-resolution hydrographic data 
+derived from NASA's Shuttle Radar Topography Mission (SRTM). Covering most land 
+areas, it offers structured datasets for hydrological modeling, watershed analysis, 
+and environmental research. The data is available at resolutions up to 3 
+arc-seconds (~90m) in raster (GeoTIFF) and vector (shapefiles, geodatabases) formats. 
+We opted to use the geodatabases format. It includes river networks, watershed 
+boundaries, drainage directions, and flow accumulation. Core products include 
+HydroBASINS for watershed boundaries, HydroRIVERS for river networks, HydroLAKES 
+for lakes and reservoirs, and HydroATLAS, which adds environmental attributes. 
+
+<details>
+<summary>Description of riversegments variables</summary>
+
+```{r }
+#| label: riversegment variables
+#| echo: TRUE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Variables description
+#| tbl-subcap :
+#|    - subcap1
+#|    - subcap2
+
+
+
+```
+
+</details>
+
+# Importing data
+## Import HydroShed
+The first thing is to download and process the hydrological network from the 
+HydroShed website. To do so we created a PowerShell script that iterates through 
+predefined file IDs (`$files`) and corresponding dataset types (`$atlas`), 
+constructing download URLs and filenames dynamically. The script navigates to the 
+source directory, downloads each dataset as a ZIP file using `curl`, extracts it 
+to a specified output directory, and then connects to the PostgreSQL database 
+(`diaspara`). Within the database, it ensures a clean schema by dropping any 
+existing schema of the same name and recreating it for fresh data import.
+
+<details> 
+
+<summary>PowerShell code to download HydroShed</summary>
+
+{.shell include="../bash/0_powershell_import_hydroatlas.shell"}
+
+</details> 
+
+<details>
+<summary>HydroShed</summary>
+
+```{sh}
+#| label: hydroshed download
+#| echo: TRUE
+#| warning: FALSE
+#| message: FALSE
+
+[String[]]$files = "20082137","20087321","35959544"
+[String[]]$atlas = "Basin","River","Lake"
+$pathccmsource = "D:\eda\hydroatlas"
+$pathccmout = "D:\eda\"
+
+for ($i = 0; $i -lt $files.Length; $i++) {
+    $file = $files[$i]
+    $atlasName = $atlas[$i]
+
+    Write-Output "Downloading "$atlasName""ATLAS""
+
+    $namefile = "$atlasName" + "ATLAS_Data_v10.gdb"
+    $schema = "$atlasName" + "ATLAS"
+
+    cd $pathccmsource
+
+    curl -o "$namefile.zip" "https://figshare.com/ndownloader/files/$file"
+
+    Expand-Archive "$namefile.zip" -DestinationPath "$pathccmout"
+
+    psql --dbname="postgresql://${env:userlocal}:${env:passlocal}@$env:hostdiaspara/diaspara" -c "DROP SCHEMA IF EXISTS $schema CASCADE; CREATE SCHEMA $schema;"
+}
+```
+</details>
+
+The same process has been used to import a country layer and ICES divisions.
+ICES divisions are downloaded from the ICES website.
+
+## Insert data
+Then we have to insert the downloaded data to the database. To do so we used 
+`ogr2ogr`, a command-line tool from the GDAL library, to import geospatial data 
+from **File Geodatabases (GDB)** into a **PostgreSQL database**. Each command 
+processes a different dataset—**BasinATLAS, RiverATLAS, and LakeATLAS**—and 
+loads them into corresponding schemas within the **diaspara** database.  
+
+The `-f "PostgreSQL"` specifies the output format, while `-a_srs EPSG:4326` 
+ensures the spatial reference system is set to **WGS 84 (EPSG:4326)**. 
+The `-lco SCHEMA="..."` option places each dataset into a designated schema 
+(**basinatlas, riveratlas, lakeatlas**). The `-overwrite` flag ensures any 
+existing data in the schema is replaced. The `-progress` option provides 
+real-time feedback during execution. Lastly, `--config PG_USE_COPY YES` optimizes 
+performance by using PostgreSQL's `COPY` command for faster data insertion.
+
+<details>
+<summary>Importing data to the database</summary>
+
+```{bash}
+#| label: data insertion
+#| echo: TRUE
+#| warning: FALSE
+#| message: FALSE
+
+ogr2ogr.exe -f "PostgreSQL" -a_srs EPSG:4326 PG:"host=localhost port=5432 dbname=diaspara user=postgres password=postgres" -lco SCHEMA="basinatlas" D:\eda\BasinATLAS_v10.gdb   -overwrite -progress --config PG_USE_COPY YES
+
+ogr2ogr.exe -f "PostgreSQL" -a_srs EPSG:4326 PG:"host=localhost port=5432 dbname=diaspara user=postgres password=postgres" -lco SCHEMA="riveratlas" D:\eda\RiverATLAS_v10.gdb -overwrite -progress --config PG_USE_COPY YES
+
+ogr2ogr.exe -f "PostgreSQL" -a_srs EPSG:4326 PG:"host=localhost port=5432 dbname=diaspara user=postgres password=postgres" -lco SCHEMA="lakeatlas" D:\eda\LakeATLAS_v10.gdb   -overwrite -progress --config PG_USE_COPY YES
+```
+</details>
+
+# Building the database
+Decision to split the database into smaller groups following ICES Areas and 
+Ecoregions.
+
+Step 1 : Spliting data into smaller groups for efficiency (Europe/N.Africa)
+Step 2 : Selecting the most downstream riversegment for each reach
+Step 3 : Creating a most downstream point
+Step 4 : Intersecting the most downstream point with wanted ICES areas
+    Baltic
+    The rest
+Step 4.5 : Redo the intersection using a larger buffer to retrieve missing points
+Step 5 : Copy all riversegments corresponding to the previously selected 
+riversegments using the main_riv identifier
+Step 6 : Gather all corresponding catchments using an intersection function
+Step 7 : Retrieve all missing endorheic catchments using an evelope
+Step 8 : Retrieve all missing islands and coastal catchments not linked to a 
+riversegments by using an intersection with ICES areas
