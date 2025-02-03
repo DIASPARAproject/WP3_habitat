@@ -1,5 +1,5 @@
 
-ALTER TABLE riveratlas.riveratlas_v10 RENAME COLUMN shape TO geom;
+
 -- select only rivers corresponding to catchments
 DROP TABLE IF EXISTS w2020.riversegments;
 CREATE TABLE w2020.riversegments AS(

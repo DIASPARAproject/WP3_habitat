@@ -4,6 +4,7 @@
 # ICES_ecoregions
 
 [String[]]$files = "areas","ecoregions"
+md "D:\eda\ices"
 $pathccmsource = "D:\eda\ices"
 #$pathccmout = "D:\eda\ices\ICES"
 foreach ($file in $files){
@@ -12,7 +13,7 @@ $namefile = "ICES_$file"
 $schema = "ICES_$file"
 cd $pathccmsource
 curl -o "$namefile.zip" https://gis.ices.dk/shapefiles/$namefile.zip
-$destination = Join-Path -Path $pathccmout -ChildPath $namefile
+$destination = Join-Path -Path $pathccmsource -ChildPath $namefile
 if (-not (Test-Path -Path $destination)) {
     New-Item -ItemType Directory -Path $destination | Out-Null
 }
