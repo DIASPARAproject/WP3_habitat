@@ -61,3 +61,4 @@ R/data/*.html
 R/data/*_xtml*.*
 R/_extensions/*
 R/assets/*
+credentials.yml
