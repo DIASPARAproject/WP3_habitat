@@ -40,49 +40,111 @@ ECRINS, being an European only dataset, will not include the southern mediterran
 HydroSHEDS is a global database providing high-resolution hydrographic data derived from NASA's Shuttle Radar Topography Mission (SRTM). Covering most land areas, it offers structured datasets for hydrological modeling, watershed analysis, and environmental research. The data is available at resolutions up to 3 arc-seconds (~90m) in raster (GeoTIFF) and vector (shapefiles,geodatabases) formats. 
 We opted to use the geodatabases format. It includes river networks, watershed boundaries, drainage directions, and flow accumulation. Core products include HydroBASINS for watershed boundaries, HydroRIVERS for river networks, HydroLAKES for lakes and reservoirs, and HydroATLAS, which adds environmental attributes. 
 
-<details>
-<summary>Description of riversegments variables</summary>
 
-```{r }
-#| label: riversegment variables
-#| echo: TRUE
+```{r init}
+#| echo: FALSE
 #| warning: FALSE
 #| message: FALSE
-#| tbl-cap: Variables description
-#| tbl-subcap :
-#|    - subcap1
-#|    - subcap2
+#| results: 'hide'
+
+#if (!grepl("montepomi", getwd())) {
+if(Sys.info()[["user"]] == 'joliviero'){
+setwd("D:/workspace/DIASPARA_WP3_habitat/R")
+datawd <- "D:/DIASPARA/wgbast"
+} else if (Sys.info()[["user"]] == 'cedric.briand'){
+setwd("C:/workspace/DIASPARA_WP3_habitat/R")
+datawd <- "C:/Users/cedric.briand/OneDrive - EPTB Vilaine/Projets/DIASPARA/wgbast"
+}
+source("utilities/load_library.R")
+load_library("tidyverse")
+load_library("knitr")
+load_library("kableExtra")
+load_library("icesVocab")
+load_library("readxl")
+load_library("janitor")
+load_library("skimr")
+load_library("RPostgres")
+load_library("yaml")
+load_library("DBI")
+load_library("ggplot2")
+load_library("sf")
+load_library("janitor") # clean_names
+load_library("rnaturalearth")
+cred <- read_yaml("../credentials.yml")
+con_diaspara <- dbConnect(Postgres(), 
+                           dbname = cred$dbnamehydro,
+                           host = cred$host,
+                           port = cred$port,
+                           user = cred$userdiaspara,
+                           password = cred$passworddiaspara)
+con_diaspara_admin <- dbConnect(Postgres(), 
+                           dbname = cred$dbnamehydro,
+                           host = cred$host,
+                           port = cred$port,
+                           user = cred$usersalmo,
+                           password = cred$passwordsalmo)
+
+
 
 
 
 ```
 
+
+<details>
+<summary>Descriptions of riversegments variables</summary>
+
+```{r}
+#| label: riversegment variables
+#| echo: TRUE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Variables description
+
+
+data_description <- dbGetQuery(con_diaspara, 
+  "SELECT cols.column_name AS var_name, 
+        pgd.description AS description
+  FROM information_schema.columns cols
+  LEFT JOIN pg_catalog.pg_statio_all_tables st 
+      ON st.schemaname = cols.table_schema AND st.relname = cols.table_name
+  LEFT JOIN pg_catalog.pg_description pgd 
+      ON pgd.objoid = st.relid AND pgd.objsubid = cols.ordinal_position
+  WHERE cols.table_schema = 'riveratlas'
+  AND cols.table_name = 'riveratlas_v10';")
+
+knitr::kable(data_description) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
 </details>
+
+
 
 # Importing data
 ## Import HydroShed
 The first thing is to download and process the hydrological network from the HydroShed website. To do so we created a PowerShell script that iterates through predefined file IDs (`$files`) and corresponding dataset types (`$atlas`), constructing download URLs and filenames dynamically. The script navigates to the source directory, downloads each dataset as a ZIP file using `curl`, extracts it to a specified output directory, and then connects to the PostgreSQL database (`diaspara`). Within the database, it ensures a cleanschema by dropping any existing schema of the same name and recreating it for fresh data import.
 
 <details> 
-
 <summary>PowerShell code to download HydroShed</summary>
 
-{.powershell include="../bash/0_powershell_import_hydroatlas.ps1"}
-
+```{.ps1 include="../bash/0_powershell_import_hydroatlas.ps1"}
+```
 </details> 
 
 The same process has been used to import a country layer and ICES divisions.
 ICES divisions are downloaded from the ICES website.
 
 ## Insert data
-Then we have to insert the downloaded data to the database. To do so we used `ogr2ogr`, a command-line tool from the GDAL library, to import geospatial data from **File Geodatabases (GDB)** into a **PostgreSQL database**. Each command processes a different dataset—**BasinATLAS, RiverATLAS, and LakeATLAS**—and loads them into corresponding schemas within the **diaspara** database.  
+Then we have to insert the downloaded data to the database. To do so we used `ogr2ogr`, a command-line tool from the GDAL library, to import geospatial data from File Geodatabases (GDB) into a PostgreSQL database. Each command processes a different dataset—**BasinATLAS, RiverATLAS, and LakeATLAS**—and loads them into corresponding schemas within the **diaspara** database.  
 
-The `-f "PostgreSQL"` specifies the output format, while `-a_srs EPSG:4326` ensures the spatial reference system is set to **WGS 84 (EPSG:4326)**. The `-lco SCHEMA="..."` option places each dataset into a designated schema (**basinatlas, riveratlas, lakeatlas**). The `-overwrite` flag ensures any existing data in the schema is replaced. The `-progress` option provides real-time feedback during execution. Lastly, `--config PG_USE_COPY YES` optimizes performance by using PostgreSQL's `COPY` command for faster data insertion.
+The `-f "PostgreSQL"` specifies the output format, while `-a_srs EPSG:4326` ensures the spatial reference system is set to WGS 84 (EPSG:4326). The `-lco SCHEMA="..."` option places each dataset into a designated schema (`basinatlas`, `riveratlas`, `lakeatlas`). The `-overwrite` flag ensures any existing data in the schema is replaced. The `-progress` option provides real-time feedback during execution. Lastly, `--config PG_USE_COPY YES` optimizes performance by using PostgreSQL's `COPY` command for faster data insertion.
 
 <details>
-<summary>Importing data to the database</summary>
+<summary>Code to import data to the database</summary>
 
-{.ps1 include="../bash/1_osgeo4w_ogr2ogr_gdb_postgres_hydroatlas.ps1"}
+```{.ps1 include="../bash/1_osgeo4w_ogr2ogr_gdb_postgres_hydroatlas.ps1"}
+```
 </details>
 
 The same process is used to insert other downloaded data to the database.
@@ -92,16 +154,162 @@ The same process is used to insert other downloaded data to the database.
 Decision to split the database into smaller groups following ICES Areas and 
 Ecoregions.
 
-Step 1 : Spliting data into smaller groups for efficiency (Europe/N.Africa)
-Step 2 : Selecting the most downstream riversegment for each reach
-Step 3 : Creating a most downstream point
-Step 4 : Intersecting the most downstream point with wanted ICES areas
-    Baltic
-    The rest
-Step 4.5 : Redo the intersection using a larger buffer to retrieve missing points
-Step 5 : Copy all riversegments corresponding to the previously selected 
-riversegments using the main_riv identifier
-Step 6 : Gather all corresponding catchments using an intersection function
-Step 7 : Retrieve all missing endorheic catchments using an evelope
-Step 8 : Retrieve all missing islands and coastal catchments not linked to a 
-riversegments by using an intersection with ICES areas
+## Step 1 : Spliting data into smaller groups for efficiency (Europe/N.Africa)
+
+We decided to extract European hydrological data by first selecting large-scale catchments from `basinatlas.basinatlas_v10_lev03`, a layer representing coarse-resolution catchments at level 3. We filtered these catchments based on specific `hybas_id` values and stored them in a temporary table `tempo.hydro_large_catchments_europe`. Next, we refined our selection by extracting smaller, more detailed catchments from `basinatlas.basinatlas_v10_lev12`, which represents the most detailed level (level 12) of the HydroBASINS hierarchy. We ensured that these smaller catchments were spatially contained within the large catchments using `ST_Within`, saving them in `tempo.hydro_small_catchments_europe`, and added a GIST index on geometries to improve spatial query efficiency. Finally, we selected river segments from `riveratlas.riveratlas_v10` that intersected with the chosen small catchments using `ST_Intersects`, storing the results in `tempo.hydro_riversegments_europe`.
+
+```{sql}
+#| label: smaller groups
+#| code-summary: Code to split data into smaller entities
+#| echo: TRUE
+#| eval: FALSE
+#| warning: FALSE
+#| message: FALSE
+
+-- Selecting european data from hydroatlas (large catchments)
+DROP TABLE IF EXISTS tempo.hydro_large_catchments_europe;
+CREATE TABLE tempo.hydro_large_catchments_europe AS(
+SELECT shape FROM basinatlas.basinatlas_v10_lev03
+WHERE hybas_id = ANY(ARRAY[2030000010,2030003440,2030005690,2030006590,
+              2030006600,2030007930,2030007940,2030008490,2030008500,
+							2030009230,2030012730,2030014550,2030016230,2030018240,2030020320,2030024230,2030026030,2030028220,
+							2030030090,2030033480,2030037990,2030041390,2030045150,2030046500,2030047500,2030048590,2030048790,
+							2030054200,2030056770,2030057170,2030059370,2030059450,2030059500,2030068680,2030059510])
+);--35
+
+-- Selecting european data from hydroatlas (small catchments)
+DROP TABLE IF EXISTS tempo.hydro_small_catchments_europe;
+CREATE TABLE tempo.hydro_small_catchments_europe AS (
+SELECT * FROM basinatlas.basinatlas_v10_lev12 ba
+WHERE EXISTS (
+  SELECT 1
+  FROM tempo.hydro_large_catchments_europe hlce
+  WHERE ST_Within(ba.shape,hlce.shape)
+  )
+);--78055
+CREATE INDEX idx_tempo_hydro_small_catchments_europe ON tempo.hydro_small_catchments_europe USING GIST(shape);
+
+-- Selecting european data from riveratlas
+DROP TABLE IF EXISTS tempo.hydro_riversegments_europe;
+CREATE TABLE tempo.hydro_riversegments_europe AS(
+	SELECT * FROM riveratlas.riveratlas_v10 r
+	WHERE EXISTS (
+		SELECT 1
+		FROM tempo.hydro_small_catchments_europe e
+		WHERE ST_Intersects(r.geom,e.shape)
+	)
+); --589947
+```
+
+The same method has been used to select catchemnts and river segments in the Southern Mediterranean area.
+
+TODO create map of all catchments
+
+## Step 2 : Selecting the most downstream riversegment for each reach
+
+Next we needed to extract the most downstream river segments from `tempo.hydro_riversegments_europe`. To achieve this, we filtered the table to retain only the river segments where `hyriv_id` is equal to `main_riv`, which correspond to the most downstream river segment of the river basin, ensuring that for each reach, only its most downstream segment is selected. The results were then stored in `tempo.riveratlas_mds`.
+
+```{sql}
+#| label: most downstream rivers
+#| code-summary: Code to select the most downstream river segments
+#| echo: TRUE
+#| eval: FALSE
+#| warning: FALSE
+#| message: FALSE
+
+DROP TABLE IF EXISTS tempo.riveratlas_mds;
+CREATE TABLE tempo.riveratlas_mds AS (
+	SELECT *
+	FROM tempo.hydro_riversegments_europe
+	WHERE hydro_riversegments_europe.hyriv_id = hydro_riversegments_europe.main_riv); --17344
+```
+
+The same method has been used for Southern Mediterranean data.
+
+![Map of most downstream river segments in the Baltic area.](images/fig-mds_baltic.png "A view of the Baltic with the most downstream river segments highlighted"){#fig-mds_baltic}
+
+## Step 3 : Creating a most downstream point
+
+To identify the most downstream point for each river segment in `tempo.riveratlas_mds`, a new column, `downstream_point`, was added to store the point geometry (EPSG:4326). The last coordinate of each segment’s geometry was extracted using `ST_PointN` on the cut down line geometry from `ST_Dump`, ensuring that the most downstream point was correctly identified. The table was then updated by assigning the extracted downstream point to the corresponding `hyriv_id`. Finally, a GIST index on `downstream_point` was created to improve the efficiency of spatial queries.
+
+```{sql}
+#| label: most downstream point
+#| code-summary: Code to create the most downstream point
+#| echo: TRUE
+#| eval: FALSE
+#| warning: FALSE
+#| message: FALSE
+
+ALTER TABLE tempo.riveratlas_mds
+	ADD COLUMN downstream_point geometry(Point, 4326);
+WITH downstream_points AS (
+    SELECT 
+        hyriv_id,
+        ST_PointN((ST_Dump(geom)).geom, ST_NumPoints((ST_Dump(geom)).geom)) AS downstream_point
+    FROM tempo.riveratlas_mds
+)
+UPDATE tempo.riveratlas_mds AS t
+	SET downstream_point = dp.downstream_point
+	FROM downstream_points AS dp
+	WHERE t.hyriv_id = dp.hyriv_id; --17344
+
+CREATE INDEX idx_tempo_riveratlas_mds_dwnstrm ON tempo.riveratlas_mds USING GIST(downstream_point);
+```
+
+The same method has been used for Southern Mediterranean data.
+
+![Map of most downstream points in the Baltic area.](images/fig-mdp_baltic.png "A view of the Baltic with the most downstream points highlighted"){#fig-mdp_baltic}
+
+## Step 4 : Intersecting the most downstream point with wanted ICES areas
+
+Two different methods used from here
+
+  * Baltic
+
+WGBAST using ICES_areas in the Baltic so we decided to do the same.
+30 & 31 ; 27,28,29 & 32 ; 22,24,25 & 26
+
+![Map of ICES fishing areas at subdivision level, source NAFO, FAO, ICES, GFCM.](images/fig-ices_baltic.png "A view of the Baltic with ICES fishing subdivision"){#fig-ices_baltic}
+
+A new table, `tempo.ices_areas_3229_27`, was created by selecting river segments from `tempo.riveratlas_mds` where the `downstream_point` of each segment is within a specified distance (0.01 units) of the geometry in `ices_areas."ices_areas_20160601_cut_dense_3857"`. The selection was further restricted to areas with specific `subdivisio` values ('32', '29', '28', '27'). Additionally, to avoid duplicates, only segments whose `downstream_point` is not already present in `tempo.ices_areas_3031` were included.
+The same method is used for the whole Baltic area.
+
+```{sql}
+#| label: baltic downstream points
+#| code-summary: Code to retrieve most downstream points for 27, 28, 29 & 32 ICES areas
+#| eval: FALSE
+#| echo: TRUE
+#| warning: FALSE
+#| message: FALSE
+
+CREATE TABLE tempo.ices_areas_3229_27 AS (
+	SELECT dp.*
+	FROM tempo.riveratlas_mds AS dp
+	JOIN ices_areas."ices_areas_20160601_cut_dense_3857" AS ia
+	ON ST_DWithin(
+	    dp.downstream_point,
+	    ia.geom,
+	    0.01
+	)
+	WHERE ia.subdivisio=ANY(ARRAY['32','29','28','27'])
+	AND dp.downstream_point NOT IN (
+		SELECT existing.downstream_point
+	    FROM tempo.ices_areas_3031 AS existing)
+); --569
+```
+
+  * The rest
+
+Ecoregions + countries
+![Map of ICES fishing ecoregions.](images/fig-ices_ecoregions.png "A view of Europe and Northern Africa with ICES fishing ecoregions"){#fig-ices_ecoregions}
+
+
+## Step 4.5 : Redo the intersection using a larger buffer to retrieve missing points
+
+## Step 5 : Copy all riversegments corresponding to the previously selected riversegments using the main_riv identifier
+
+## Step 6 : Gather all corresponding catchments using an intersection function
+
+## Step 7 : Retrieve all missing endorheic catchments using an evelope
+
+## Step 8 : Retrieve all missing islands and coastal catchments not linked to a riversegments by using an intersection with ICES areas
