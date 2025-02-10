@@ -1671,7 +1671,7 @@ CREATE TABLE h_svalbard.riversegments AS (
     FROM tempo.hydro_riversegments_europe AS hre
     JOIN tempo.ices_areas_svalbard AS ie
     ON hre.main_riv = ie.main_riv
-);--3292
+);--298
 
 ALTER TABLE h_svalbard.riversegments
 ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
@@ -2128,10 +2128,6 @@ ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
 CREATE INDEX idx_h_svalbard_catchments_main_bas ON h_svalbard.catchments USING BTREE(main_bas);
 CREATE INDEX idx_h_svalbard_catchments ON h_svalbard.catchments USING GIST(shape);
 
-DROP TABLE IF EXISTS tempo.convextest2;
-CREATE TABLE tempo.convextest2 AS (
-	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.01,FALSE) geom
-	FROM h_med_west.catchments AS ha);
 
 ------------------ TESTING STUFF HERE DON'T MIND ME ------------------
 
@@ -2197,7 +2193,8 @@ WHERE NOT EXISTS (
     AND ST_Equals(r.geom, ex.geom)
 );--1
 
--- NOT GOOOOOOD, I don't want to take anything from the eastern part 
+
+
 DROP TABLE IF EXISTS tempo.oneendo_3229_27;
 CREATE TABLE tempo.oneendo_3229_27 AS (
 	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.1,FALSE) geom
@@ -2439,7 +2436,7 @@ WITH endo_basins AS (
     JOIN tempo.oneendo_barent
     ON ba.shape && oneendo_barent.geom
     AND ST_Intersects(ba.shape, oneendo_barent.geom)
-    WHERE ba.main_bas != ANY(ARRAY[2120068680 2120044660 3120001840 2120044660])
+    WHERE ba.main_bas != 2120068680
 ),
 excluded_basins AS (
     SELECT shape 
@@ -2645,7 +2642,7 @@ filtered_basin AS (
     WHERE exb.shape IS NULL
 )
 INSERT INTO h_svalbard.catchments
-SELECT *
+SELECT DISTINCT ON (hybas_id) *
 FROM filtered_basin;--30
 
 INSERT INTO h_svalbard.riversegments
@@ -3604,5 +3601,4 @@ filtered_basin AS (
 INSERT INTO h_svalbard.catchments
 SELECT *
 FROM filtered_basin;--7
-
 
