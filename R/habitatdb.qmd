@@ -31,14 +31,14 @@ include-after-body: "footer.html"
 
 # Choice of 2 river networks
 To create the habitat database we decided to use two river networks in parallel.
-The Hydrological data and maps based on SHuttle Elevation Derivatives at multiple Scales (HydroSHEDS) and the European Catchments and RIvers Network System (ECRINS).
+The Hydrological data and maps based on SHuttle Elevation Derivatives at multiple Scales (**HydroSHEDS**) and the European Catchments and RIvers Network System (**ECRINS**).
 
-ECRINS, being an European only dataset, will not include the southern mediterranean.
+**ECRINS**, being an European only dataset, will not include the Southern Mediterranean.
 
 # Data description
-## HydroShed
-HydroSHEDS is a global database providing high-resolution hydrographic data derived from NASA's Shuttle Radar Topography Mission (SRTM). Covering most land areas, it offers structured datasets for hydrological modeling, watershed analysis, and environmental research. The data is available at resolutions up to 3 arc-seconds (~90m) in raster (GeoTIFF) and vector (shapefiles,geodatabases) formats. 
-We opted to use the geodatabases format. It includes river networks, watershed boundaries, drainage directions, and flow accumulation. Core products include HydroBASINS for watershed boundaries, HydroRIVERS for river networks, HydroLAKES for lakes and reservoirs, and HydroATLAS, which adds environmental attributes. 
+## HydroSHEDS
+**HydroSHEDS** is a global database providing high-resolution hydrographic data derived from NASA's Shuttle Radar Topography Mission (SRTM). Covering most land areas, it offers structured datasets for hydrological modeling, watershed analysis, and environmental research. The data is available at resolutions up to 3 arc-seconds (~90m) in raster (GeoTIFF) and vector (shapefiles,geodatabases) formats. 
+We opted to use the geodatabases format. It includes river networks, watershed boundaries, drainage directions, and flow accumulation. Core products include **HydroBASINS** for watershed boundaries, **HydroRIVERS** for river networks, **HydroLAKES** for lakes and reservoirs, and **HydroATLAS**, which adds environmental attributes.
 
 
 ```{r init}
@@ -122,11 +122,11 @@ knitr::kable(data_description) %>% kable_styling(bootstrap_options = c("striped"
 
 
 # Importing data
-## Import HydroShed
-The first thing is to download and process the hydrological network from the HydroShed website. To do so we created a PowerShell script that iterates through predefined file IDs (`$files`) and corresponding dataset types (`$atlas`), constructing download URLs and filenames dynamically. The script navigates to the source directory, downloads each dataset as a ZIP file using `curl`, extracts it to a specified output directory, and then connects to the PostgreSQL database (`diaspara`). Within the database, it ensures a cleanschema by dropping any existing schema of the same name and recreating it for fresh data import.
+## Import HydroSHEDS
+The first thing is to download and process the hydrological network from the **HydroSHEDS** website. To do so we created a PowerShell script that iterates through predefined file IDs (`$files`) and corresponding dataset types (`$atlas`), constructing download URLs and filenames dynamically. The script navigates to the source directory, downloads each dataset as a ZIP file using `curl`, extracts it to a specified output directory, and then connects to the PostgreSQL database (`diaspara`). Within the database, it ensures a cleanschema by dropping any existing schema of the same name and recreating it for fresh data import.
 
 <details> 
-<summary>PowerShell code to download HydroShed</summary>
+<summary>PowerShell code to download HydroSHEDS</summary>
 
 ```{.ps1 include="../bash/0_powershell_import_hydroatlas.ps1"}
 ```
@@ -136,7 +136,7 @@ The same process has been used to import a country layer and ICES divisions.
 ICES divisions are downloaded from the ICES website.
 
 ## Insert data
-Then we have to insert the downloaded data to the database. To do so we used `ogr2ogr`, a command-line tool from the GDAL library, to import geospatial data from File Geodatabases (GDB) into a PostgreSQL database. Each command processes a different dataset—**BasinATLAS, RiverATLAS, and LakeATLAS**—and loads them into corresponding schemas within the **diaspara** database.  
+Then we have to insert the downloaded data to the database. To do so we used `ogr2ogr`, a command-line tool from the GDAL library, to import geospatial data from File Geodatabases (GDB) into a PostgreSQL database. Each command processes a different dataset—**BasinATLAS, RiverATLAS, and LakeATLAS**—and loads them into corresponding schemas within the **DIASPARA** database.  
 
 The `-f "PostgreSQL"` specifies the output format, while `-a_srs EPSG:4326` ensures the spatial reference system is set to WGS 84 (EPSG:4326). The `-lco SCHEMA="..."` option places each dataset into a designated schema (`basinatlas`, `riveratlas`, `lakeatlas`). The `-overwrite` flag ensures any existing data in the schema is replaced. The `-progress` option provides real-time feedback during execution. Lastly, `--config PG_USE_COPY YES` optimizes performance by using PostgreSQL's `COPY` command for faster data insertion.
 
@@ -151,8 +151,7 @@ The same process is used to insert other downloaded data to the database.
 
 
 # Building the database
-Decision to split the database into smaller groups following ICES Areas and 
-Ecoregions.
+Once the data downloaded we chose to to split the database into smaller groups following ICES Areas and Ecoregions.
 
 ## Step 1 : Spliting data into smaller groups for efficiency (Europe/N.Africa)
 
@@ -203,7 +202,7 @@ CREATE TABLE tempo.hydro_riversegments_europe AS(
 
 The same method has been used to select catchemnts and river segments in the Southern Mediterranean area.
 
-TODO create map of all catchments
+![Map of all catchemnts present in the database.](images/fig-all_catchments.png "A view of all European and Northern African catchments "){#fig-all_catchments}
 
 ## Step 2 : Selecting the most downstream riversegment for each reach
 
@@ -262,12 +261,9 @@ The same method has been used for Southern Mediterranean data.
 
 ## Step 4 : Intersecting the most downstream point with wanted ICES areas
 
-Two different methods used from here
+### Baltic
 
-  * Baltic
-
-WGBAST using ICES_areas in the Baltic so we decided to do the same.
-30 & 31 ; 27,28,29 & 32 ; 22,24,25 & 26
+ICES divisions are already used in the Baltic by WGBAST thus we decided to keep the same structure. It is divided in three areas grouping together ICES divisions 30 & 31 ; 27,28,29 & 32 and 22,24,25 & 26.
 
 ![Map of ICES fishing areas at subdivision level, source NAFO, FAO, ICES, GFCM.](images/fig-ices_baltic.png "A view of the Baltic with ICES fishing subdivision"){#fig-ices_baltic}
 
@@ -298,18 +294,408 @@ CREATE TABLE tempo.ices_areas_3229_27 AS (
 ); --569
 ```
 
-  * The rest
 
-Ecoregions + countries
+![Map of most downstream points in the Northern Baltic ICES area.](images/fig-mdp_baltic2732.png "A view of the Northern Baltic with the most downstream points highlighted"){#fig-mdp_baltic2732}
+
+### Ecoregions
+
+For the rest of the dataset, ICES ecoregions have been used to group catchments and river segments together.
+
 ![Map of ICES fishing ecoregions.](images/fig-ices_ecoregions.png "A view of Europe and Northern Africa with ICES fishing ecoregions"){#fig-ices_ecoregions}
 
+We gathered the most downstream points from `tempo.riveratlas_mds`, applying three filters: a country filter, an ICES ecoregion filter, and an exclusion condition.  
+
+First, we retrieved distinct downstream points that were within 0.04 degrees of the geometries in `ices_ecoregions.ices_ecoregions_20171207_erase_esri`, specifically selecting `objectid = 11`, which corresponded to the desired ICES ecoregion. Additionally, these points had to be within 0.02 degrees of the geometries in `tempo.ne_10m_admin_0_countries`, ensuring they were located in Norway or Sweden.  
+
+Similarly, we selected downstream points that were within 0.04 degrees of the geometries in `ices_areas.ices_areas_20160601_cut_dense_3857`, specifically for `subdivisio = '23'`, while also ensuring they were within 0.02 degrees of Norway or Sweden. This is done because of an overlap between ICES ecoregions and ICES areas in this particular zone. 
+
+Finally, we combined both sets of points while applying an exclusion condition: any points from the ICES area selection that already existed in the ICES ecoregion selection were removed, ensuring no duplicates while maintaining priority for the ecoregion-based selection. The resulting dataset `tempo.ices_ecoregions_nsea_north` contained the most downstream points filtered by ICES ecoregions, ICES areas, and country boundaries for Norway and Sweden.
+
+```{sql}
+#| label: northern north sea downstream points
+#| code-summary: Code to retrieve most downstream points for the Northern part of the North Sea ICES ecoregion
+#| eval: FALSE
+#| echo: TRUE
+#| warning: FALSE
+#| message: FALSE
+
+CREATE TABLE tempo.ices_ecoregions_nsea_north AS (
+    WITH ecoregion_points AS (
+        SELECT DISTINCT dp.*
+        FROM tempo.riveratlas_mds AS dp
+        JOIN ices_ecoregions."ices_ecoregions_20171207_erase_esri" AS er
+        ON ST_DWithin(
+            dp.downstream_point,
+            er.geom,
+            0.04
+        )
+        JOIN tempo.ne_10m_admin_0_countries AS cs
+        ON ST_DWithin(
+            dp.downstream_point,
+            cs.geom,
+            0.02
+        )
+        WHERE er.objectid = 11
+          AND cs.name IN ('Norway','Sweden')
+    ),
+    area_points AS (
+        SELECT DISTINCT dp.*
+        FROM tempo.riveratlas_mds AS dp
+        JOIN ices_areas."ices_areas_20160601_cut_dense_3857" AS ia
+        ON ST_DWithin(
+            dp.downstream_point,
+            ia.geom,
+            0.04
+        )
+        JOIN tempo.ne_10m_admin_0_countries AS cs
+        ON ST_DWithin(
+            dp.downstream_point,
+            cs.geom,
+            0.02
+        )
+        WHERE ia.subdivisio = '23'
+          AND cs.name IN ('Norway','Sweden')
+    )
+    SELECT * FROM ecoregion_points
+    UNION
+    SELECT * FROM area_points
+    WHERE downstream_point NOT IN (
+        SELECT downstream_point FROM ecoregion_points
+    )
+);--1271
+```
+
+![Map of most downstream points in the Northern Sea.](images/fig-mdp_ecoregions.png "A view of the Northern Sea with the most downstream points highlighted"){#fig-mdp_ecoregions}
 
 ## Step 4.5 : Redo the intersection using a larger buffer to retrieve missing points
 
+### Baltic
+
+We selected the most downstream points from `tempo.riveratlas_mds` that were within a larger buffer of 0.1 degrees of the geometries in `ices_areas.ices_areas_20160601_cut_dense_3857`, specifically for `subdivisio` values 32, 29, and 28 (subdivision 27 being already complete).
+
+To avoid duplication, we compiled a list of excluded points by gathering all downstream points already present in several existing tables: `tempo.ices_areas_26_22`, `tempo.ices_areas_3229_27`, `tempo.ices_areas_3031`, `tempo.ices_ecoregions_barent`, `tempo.ices_ecoregions_nsea_north`, and `tempo.ices_ecoregions_norwegian`.  
+
+We then identified the missing points by filtering out any downstream points from our selection that matched an already excluded point. This ensured that only new and unique points were retained.  
+Finally, we inserted these missing points into `tempo.ices_areas_3229_27`.
+
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to retrieve missing most downstream points for 27, 28, 29 & 32 ICES areas using a larger buffer
+#| warning: FALSE
+#| message: FALSE
+
+WITH filtered_points AS (
+    SELECT dp.*
+    FROM tempo.riveratlas_mds AS dp
+    JOIN ices_areas."ices_areas_20160601_cut_dense_3857" AS ia
+    ON ST_DWithin(
+        dp.downstream_point,
+        ST_Transform(ia.geom, 4326),
+        0.1
+    )
+    WHERE ia.subdivisio = ANY(ARRAY['32', '29', '28'])
+),
+excluded_points AS (
+    SELECT downstream_point
+    FROM tempo.ices_areas_26_22
+    UNION ALL
+    SELECT downstream_point FROM tempo.ices_areas_3229_27
+    UNION ALL
+    SELECT downstream_point FROM tempo.ices_areas_3031
+    UNION ALL
+    SELECT downstream_point FROM tempo.ices_ecoregions_barent
+    UNION ALL
+    SELECT downstream_point FROM tempo.ices_ecoregions_nsea_north
+    UNION ALL
+    SELECT downstream_point FROM tempo.ices_ecoregions_norwegian
+),
+missing_points AS (
+    SELECT fp.*
+    FROM filtered_points AS fp
+    LEFT JOIN excluded_points AS ep
+    ON ST_Equals(fp.downstream_point, ep.downstream_point)
+    WHERE ep.downstream_point IS NULL
+)
+INSERT INTO tempo.ices_areas_3229_27
+SELECT mp.*
+FROM missing_points AS mp;--8
+```
+
+
+### Ecoregions
+
+We selected distinct downstream points from `tempo.riveratlas_mds` using two spatial filters. The first selection included points within 0.1 degrees of `ices_ecoregions.ices_ecoregions_20171207_erase_esri`, specifically for `objectid = 11`, and also within the larger buffer of 0.1 degrees of `tempo.ne_10m_admin_0_countries`, ensuring they were in Norway or Sweden.  
+
+The second selection included points within 0.1 degrees of `ices_areas.ices_areas_20160601_cut_dense_3857`, specifically for `subdivisio = '23'`, while also ensuring proximity to Norway or Sweden. Both selections were merged to form the set of filtered points.  
+
+To prevent duplication, we compiled a list of excluded points by gathering all downstream points already present in several tables: `tempo.ices_areas_26_22`, `tempo.ices_areas_3229_27`, `tempo.ices_areas_3031`, `tempo.ices_ecoregions_barent`, `tempo.ices_ecoregions_nsea_north`, `tempo.ices_ecoregions_norwegian`, and `tempo.ices_ecoregions_nsea_south`.  
+
+We then identified missing points by removing any downstream points from our selection that matched an already excluded point. This ensured that only new and unique points were retained.  
+
+Finally, we inserted these missing points into `tempo.ices_ecoregions_nsea_north`, adding new downstream points that met the criteria while avoiding duplicates.
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to retrieve most downstream points for the Northern part of the North Sea ICES ecoregion with a larger buffer
+#| warning: FALSE
+#| message: FALSE
+
+WITH filtered_points AS (
+    SELECT DISTINCT dp.*
+    FROM tempo.riveratlas_mds AS dp
+    JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+    ON ST_DWithin(
+        dp.downstream_point,
+        ST_Transform(er.geom, 4326),
+        0.1
+    )
+    JOIN tempo.ne_10m_admin_0_countries AS cs
+    ON ST_DWithin(
+        dp.downstream_point,
+        ST_Transform(cs.geom, 4326),
+        0.1
+    )
+    WHERE er.objectid = 11
+      AND cs.name IN ('Norway', 'Sweden')
+
+    UNION
+    SELECT DISTINCT dp.*
+    FROM tempo.riveratlas_mds AS dp
+    JOIN ices_areas.ices_areas_20160601_cut_dense_3857 AS ia
+    ON ST_DWithin(
+        dp.downstream_point,
+        ST_Transform(ia.geom, 4326),
+        0.1
+    )
+    JOIN tempo.ne_10m_admin_0_countries AS cs
+    ON ST_DWithin(
+        dp.downstream_point,
+        ST_Transform(cs.geom, 4326),
+        0.1
+    )
+    WHERE ia.subdivisio = '23'
+      AND cs.name IN ('Norway', 'Sweden')
+),
+excluded_points AS (
+    SELECT downstream_point FROM tempo.ices_areas_26_22
+    UNION ALL
+    SELECT downstream_point FROM tempo.ices_areas_3229_27
+    UNION ALL
+    SELECT downstream_point FROM tempo.ices_areas_3031
+    UNION ALL
+    SELECT downstream_point FROM tempo.ices_ecoregions_barent
+    UNION ALL
+    SELECT downstream_point FROM tempo.ices_ecoregions_nsea_north
+    UNION ALL
+    SELECT downstream_point FROM tempo.ices_ecoregions_norwegian
+    UNION ALL
+    SELECT downstream_point FROM tempo.ices_ecoregions_nsea_south
+),
+missing_points AS (
+    SELECT fp.*
+    FROM filtered_points AS fp
+    LEFT JOIN excluded_points AS ep
+    ON ST_Equals(fp.downstream_point, ep.downstream_point)
+    WHERE ep.downstream_point IS NULL
+)
+INSERT INTO tempo.ices_ecoregions_nsea_north
+SELECT mp.*
+FROM missing_points AS mp;
+```
+
 ## Step 5 : Copy all riversegments corresponding to the previously selected riversegments using the main_riv identifier
+
+A new schema `h_baltic_3229_27` was created to store the selected river segments. Within this schema, we created the `riversegments` table by selecting distinct river segments from `tempo.hydro_riversegments_europe` that matched the `main_riv` values found in `tempo.ices_areas_3229_27`. This ensured that only river segments associated with the relevant ICES subdivisions were included.  
+
+To optimize the table, we added a primary key constraint on `hyriv_id`, ensuring data integrity and uniqueness. Additionally, two indexes were created: a **B-tree** index on `main_riv` to improve lookup efficiency and a **GIST** index on `geom` to speed up spatial queries.
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to retrieve all river segments corresponding to the selected area
+#| warning: FALSE
+#| message: FALSE
+
+CREATE SCHEMA h_baltic_3229_27;
+DROP TABLE IF EXISTS h_baltic_3229_27.riversegments;
+CREATE TABLE h_baltic_3229_27.riversegments AS (
+    SELECT DISTINCT ON (hre.geom) hre.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.ices_areas_3229_27 AS ia
+    ON hre.main_riv = ia.main_riv
+);--30869
+
+ALTER TABLE h_baltic_3229_27.riversegments
+ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
+
+CREATE INDEX idx_h_baltic_3229_27_riversegments_main_riv ON h_baltic_3229_27.riversegments USING BTREE(main_riv);
+CREATE INDEX idx_h_baltic_3229_27_riversegments ON h_baltic_3229_27.riversegments USING GIST(geom);
+```
+
+![Map of river segments for 27, 29-32 ICES areas.](images/fig-rs_baltic2732.png "A view of the Baltic with selected river segments for 27, 29-32 ICES areas"){#fig-rs_baltic2732}
 
 ## Step 6 : Gather all corresponding catchments using an intersection function
 
+We created the `h_baltic_26_22.catchments` table by selecting distinct small catchments from `tempo.hydro_small_catchments_europe` that intersect with the river segments stored in `h_baltic_26_22.riversegments`. To avoid duplication, we excluded any catchments that were already present in `h_baltic_3031.catchments` or `h_baltic_3229_27.catchments`.  
+
+To improve performance and maintain data integrity, we added a primary key constraint on `hybas_id`. Additionally, we created a **B-tree** index on `main_bas` to optimize lookups and a **GIST** index on `shape` to enhance spatial query efficiency.
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to retrieve all catchments corresponding to previously selected river segments
+#| warning: FALSE
+#| message: FALSE
+
+DROP TABLE IF EXISTS h_baltic_26_22.catchments;
+CREATE TABLE h_baltic_26_22.catchments AS (
+    SELECT DISTINCT ON (hce.hybas_id) hce.*
+    FROM tempo.hydro_small_catchments_europe AS hce
+    JOIN h_baltic_26_22.riversegments AS rs
+    ON ST_Intersects(hce.shape, rs.geom)
+    LEFT JOIN (
+        SELECT shape FROM h_baltic_3031.catchments
+        UNION ALL
+        SELECT shape FROM h_baltic_3229_27.catchments
+    ) AS excluded
+    ON hce.shape && excluded.shape
+    AND ST_Equals(hce.shape, excluded.shape)
+    WHERE excluded.shape IS NULL
+);--3878
+
+ALTER TABLE h_baltic_26_22.catchments
+ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
+
+CREATE INDEX idx_h_baltic_26_22_catchments_main_bas ON h_baltic_26_22.catchments USING BTREE(main_bas);
+CREATE INDEX idx_h_baltic_26_22_catchments ON h_baltic_26_22.catchments USING GIST(shape);
+```
+
+![Map of catchments for 27, 29-32 ICES areas.](images/fig-catch_baltic2732.png "A view of the Baltic with selected catchments for 27, 29-32 ICES areas"){#fig-catch_baltic2732}
+
 ## Step 7 : Retrieve all missing endorheic catchments using an evelope
 
+We constructed the `tempo.oneendo_bisciber` table by generating a concave hull around the exterior boundary of the merged catchment shapes from `h_biscay_iberian.catchments`. This process created a generalized polygon representing the area covered by these catchments. To improve spatial query performance, we added a **GIST** index on the geometry column.  
+
+Next, we identified endorheic basins from `basinatlas.basinatlas_v10_lev12` that intersected with `tempo.oneendo_bisciber`. To ensure only relevant basins were selected, we excluded those already present in surrounding areas (`h_biscay_iberian.catchments`, `h_med_west.catchments`, `h_nsea_south.catchments`), and specific basins defined by `main_bas` values 2120017150, 2120017480, and 2120018070 that belongs to another area. The remaining filtered basins were then inserted into `h_biscay_iberian.catchments`.
+
+Finally, we populated `h_biscay_iberian.riversegments` by selecting distinct river segments from `tempo.hydro_riversegments_europe` that intersected with the newly added catchments. To prevent duplicate entries, we excluded any river segments that already existed in `h_biscay_iberian.riversegments`.
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to retrieve missing endorheic basins
+#| warning: FALSE
+#| message: FALSE
+
+DROP TABLE IF EXISTS tempo.oneendo_bisciber;
+CREATE TABLE tempo.oneendo_bisciber AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.1,FALSE) geom
+	FROM h_biscay_iberian.catchments AS ha);--67
+CREATE INDEX idx_tempo_oneendo_bisciber ON tempo.oneendo_bisciber USING GIST(geom);
+	
+
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_bisciber
+    ON ba.shape && oneendo_bisciber.geom
+    AND ST_Intersects(ba.shape, oneendo_bisciber.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_biscay_iberian.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_west.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_south.catchments
+    UNION ALL
+    SELECT shape
+    FROM basinatlas.basinatlas_v10_lev12
+    WHERE main_bas = ANY(ARRAY[2120017150, 2120017480, 2120018070])
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_biscay_iberian.catchments
+SELECT *
+FROM filtered_basin;--62
+
+
+INSERT INTO h_biscay_iberian.riversegments
+SELECT DISTINCT ON (r.hyriv_id) r.*
+FROM tempo.hydro_riversegments_europe r
+JOIN h_biscay_iberian.catchments c
+ON r.geom && c.shape
+AND ST_Intersects(r.geom, c.shape)
+WHERE NOT EXISTS (
+    SELECT *
+    FROM h_biscay_iberian.riversegments ex
+    WHERE r.geom && ex.geom
+    AND ST_Equals(r.geom, ex.geom)
+);--57
+```
+
+![Map of catchemnts on the Iberian peninsula with missing endorheic basins.](images/fig-endo_biscay.png "A view of the Iberian peninsula with missing endorheic basins"){#fig-endo_biscay}
+
+![Map of the concave hull on the Iberian peninsula.](images/fig-conc_biscay.png "A view of the concave hull on the Iberian peninsula"){#fig-conc_biscay}
+
+![Map of catchemnts on the Iberian peninsula without missing endorheic basins.](images/fig-fendo_biscay.png "A view of the Iberian peninsula without missing endorheic basins"){#fig-fendo_biscay}
+
+
 ## Step 8 : Retrieve all missing islands and coastal catchments not linked to a riversegments by using an intersection with ICES areas
+
+We identified the last set of catchments by selecting distinct small catchments from `tempo.hydro_small_catchments_europe` that intersected with `ices_areas.ices_areas_20160601_cut_dense_3857`, specifically within subdivisions 32, 29, 28, and 27.  
+
+To avoid duplication, we excluded catchments that were already present in `h_baltic_3031.catchments`, `h_baltic_3229_27.catchments`, and `h_baltic_26_22.catchments`. The remaining catchments, which were not already accounted for, were inserted into `h_baltic_3229_27.catchments`.
+
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to retrieve all missing islands and coastal catchments
+#| warning: FALSE
+#| message: FALSE
+
+WITH last_basin AS (
+	SELECT DISTINCT ON (c.hybas_id) c.*
+	FROM tempo.hydro_small_catchments_europe AS c
+	JOIN ices_areas.ices_areas_20160601_cut_dense_3857 AS ia
+	ON ST_Intersects(c.shape, ia.geom)
+	WHERE ia.subdivisio=ANY(ARRAY['32','29','28','27'])
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_baltic_3031.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_baltic_3229_27.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_baltic_26_22.catchments
+),
+filtered_basin AS (
+    SELECT lb.*
+    FROM last_basin lb
+    LEFT JOIN excluded_basins exb
+    ON lb.shape && exb.shape
+    AND ST_Equals(lb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_baltic_3229_27.catchments
+SELECT *
+FROM filtered_basin;
+```
+
+![Map of catchemnts on the Baltic with missing islands basins.](images/fig-missing_baltic2732.png "A view of the Baltic with missing islands"){#fig-missing_baltic2732}
+
+![Map of catchemnts on the Baltic without missing islands basins.](images/fig-full_baltic2732.png "A view of the Baltic without missing islands"){#fig-full_baltic2732}
