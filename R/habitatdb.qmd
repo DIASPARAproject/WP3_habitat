@@ -699,3 +699,5 @@ FROM filtered_basin;
 ![Map of catchemnts on the Baltic with missing islands basins.](images/fig-missing_baltic2732.png "A view of the Baltic with missing islands"){#fig-missing_baltic2732}
 
 ![Map of catchemnts on the Baltic without missing islands basins.](images/fig-full_baltic2732.png "A view of the Baltic without missing islands"){#fig-full_baltic2732}
+
+![Final map of catchemnts from HydroSHEDS split into ICES areas and ecoregions.](images/fig-final.png "A view of Europe and Northern Africa catchments"){#fig-final}
