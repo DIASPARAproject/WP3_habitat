@@ -374,6 +374,22 @@ CREATE TABLE tempo.ices_ecoregions_iceland AS (
 );--1076
 
 
+DROP TABLE IF EXISTS tempo.ices_areas_svalbard;
+CREATE TABLE tempo.ices_areas_svalbard AS (
+	SELECT dp.*
+	FROM tempo.riveratlas_mds AS dp
+	JOIN ref.tr_fishingarea_fia AS er
+	ON ST_DWithin(
+	    dp.downstream_point,
+	    er.geom,
+	    0.04
+	)
+	WHERE er.fia_division = '27.2.b'
+	OR dp.main_riv = ANY(ARRAY[20000351, 20000291, 20000316, 20000304, 20000314, 20000278, 20000238, 20000272])
+); --1379
+CREATE INDEX idx_tempo_ices_areas_svalbard ON tempo.ices_areas_svalbard USING GIST(downstream_point);
+
+
 DROP TABLE IF EXISTS tempo.ices_ecoregions_barent;
 CREATE TABLE tempo.ices_ecoregions_barent AS (
 	SELECT dp.*
@@ -385,6 +401,9 @@ CREATE TABLE tempo.ices_ecoregions_barent AS (
 	    0.02
 	)
 	WHERE er.objectid = 14
+	AND dp.downstream_point NOT IN (
+			SELECT existing.downstream_point
+	    	FROM tempo.ices_areas_svalbard AS existing)
 );--1948
 
 
@@ -543,22 +562,7 @@ CREATE TABLE tempo.ices_ecoregions_south_atlantic AS (
 );--672
 
 
-DROP TABLE IF EXISTS tempo.ices_areas_svalbard;
-CREATE TABLE tempo.ices_areas_svalbard AS (
-	SELECT dp.*
-	FROM tempo.riveratlas_mds AS dp
-	JOIN ref.tr_fishingarea_fia AS er
-	ON ST_DWithin(
-	    dp.downstream_point,
-	    er.geom,
-	    0.04
-	)
-	WHERE er.fia_division = ANY(ARRAY['27.2.b', '27.1.b'])
-	AND dp.geom NOT IN (
-	    SELECT existing.geom
-	    FROM tempo.ices_ecoregions_barent AS existing)
-); --1363
-CREATE INDEX idx_tempo_ices_areas_svalbard ON tempo.ices_areas_svalbard USING GIST(downstream_point);
+
 
 ---------------- Step 3.5 : Redo with larger buffer to catch missing bassins ----------------
 
@@ -888,6 +892,44 @@ FROM missing_points AS mp;--42
 WITH filtered_points AS (
     SELECT dp.*
     FROM tempo.riveratlas_mds AS dp
+    JOIN ref.tr_fishingarea_fia AS er
+    ON ST_DWithin(
+        dp.downstream_point,
+        ST_Transform(er.geom, 4326),
+        0.1
+    )
+    JOIN tempo.ne_10m_admin_0_countries AS cs
+    ON ST_DWithin(
+        dp.downstream_point,
+        ST_Transform(cs.geom, 4326),
+        0.1
+    )
+    WHERE er.fia_division IN ('27.1.b', '27.2.b')
+      AND cs.name IN ('Norway')
+),
+excluded_points AS (
+    SELECT downstream_point
+    FROM tempo.ices_ecoregions_barent
+    UNION ALL
+    SELECT downstream_point FROM tempo.ices_ecoregions_norwegian
+    UNION ALL
+    SELECT downstream_point FROM tempo.ices_areas_svalbard
+),
+missing_points AS (
+    SELECT fp.*
+    FROM filtered_points AS fp
+    LEFT JOIN excluded_points AS ep
+    ON ST_Equals(fp.downstream_point, ep.downstream_point)
+    WHERE ep.downstream_point IS NULL
+)
+INSERT INTO tempo.ices_areas_svalbard
+SELECT mp.*
+FROM missing_points AS mp;
+
+
+WITH filtered_points AS (
+    SELECT dp.*
+    FROM tempo.riveratlas_mds AS dp
     JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
     ON ST_DWithin(
         dp.downstream_point,
@@ -908,6 +950,8 @@ excluded_points AS (
     FROM tempo.ices_ecoregions_barent
     UNION ALL
     SELECT downstream_point FROM tempo.ices_ecoregions_norwegian
+    UNION ALL
+    SELECT downstream_point FROM tempo.ices_areas_svalbard
 ),
 missing_points AS (
     SELECT fp.*
@@ -1471,6 +1515,23 @@ CREATE INDEX idx_h_iceland_riversegments_main_riv ON h_iceland.riversegments USI
 CREATE INDEX idx_h_iceland_riversegments ON h_iceland.riversegments USING GIST(geom);
 
 
+CREATE SCHEMA h_svalbard;
+DROP TABLE IF EXISTS h_svalbard.riversegments;
+CREATE TABLE h_svalbard.riversegments AS (
+    SELECT DISTINCT ON (hre.geom) hre.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.ices_areas_svalbard AS ie
+    ON hre.main_riv = ie.main_riv
+);--298
+
+ALTER TABLE h_svalbard.riversegments
+ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
+
+CREATE INDEX idx_h_svalbard_riversegments_main_riv ON h_svalbard.riversegments USING BTREE(main_riv);
+CREATE INDEX idx_h_svalbard_riversegments ON h_svalbard.riversegments USING GIST(geom);
+
+
+
 CREATE SCHEMA h_barent;
 DROP TABLE IF EXISTS h_barent.riversegments;
 CREATE TABLE h_barent.riversegments AS (
@@ -1664,24 +1725,6 @@ CREATE INDEX idx_h_south_atlantic_riversegments ON h_south_atlantic.riversegment
 
 
 
-CREATE SCHEMA h_svalbard;
-DROP TABLE IF EXISTS h_svalbard.riversegments;
-CREATE TABLE h_svalbard.riversegments AS (
-    SELECT DISTINCT ON (hre.geom) hre.*
-    FROM tempo.hydro_riversegments_europe AS hre
-    JOIN tempo.ices_areas_svalbard AS ie
-    ON hre.main_riv = ie.main_riv
-);--298
-
-ALTER TABLE h_svalbard.riversegments
-ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
-
-CREATE INDEX idx_h_svalbard_riversegments_main_riv ON h_svalbard.riversegments USING BTREE(main_riv);
-CREATE INDEX idx_h_svalbard_riversegments ON h_svalbard.riversegments USING GIST(geom);
-
-
-
-
 -------------- Step 5 : Select all corresponding catchments --------------
 DROP TABLE IF EXISTS h_baltic_3031.catchments;
 CREATE TABLE h_baltic_3031.catchments AS (
@@ -1837,6 +1880,23 @@ ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
 
 CREATE INDEX idx_h_iceland_catchments_main_bas ON h_iceland.catchments USING BTREE(main_bas);
 CREATE INDEX idx_h_iceland_catchments ON h_iceland.catchments USING GIST(shape);
+
+
+
+DROP TABLE IF EXISTS h_svalbard.catchments;
+CREATE TABLE h_svalbard.catchments AS (
+	SELECT DISTINCT ON (hce.hybas_id) hce.*
+	FROM tempo.hydro_small_catchments_europe AS hce
+	JOIN h_svalbard.riversegments AS rs
+	ON ST_Intersects(hce.shape,rs.geom)
+);--336
+
+ALTER TABLE h_svalbard.catchments
+ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
+
+CREATE INDEX idx_h_svalbard_catchments_main_bas ON h_svalbard.catchments USING BTREE(main_bas);
+CREATE INDEX idx_h_svalbard_catchments ON h_svalbard.catchments USING GIST(shape);
+
 
 
 DROP TABLE IF EXISTS h_barent.catchments;
@@ -2114,30 +2174,8 @@ CREATE INDEX idx_h_south_atlantic_catchments_main_bas ON h_south_atlantic.catchm
 CREATE INDEX idx_h_south_atlantic_catchments ON h_south_atlantic.catchments USING GIST(shape);
 
 
-DROP TABLE IF EXISTS h_svalbard.catchments;
-CREATE TABLE h_svalbard.catchments AS (
-	SELECT DISTINCT ON (hce.hybas_id) hce.*
-	FROM tempo.hydro_small_catchments_europe AS hce
-	JOIN h_svalbard.riversegments AS rs
-	ON ST_Intersects(hce.shape,rs.geom)
-);--336
+------------------------ Step 6 : Retrieving missing endoheric basins with ST_Envelope ------------------------
 
-ALTER TABLE h_svalbard.catchments
-ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
-
-CREATE INDEX idx_h_svalbard_catchments_main_bas ON h_svalbard.catchments USING BTREE(main_bas);
-CREATE INDEX idx_h_svalbard_catchments ON h_svalbard.catchments USING GIST(shape);
-
-
------------------- TESTING STUFF HERE DON'T MIND ME ------------------
-
--- TODO Try to retrieve missing endoheric basins with ST_Envelope
--- Sélection des bassins endoréiques touchant l'enveloppe géographique de h_adriatic.shape
-
---WIP Use convextest3 to select all missing endoheric basins
--- Use convextest to grab missing endo basins 
--- Compare with basins already in table 1 et in table 2
--- Take missing ones with exception for those already in the neighbouring table + non endo (=0) 
 
 DROP TABLE IF EXISTS tempo.oneendo_3031;
 CREATE TABLE tempo.oneendo_3031 AS (
@@ -2461,7 +2499,7 @@ filtered_basin AS (
 )
 INSERT INTO h_barent.catchments
 SELECT *
-FROM filtered_basin;--359
+FROM filtered_basin;--188
 
 INSERT INTO h_barent.riversegments
 SELECT DISTINCT ON (r.hyriv_id) r.*
@@ -2727,61 +2765,6 @@ WHERE NOT EXISTS (
 );--5
 
 
---WITH riversegments_in_zone AS (
---    SELECT rs.*
---    FROM tempo.hydro_riversegments_europe AS rs
---    JOIN tempo.oneendo_nseas
---    ON rs.geom && oneendo_nseas.geom
---    AND ST_Intersects(rs.geom, oneendo_nseas.geom)
---    WHERE rs.endorheic = 1
---),
---excluded_segments AS (
---    SELECT rs.*
---    FROM tempo.hydro_riversegments_europe AS rs
---    JOIN (
---        SELECT shape 
---    FROM h_baltic_26_22.catchments
---    UNION ALL
---    SELECT shape 
---    FROM h_nsea_north.catchments
---    UNION ALL
---    SELECT shape 
---    FROM h_black_sea.catchments
---    UNION ALL
---    SELECT shape 
---    FROM h_adriatic.catchments
---    UNION ALL
---    SELECT shape 
---    FROM h_biscay_iberian.catchments
---    UNION ALL
---    SELECT shape 
---    FROM h_med_west.catchments
---    UNION ALL
---    SELECT shape 
---    FROM h_nsea_south.catchments
---    ) AS excluded_basins
---    ON rs.geom && excluded_basins.shape
---    AND ST_Intersects(rs.geom, excluded_basins.shape)
---),
---filtered_segments AS (
---    SELECT rsz.*
---    FROM riversegments_in_zone rsz
---    LEFT JOIN excluded_segments exs
---    ON rsz.geom && exs.geom
---    AND ST_Equals(rsz.geom, exs.geom)
---    WHERE exs.geom IS NULL
---),
---final_segments AS (
---    SELECT rs.*
---    FROM tempo.hydro_riversegments_europe AS rs
---    WHERE rs.main_riv IN (
---        SELECT DISTINCT fs.main_riv
---        FROM filtered_segments fs
---    )
---)
-----INSERT INTO h_med_east.riversegments
---SELECT *
---FROM final_segments;
 
 DROP TABLE IF EXISTS tempo.oneendo_bisciber;
 CREATE TABLE tempo.oneendo_bisciber AS (
@@ -2964,58 +2947,47 @@ CREATE TABLE tempo.oneendo_mede AS (
 CREATE INDEX idx_tempo_oneendo_mede ON tempo.oneendo_mede USING GIST(geom);
 
 
-
--- test with riversegments
-WITH riversegments_in_zone AS (
-    SELECT rs.*
-    FROM tempo.hydro_riversegments_europe AS rs
-    JOIN tempo.oneendo_mede
-    ON rs.geom && oneendo_mede.geom
-    AND ST_Intersects(rs.geom, oneendo_mede.geom)
-    WHERE rs.endorheic = 1
+WITH excluded_basins AS (
+    SELECT geom FROM h_black_sea.riversegments
+    UNION ALL
+    SELECT geom FROM h_adriatic.riversegments
+    UNION ALL
+    SELECT geom FROM h_med_central.riversegments
+    UNION ALL
+    SELECT geom FROM h_med_east.riversegments
+    UNION ALL
+    SELECT geom
+    FROM tempo.hydro_riversegments_europe
+    WHERE main_riv = ANY(ARRAY[20641990, 20641991, 20641880, 20635552])
 ),
-excluded_segments AS (
+riversegments_in_zone AS (
     SELECT rs.*
-    FROM tempo.hydro_riversegments_europe AS rs
-    JOIN (
-        SELECT shape 
-        FROM h_black_sea.catchments
-        UNION ALL
-        SELECT shape 
-        FROM h_adriatic.catchments
-        UNION ALL
-        SELECT shape 
-        FROM h_med_central.catchments
-        UNION ALL
-        SELECT shape 
-        FROM h_med_east.catchments
-        UNION ALL
-        SELECT geom
-        FROM tempo.hydro_riversegments_europe
-        WHERE main_riv = ANY(ARRAY[20641990, 20641991, 20641880])
-    ) AS excluded_basins
-    ON rs.geom && excluded_basins.shape
-    AND ST_Intersects(rs.geom, excluded_basins.shape)
+    FROM tempo.hydro_riversegments_europe rs
+    JOIN tempo.oneendo_mede o
+    ON rs.geom && o.geom
+    WHERE rs.endorheic = 1
+    AND ST_Intersects(rs.geom, o.geom)
 ),
 filtered_segments AS (
     SELECT rsz.*
     FROM riversegments_in_zone rsz
-    LEFT JOIN excluded_segments exs
-    ON rsz.geom && exs.geom
-    AND ST_Equals(rsz.geom, exs.geom)
-    WHERE exs.geom IS NULL
+    LEFT JOIN excluded_basins exb
+    ON rsz.geom && exb.geom
+    AND ST_Equals(rsz.geom, exb.geom)
+    WHERE exb.geom IS NULL
 ),
 final_segments AS (
-    SELECT rs.*
-    FROM tempo.hydro_riversegments_europe AS rs
+    SELECT DISTINCT ON (rs.hyriv_id) rs.*
+    FROM tempo.hydro_riversegments_europe rs
     WHERE rs.main_riv IN (
         SELECT DISTINCT fs.main_riv
         FROM filtered_segments fs
     )
 )
 INSERT INTO h_med_east.riversegments
-SELECT *
-FROM final_segments;--3941 (16 min?!)
+SELECT DISTINCT ON (fs.hyriv_id) fs.*
+FROM final_segments fs;--3920 15min
+
 
 
 INSERT INTO h_med_east.catchments
@@ -3029,59 +3001,7 @@ WHERE NOT EXISTS (
     FROM h_med_east.catchments ex
     WHERE c.shape && ex.shape
     AND ST_Equals(c.shape, ex.shape)
-);--705
-
-
-DROP TABLE IF EXISTS tempo.oneendo_mede;
-CREATE TABLE tempo.oneendo_mede AS (
-	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.05,FALSE) geom
-	FROM h_med_east.catchments AS ha);--234
-CREATE INDEX idx_tempo_oneendo_mede ON tempo.oneendo_mede USING GIST(geom);
-
-WITH endo_basins AS (	
-    SELECT ba.*
-    FROM tempo.hydro_small_catchments_europe AS ba
-    JOIN tempo.oneendo_mede
-    ON ba.shape && oneendo_mede.geom
-    AND ST_Intersects(ba.shape, oneendo_mede.geom)
-    WHERE endo = ANY(ARRAY[1, 2])
-),
-excluded_basins AS (
-    SELECT shape 
-    FROM h_med_east.catchments
-    UNION ALL
-    SELECT shape 
-    FROM h_black_sea.catchments
-    UNION ALL
-    SELECT shape 
-    FROM h_adriatic.catchments
-    UNION ALL
-    SELECT shape 
-    FROM h_med_central.catchments
-    UNION ALL
-    SELECT shape
-    FROM tempo.hydro_small_catchments_europe
-    WHERE main_bas = ANY(ARRAY[2120085960, 2120100150, 2120102750, 2120108140, 2120108130])
-),
-filtered_basin AS (
-    SELECT eb.*
-    FROM endo_basins eb
-    LEFT JOIN excluded_basins exb
-    ON eb.shape && exb.shape
-    AND ST_Equals(eb.shape, exb.shape)
-    WHERE exb.shape IS NULL
-)
-INSERT INTO h_med_east.catchments
-SELECT *
-FROM filtered_basin;--89
-
-
-SELECT 
-    geom, 
-    COUNT(*) AS duplicate_count
-FROM h_svalbard.riversegments
-GROUP BY geom
-HAVING COUNT(*) > 1;
+);--702
 
 
 
@@ -3091,61 +3011,57 @@ CREATE TABLE tempo.oneendo_bsea AS (
 	FROM h_black_sea.catchments AS ha);--38
 CREATE INDEX idx_tempo_oneendo_bsea ON tempo.oneendo_bsea USING GIST(geom);
 
-WITH riversegments_in_zone AS (
-    SELECT rs.*
-    FROM tempo.hydro_riversegments_europe AS rs
-    WHERE rs.endorheic = 1
-    AND rs.main_riv != 20490321
-    AND EXISTS (
-        SELECT * FROM tempo.oneendo_bsea ob
-        WHERE rs.geom && ob.geom
-        AND ST_Intersects(rs.geom, ob.geom)
-    )
+
+WITH excluded_basins AS (
+    SELECT geom 
+    FROM h_black_sea.riversegments
+    UNION ALL
+    SELECT geom 
+    FROM h_baltic_26_22.riversegments
+    UNION ALL
+    SELECT geom 
+    FROM h_baltic_3229_27.riversegments
+    UNION ALL
+    SELECT geom 
+    FROM h_med_east.riversegments
+    UNION ALL
+    SELECT geom 
+    FROM h_nsea_south.riversegments
+    UNION ALL
+    SELECT geom 
+    FROM h_adriatic.riversegments
+    UNION ALL
+    SELECT geom
+    FROM tempo.hydro_riversegments_europe
+    WHERE main_riv = ANY(ARRAY[20490321, 20539064, 20518667])
 ),
-excluded_segments AS (
+riversegments_in_zone AS (
     SELECT rs.*
-    FROM tempo.hydro_riversegments_europe AS rs
-    JOIN (
-        SELECT shape 
-        FROM h_black_sea.catchments
-        UNION ALL
-        SELECT shape 
-        FROM h_baltic_26_22.catchments
-        UNION ALL
-        SELECT shape 
-        FROM h_baltic_3229_27.catchments
-        UNION ALL
-        SELECT shape 
-        FROM h_med_east.catchments
-        UNION ALL
-        SELECT shape 
-        FROM h_nsea_south.catchments
-        UNION ALL
-        SELECT shape 
-        FROM h_adriatic.catchments
-    ) AS excluded_basins
-    ON rs.geom && excluded_basins.shape
-    AND ST_Intersects(rs.geom, excluded_basins.shape)
+    FROM tempo.hydro_riversegments_europe rs
+    JOIN tempo.oneendo_bsea o
+    ON rs.geom && o.geom
+    WHERE rs.endorheic = 1
+    AND ST_Intersects(rs.geom, o.geom)
 ),
 filtered_segments AS (
     SELECT rsz.*
     FROM riversegments_in_zone rsz
-    LEFT JOIN excluded_segments exs
-    ON rsz.geom && exs.geom
-    AND ST_Equals(rsz.geom, exs.geom)
-    WHERE exs.geom IS NULL
+    LEFT JOIN excluded_basins exb
+    ON rsz.geom && exb.geom
+    AND ST_Equals(rsz.geom, exb.geom)
+    WHERE exb.geom IS NULL
 ),
 final_segments AS (
-    SELECT rs.*
-    FROM tempo.hydro_riversegments_europe AS rs
+    SELECT DISTINCT ON (rs.hyriv_id) rs.*
+    FROM tempo.hydro_riversegments_europe rs
     WHERE rs.main_riv IN (
         SELECT DISTINCT fs.main_riv
         FROM filtered_segments fs
     )
 )
---INSERT INTO h_black_sea.riversegments
-SELECT *
-FROM final_segments;--1675
+INSERT INTO h_black_sea.riversegments
+SELECT DISTINCT ON (fs.hyriv_id) fs.*
+FROM final_segments fs;--2001
 
 
 INSERT INTO h_black_sea.catchments
@@ -3159,107 +3075,80 @@ WHERE NOT EXISTS (
     FROM h_black_sea.catchments ex
     WHERE c.shape && ex.shape
     AND ST_Equals(c.shape, ex.shape)
-);--320
-
---------------- HERE -----------------
-DROP TABLE IF EXISTS tempo.oneendo_bsea;
-CREATE TABLE tempo.oneendo_bsea AS (
-	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.001,FALSE) geom
-	FROM h_black_sea.catchments AS ha);--38
-CREATE INDEX idx_tempo_oneendo_bsea ON tempo.oneendo_bsea USING GIST(geom);
-
-WITH endo_basins AS (	
-    SELECT ba.*
-    FROM tempo.hydro_small_catchments_europe AS ba
-    JOIN tempo.oneendo_bsea
-    ON ba.shape && oneendo_bsea.geom
-    AND ST_Intersects(ba.shape, oneendo_bsea.geom)
-),
-excluded_basins AS (
-    SELECT shape 
-    FROM h_black_sea.catchments
-    UNION ALL
-    SELECT shape 
-    FROM h_baltic_26_22.catchments
-    UNION ALL
-    SELECT shape 
-    FROM h_baltic_3229_27.catchments
-    UNION ALL
-    SELECT shape 
-    FROM h_med_east.catchments
-    UNION ALL
-    SELECT shape 
-    FROM h_nsea_south.catchments
-    UNION ALL
-    SELECT shape 
-    FROM h_adriatic.catchments
-    UNION ALL
-    SELECT shape
-    FROM tempo.hydro_small_catchments_europe
-    WHERE main_bas = 2120068680
-),
-filtered_basin AS (
-    SELECT eb.*
-    FROM endo_basins eb
-    LEFT JOIN excluded_basins exb
-    ON eb.shape && exb.shape
-    AND ST_Equals(eb.shape, exb.shape)
-    WHERE exb.shape IS NULL
-)
---INSERT INTO h_black_sea.catchments
-SELECT *
-FROM filtered_basin;
+);--395
 
 
--- hmmmmmmmmmmm
 DROP TABLE IF EXISTS tempo.oneendo_adriatic;
 CREATE TABLE tempo.oneendo_adriatic AS (
-	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.05,FALSE) geom
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.2,FALSE) geom
 	FROM h_adriatic.catchments AS ha);--152
 CREATE INDEX idx_tempo_oneendo_adriatic ON tempo.oneendo_adriatic USING GIST(geom);
 
-WITH endo_basins AS (	
-    SELECT ba.*
-    FROM basinatlas.basinatlas_v10_lev12 AS ba
-    JOIN tempo.oneendo_adriatic
-    ON ba.shape && oneendo_adriatic.geom
-    AND ST_Intersects(ba.shape, oneendo_adriatic.geom)
+
+WITH excluded_basins AS (
+    SELECT geom 
+    FROM h_med_west.riversegments
+    UNION ALL
+    SELECT geom 
+    FROM h_nsea_south.riversegments
+    UNION ALL
+    SELECT geom 
+    FROM h_adriatic.riversegments
+    UNION ALL
+    SELECT geom 
+    FROM h_med_central.riversegments
+    UNION ALL
+    SELECT geom 
+    FROM h_med_east.riversegments
+    UNION ALL
+    SELECT geom 
+    FROM h_black_sea.riversegments
 ),
-excluded_basins AS (
-    SELECT shape 
-    FROM h_med_west.catchments
-    UNION ALL
-    SELECT shape 
-    FROM h_nsea_south.catchments
-    UNION ALL
-    SELECT shape 
-    FROM h_adriatic.catchments
-    UNION ALL
-    SELECT shape 
-    FROM h_med_central.catchments
-    UNION ALL
-    SELECT shape 
-    FROM h_med_east.catchments
-    UNION ALL
-    SELECT shape 
-    FROM h_black_sea.catchments
+riversegments_in_zone AS (
+    SELECT rs.*
+    FROM tempo.hydro_riversegments_europe rs
+    JOIN tempo.oneendo_adriatic o
+    ON rs.geom && o.geom
+    WHERE rs.endorheic = 1
+    AND ST_Intersects(rs.geom, o.geom)
 ),
-filtered_basin AS (
-    SELECT eb.*
-    FROM endo_basins eb
+filtered_segments AS (
+    SELECT rsz.*
+    FROM riversegments_in_zone rsz
     LEFT JOIN excluded_basins exb
-    ON eb.shape && exb.shape
-    AND ST_Equals(eb.shape, exb.shape)
-    WHERE exb.shape IS NULL
+    ON rsz.geom && exb.geom
+    AND ST_Equals(rsz.geom, exb.geom)
+    WHERE exb.geom IS NULL
+),
+final_segments AS (
+    SELECT DISTINCT ON (rs.hyriv_id) rs.*
+    FROM tempo.hydro_riversegments_europe rs
+    WHERE rs.main_riv IN (
+        SELECT DISTINCT fs.main_riv
+        FROM filtered_segments fs
+    )
 )
---INSERT INTO h_adriatic.catchments
-SELECT *
-FROM filtered_basin;
+INSERT INTO h_adriatic.riversegments
+SELECT DISTINCT ON (fs.hyriv_id) fs.*
+FROM final_segments fs; --1505
 
-------------------------------------------------------------
+INSERT INTO h_adriatic.catchments
+SELECT DISTINCT ON (c.hybas_id) c.*
+FROM tempo.hydro_small_catchments_europe c
+JOIN h_adriatic.riversegments r
+ON c.shape && r.geom
+AND ST_Intersects(c.shape, r.geom)
+WHERE NOT EXISTS (
+    SELECT *
+    FROM h_adriatic.catchments ex
+    WHERE c.shape && ex.shape
+    AND ST_Equals(c.shape, ex.shape)
+);--313
 
--- Retrieving last islands and basins along the coast
 
+
+
+------------------------ Step 7 : Retrieving last islands and basins along the coast ------------------------
 
 WITH last_basin AS (
 	SELECT c.*
@@ -3291,8 +3180,6 @@ INSERT INTO h_baltic_3031.catchments
 SELECT *
 FROM filtered_basin;--2
 
--- Donc la je teste l'intéraction et tout pour récupérer les basins manquants. MAIS il en manque quand même
--- C'est chiant
 
 
 WITH last_basin AS (
@@ -3579,6 +3466,84 @@ FROM filtered_basin;--116
 WITH last_basin AS (
 	SELECT DISTINCT ON (c.hybas_id) c.*
 	FROM tempo.hydro_small_catchments_europe AS c
+	JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+	ON ST_Intersects(c.shape, er.geom)
+	WHERE er.objectid = 6
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_black_sea.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_baltic_26_22.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_baltic_3229_27.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_east.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_south.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_adriatic.catchments
+),
+filtered_basin AS (
+    SELECT lb.*
+    FROM last_basin lb
+    LEFT JOIN excluded_basins exb
+    ON lb.shape && exb.shape
+    AND ST_Equals(lb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_black_sea.catchments
+SELECT *
+FROM filtered_basin;--126
+
+
+WITH last_basin AS (
+	SELECT DISTINCT ON (c.hybas_id) c.*
+	FROM tempo.hydro_small_catchments_europe AS c
+	JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+	ON ST_Intersects(c.shape, er.geom)
+	WHERE er.objectid = 7
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_med_west.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_nsea_south.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_adriatic.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_central.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_med_east.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_black_sea.catchments
+),
+filtered_basin AS (
+    SELECT lb.*
+    FROM last_basin lb
+    LEFT JOIN excluded_basins exb
+    ON lb.shape && exb.shape
+    AND ST_Equals(lb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO h_adriatic.catchments
+SELECT *
+FROM filtered_basin;--67
+
+
+WITH last_basin AS (
+	SELECT DISTINCT ON (c.hybas_id) c.*
+	FROM tempo.hydro_small_catchments_europe AS c
 	JOIN ref.tr_fishingarea_fia AS er
 	ON ST_Intersects(c.shape, er.geom)
 	WHERE er.fia_division = ANY(ARRAY['27.2.b','27.1.b'])
@@ -3600,5 +3565,7 @@ filtered_basin AS (
 )
 INSERT INTO h_svalbard.catchments
 SELECT *
-FROM filtered_basin;--7
+FROM filtered_basin;--25
+
+
 
