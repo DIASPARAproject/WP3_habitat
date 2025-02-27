@@ -13,25 +13,25 @@ pg_connection = f"host={pg_host} port=5432 user={pg_user} password={pg_password}
 
 schemas = {
     "h_adriatic": ["catchments", "riversegments"],
-    "h_baltic_26_22": ["catchments", "riversegments"],
-    "h_baltic_3031": ["catchments", "riversegments"],
-    "h_baltic_3229_27": ["catchments", "riversegments"],
+    "h_baltic22to26": ["catchments", "riversegments"],
+    "h_baltic30to31": ["catchments", "riversegments"],
+    "h_baltic27to29_32": ["catchments", "riversegments"],
     "h_barent": ["catchments", "riversegments"],
-    "h_biscay_iberian": ["catchments", "riversegments"],
-    "h_black_sea": ["catchments", "riversegments"],
+    "h_biscayiberian": ["catchments", "riversegments"],
+    "h_blacksea": ["catchments", "riversegments"],
     "h_celtic": ["catchments", "riversegments"],
     "h_iceland": ["catchments", "riversegments"],
-    "h_med_central": ["catchments", "riversegments"],
-    "h_med_east": ["catchments", "riversegments"],
-    "h_med_west": ["catchments", "riversegments"],
+    "h_medcentral": ["catchments", "riversegments"],
+    "h_medeast": ["catchments", "riversegments"],
+    "h_medwest": ["catchments", "riversegments"],
     "h_norwegian": ["catchments", "riversegments"],
-    "h_nsea_north": ["catchments", "riversegments"],
-    "h_nsea_south": ["catchments", "riversegments"],
-    "h_nsea_uk": ["catchments", "riversegments"],
-    "h_south_atlantic": ["catchments", "riversegments"],
-    "h_south_med_central": ["catchments", "riversegments"],
-    "h_south_med_east": ["catchments", "riversegments"],
-    "h_south_med_west": ["catchments", "riversegments"],
+    "h_nseanorth": ["catchments", "riversegments"],
+    "h_nseasouth": ["catchments", "riversegments"],
+    "h_nseauk": ["catchments", "riversegments"],
+    "h_southatlantic": ["catchments", "riversegments"],
+    "h_southmed_central": ["catchments", "riversegments"],
+    "h_southmed_east": ["catchments", "riversegments"],
+    "h_southmed_west": ["catchments", "riversegments"],
     "h_svalbard": ["catchments", "riversegments"]
 }
 
@@ -56,4 +56,4 @@ for schema, tables in schemas.items():
         print(f"✅ Table {schema}.{table} dumped to {parquet_file}")
 
 con.close()
-print("All done !")
+print("✅ All done !")
