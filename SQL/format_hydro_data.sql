@@ -301,7 +301,7 @@ COMMENT ON COLUMN riveratlas.riveratlas_v10.hdi_ix_cav IS 'Average human develop
 --COMMENT ON COLUMN riveratlas.riveratlas_v10.ufid IS '';
 
 
-SELECT * FROM hydroa.catchments
+--SELECT * FROM hydroa.catchments;
 COMMENT ON TABLE hydroa.catchments IS 'Table of HydroATLAS basins level 12';
 COMMENT ON COLUMN hydroa.catchments."HYBAS_ID" IS 'Identifier of the basin';
 COMMENT ON COLUMN hydroa.catchments.next_down IS 'Identifier of the next downstream basin';
