@@ -62,3 +62,9 @@ R/data/*_xtml*.*
 R/_extensions/*
 R/assets/*
 credentials.yml
+
+# parquet dump
+Duckdb/*.parquet
+Duckdb/*.db
+Duckdb/*.duckdb
+Duckdb/*.cli
