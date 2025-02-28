@@ -1,7 +1,7 @@
 ---
 title: "diaspara habitat database creation script"
 subtitle: "DIASPARA WP3.1 working document"
-author: "Briand Cédric, Oliviéro Jules, Helminen Jani"
+author: "Oliviéro Jules, Briand Cédric,  Helminen Jani"
 date: last-modified
 date-format: "DD-MM-YYYY"
 description: "Design an international database of habitat of migratory fish, version = build"
