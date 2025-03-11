@@ -29,9 +29,9 @@ schemas = {
     "h_nseasouth": ["catchments", "riversegments"],
     "h_nseauk": ["catchments", "riversegments"],
     "h_southatlantic": ["catchments", "riversegments"],
-    "h_southmed_central": ["catchments", "riversegments"],
-    "h_southmed_east": ["catchments", "riversegments"],
-    "h_southmed_west": ["catchments", "riversegments"],
+    "h_southmedcentral": ["catchments", "riversegments"],
+    "h_southmedeast": ["catchments", "riversegments"],
+    "h_southmedwest": ["catchments", "riversegments"],
     "h_svalbard": ["catchments", "riversegments"]
 }
 
