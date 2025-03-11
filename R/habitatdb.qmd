@@ -1,7 +1,7 @@
 ---
 title: "diaspara habitat database creation script"
 subtitle: "DIASPARA WP3.1 working document"
-author: "Briand Cédric, Oliviéro Jules, Helminen Jani"
+author: "Oliviéro Jules, Briand Cédric, Helminen Jani"
 date: last-modified
 date-format: "DD-MM-YYYY"
 description: "Design an international database of habitat of migratory fish, version = build"
@@ -31,9 +31,9 @@ include-after-body: "footer.html"
 
 # Choice of 2 river networks
 To create the habitat database we decided to use two river networks in parallel.
-The Hydrological data and maps based on SHuttle Elevation Derivatives at multiple Scales (**HydroSHEDS**) and the European Catchments and RIvers Network System (**ECRINS**).
+The Hydrological data and maps based on SHuttle Elevation Derivatives at multiple Scales (**HydroSHEDS**) and **EU-Hydro** from Copernicus (European Union's Earth Observation Programme).
 
-**ECRINS**, being an European only dataset, will not include the Southern Mediterranean.
+**EU-Hydro**, being an European only dataset, will not include the Southern Mediterranean.
 
 # Data description
 ## HydroSHEDS
