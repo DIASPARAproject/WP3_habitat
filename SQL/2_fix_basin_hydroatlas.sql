@@ -3569,3 +3569,26 @@ FROM filtered_basin;--25
 
 
 --1:42:52 to run everything
+
+CREATE TABLE ref.riversegments (LIKE h_baltic30to31.riversegments);
+ALTER TABLE h_baltic30to31.riversegments INHERIT ref.riversegments;
+ALTER TABLE h_baltic22to26.riversegments INHERIT ref.riversegments;
+ALTER TABLE h_baltic27to29_32.riversegments INHERIT ref.riversegments;
+
+DROP TABLE IF EXISTS ref.catchments_baltic;
+CREATE TABLE ref.catchments_baltic (LIKE h_baltic30to31.catchments);
+ALTER TABLE h_baltic30to31.catchments INHERIT ref.catchments_baltic;
+ALTER TABLE h_baltic22to26.catchments INHERIT ref.catchments_baltic;
+ALTER TABLE h_baltic27to29_32.catchments INHERIT ref.catchments_baltic;
+
+
+CREATE TABLE ref.catchments_nas (LIKE h_barent.catchments);
+ALTER TABLE h_barent.catchments INHERIT ref.catchments_nas;
+ALTER TABLE h_biscayiberian.catchments INHERIT ref.catchments_nas;
+ALTER TABLE h_celtic.catchments INHERIT ref.catchments_nas;
+ALTER TABLE h_iceland.catchments INHERIT ref.catchments_nas;
+ALTER TABLE h_norwegian.catchments INHERIT ref.catchments_nas;
+ALTER TABLE h_nseanorth.catchments INHERIT ref.catchments_nas;
+ALTER TABLE h_nseasouth.catchments INHERIT ref.catchments_nas;
+ALTER TABLE h_nseauk.catchments INHERIT ref.catchments_nas;
+ALTER TABLE h_svalbard.catchments INHERIT ref.catchments_nas;
