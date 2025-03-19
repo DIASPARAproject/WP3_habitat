@@ -62,3 +62,5 @@ CREATE TABLE w2022.lakes AS(
 		WHERE ST_Intersects(l.geom,c.geom)
 	)
 ); --113
+
+
