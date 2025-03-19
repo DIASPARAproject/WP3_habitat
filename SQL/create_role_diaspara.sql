@@ -94,7 +94,7 @@ BEGIN
         -- Alter the owner of each table
         query := 'ALTER TABLE ' || schema_name_ident || '.' || tbl || ' OWNER TO ' || owner_  ;
        EXECUTE query;
-        --RAISE NOTICE 'query %', query;
+        RAISE NOTICE 'query %', query;
         count_ = count_ + 1;
    END LOOP;
       query1 := 'GRANT ALL ON SCHEMA ' || schema_name_ident || '  TO ' || owner_ ;
@@ -118,5 +118,6 @@ SELECT change_owner('h_norwegian', 'diaspara_admin');
 SELECT change_owner('h_nseanorth', 'diaspara_admin');
 SELECT change_owner('h_nseasouth', 'diaspara_admin');
 SELECT change_owner('h_nseauk', 'diaspara_admin');
-
-
+SELECT change_owner('h_biscayiberian', 'diaspara_admin');
+SELECT change_owner('ref', 'diaspara_admin');
+SELECT change_owner('janis', 'diaspara_admin');
