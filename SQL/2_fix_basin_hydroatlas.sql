@@ -1532,20 +1532,20 @@ CREATE INDEX idx_h_svalbard_riversegments ON h_svalbard.riversegments USING GIST
 
 
 
-CREATE SCHEMA h_barent;
-DROP TABLE IF EXISTS h_barent.riversegments;
-CREATE TABLE h_barent.riversegments AS (
+CREATE SCHEMA h_barents;
+DROP TABLE IF EXISTS h_barents.riversegments;
+CREATE TABLE h_barents.riversegments AS (
     SELECT DISTINCT ON (hre.geom) hre.*
     FROM tempo.hydro_riversegments_europe AS hre
     JOIN tempo.ices_ecoregions_barent AS ie
     ON hre.main_riv = ie.main_riv
 );--73691
 
-ALTER TABLE h_barent.riversegments
+ALTER TABLE h_barents.riversegments
 ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
 
-CREATE INDEX idx_h_barent_riversegments_main_riv ON h_barent.riversegments USING BTREE(main_riv);
-CREATE INDEX idx_h_barent_riversegments ON h_barent.riversegments USING GIST(geom);
+CREATE INDEX idx_h_barents_riversegments_main_riv ON h_barents.riversegments USING BTREE(main_riv);
+CREATE INDEX idx_h_barents_riversegments ON h_barents.riversegments USING GIST(geom);
 
 
 CREATE SCHEMA h_norwegian;
@@ -1799,7 +1799,7 @@ CREATE TABLE h_nseanorth.catchments AS (
     ON hce.shape && excluded.shape
     AND ST_Equals(hce.shape, excluded.shape)
     WHERE excluded.shape IS NULL
-);--1602
+);--1603
 
 ALTER TABLE h_nseanorth.catchments
 ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
@@ -1837,7 +1837,7 @@ CREATE TABLE h_nseasouth.catchments AS (
     ON hce.shape && excluded.shape
     AND ST_Equals(hce.shape, excluded.shape)
     WHERE excluded.shape IS NULL
-);--4592
+);--4595
 
 ALTER TABLE h_nseasouth.catchments
 ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
@@ -1889,7 +1889,7 @@ CREATE TABLE h_svalbard.catchments AS (
 	FROM tempo.hydro_small_catchments_europe AS hce
 	JOIN h_svalbard.riversegments AS rs
 	ON ST_Intersects(hce.shape,rs.geom)
-);--336
+);--343
 
 ALTER TABLE h_svalbard.catchments
 ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
@@ -1899,11 +1899,11 @@ CREATE INDEX idx_h_svalbard_catchments ON h_svalbard.catchments USING GIST(shape
 
 
 
-DROP TABLE IF EXISTS h_barent.catchments;
-CREATE TABLE h_barent.catchments AS (
+DROP TABLE IF EXISTS h_barents.catchments;
+CREATE TABLE h_barents.catchments AS (
 	SELECT DISTINCT ON (hce.hybas_id) hce.*
 	FROM tempo.hydro_small_catchments_europe AS hce
-	JOIN h_barent.riversegments AS rs
+	JOIN h_barents.riversegments AS rs
 	ON ST_Intersects(hce.shape,rs.geom)
 	LEFT JOIN (
         SELECT shape FROM h_baltic30to31.catchments
@@ -1915,11 +1915,11 @@ CREATE TABLE h_barent.catchments AS (
     WHERE excluded.shape IS NULL
 );--9838
 
-ALTER TABLE h_barent.catchments
+ALTER TABLE h_barents.catchments
 ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
 
-CREATE INDEX idx_h_barent_catchments_main_bas ON h_barent.catchments USING BTREE(main_bas);
-CREATE INDEX idx_h_barent_catchments ON h_barent.catchments USING GIST(shape);
+CREATE INDEX idx_h_barents_catchments_main_bas ON h_barents.catchments USING BTREE(main_bas);
+CREATE INDEX idx_h_barents_catchments ON h_barents.catchments USING GIST(shape);
 
 
 DROP TABLE IF EXISTS h_norwegian.catchments;
@@ -1931,7 +1931,7 @@ CREATE TABLE h_norwegian.catchments AS (
 	LEFT JOIN (
         SELECT shape FROM h_baltic30to31.catchments
         UNION ALL
-        SELECT shape FROM h_barent.catchments
+        SELECT shape FROM h_barents.catchments
         UNION ALL
         SELECT shape FROM h_nseanorth.catchments
     ) AS excluded
@@ -2195,7 +2195,7 @@ excluded_basins AS (
     FROM h_baltic27to29_32.catchments
     UNION ALL
     SELECT shape 
-    FROM h_barent.catchments
+    FROM h_barents.catchments
     UNION ALL
     SELECT shape 
     FROM h_nseanorth.catchments
@@ -2252,7 +2252,7 @@ excluded_basins AS (
     FROM h_baltic27to29_32.catchments
     UNION ALL
     SELECT shape 
-    FROM h_barent.catchments
+    FROM h_barents.catchments
     UNION ALL
     SELECT shape 
     FROM h_blacksea.catchments
@@ -2426,7 +2426,7 @@ excluded_basins AS (
     FROM h_baltic30to31.catchments
     UNION ALL
     SELECT shape 
-    FROM h_barent.catchments
+    FROM h_barents.catchments
     UNION ALL
     SELECT shape 
     FROM h_nseanorth.catchments
@@ -2465,7 +2465,7 @@ WHERE NOT EXISTS (
 DROP TABLE IF EXISTS tempo.oneendo_barent;
 CREATE TABLE tempo.oneendo_barent AS (
 	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.1,FALSE) geom
-	FROM h_barent.catchments AS ha);--351
+	FROM h_barents.catchments AS ha);--351
 CREATE INDEX idx_tempo_oneendo_barent ON tempo.oneendo_barent USING GIST(geom);
 	
 WITH endo_basins AS (	
@@ -2481,7 +2481,7 @@ excluded_basins AS (
     FROM h_baltic30to31.catchments
     UNION ALL
     SELECT shape 
-    FROM h_barent.catchments
+    FROM h_barents.catchments
     UNION ALL
     SELECT shape 
     FROM h_baltic27to29_32.catchments
@@ -2497,19 +2497,19 @@ filtered_basin AS (
     AND ST_Equals(eb.shape, exb.shape)
     WHERE exb.shape IS NULL
 )
-INSERT INTO h_barent.catchments
+INSERT INTO h_barents.catchments
 SELECT *
 FROM filtered_basin;--188
-
-INSERT INTO h_barent.riversegments
+SELECT * from h_barents.catchments;
+INSERT INTO h_barents.riversegments
 SELECT DISTINCT ON (r.hyriv_id) r.*
 FROM tempo.hydro_riversegments_europe r
-JOIN h_barent.catchments c
+JOIN h_barents.catchments c
 ON r.geom && c.shape
 AND ST_Intersects(r.geom, c.shape)
 WHERE NOT EXISTS (
     SELECT *
-    FROM h_barent.riversegments ex
+    FROM h_barents.riversegments ex
     WHERE r.geom && ex.geom
     AND ST_Equals(r.geom, ex.geom)
 );--1045
@@ -3553,7 +3553,7 @@ excluded_basins AS (
     FROM h_svalbard.catchments
     UNION ALL
     SELECT shape
-    FROM h_barent.catchments
+    FROM h_barents.catchments
 ),
 filtered_basin AS (
     SELECT lb.*
@@ -3582,8 +3582,8 @@ ALTER TABLE h_baltic22to26.catchments INHERIT ref.catchments_baltic;
 ALTER TABLE h_baltic27to29_32.catchments INHERIT ref.catchments_baltic;
 
 
-CREATE TABLE ref.catchments_nas (LIKE h_barent.catchments);
-ALTER TABLE h_barent.catchments INHERIT ref.catchments_nas;
+CREATE TABLE ref.catchments_nas (LIKE h_barents.catchments);
+ALTER TABLE h_barents.catchments INHERIT ref.catchments_nas;
 ALTER TABLE h_biscayiberian.catchments INHERIT ref.catchments_nas;
 ALTER TABLE h_celtic.catchments INHERIT ref.catchments_nas;
 ALTER TABLE h_iceland.catchments INHERIT ref.catchments_nas;
