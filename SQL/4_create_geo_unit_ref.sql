@@ -159,7 +159,7 @@ SELECT nextval('refnas.seq') AS are_id,
 	false AS are_ismarine,
 	ST_Union(shape) AS geom
 	FROM ref.catchments_nas
-	WHERE rtrim(tableoid::regclass::text, '.catchments') IN ('h_barent', 'h_biscayiberian', 'h_celtic', 'h_iceland',
+	WHERE rtrim(tableoid::regclass::text, '.catchments') IN ('h_barents', 'h_biscayiberian', 'h_celtic', 'h_iceland',
 															'h_norwegian', 'h_nseanorth', 'h_nseasouth', 'h_nseauk',
 															'h_svalbard');
 	
