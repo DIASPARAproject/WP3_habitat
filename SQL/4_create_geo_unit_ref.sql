@@ -168,7 +168,7 @@ SELECT nextval('refnas.seq') AS are_id,
 	false AS are_ismarine,
 	ST_Union(shape) AS geom
 	FROM ref.catchments_nas
-	WHERE rtrim(tableoid::regclass::text, '.catchments') IN ('h_barent', 'h_biscayiberian', 'h_celtic', 'h_iceland',
+	WHERE rtrim(tableoid::regclass::text, '.catchments') IN ('h_barents', 'h_biscayiberian', 'h_celtic', 'h_iceland',
 															'h_norwegian', 'h_nseanorth', 'h_nseasouth', 'h_nseauk',
 															'h_svalbard');
 	
@@ -179,7 +179,40 @@ SELECT nextval('refnas.seq') AS are_id,
 --SELECT tableoid::regclass::text AS table_name
 --FROM ref.catchments;
 
+														
+-- finding a way to add names to baltic rivers
+WITH add_names AS (
+    SELECT DISTINCT 
+        c.shape, 
+        c.main_bas, 
+        r."Name" AS river_name
+    FROM h_baltic30to31.catchments c
+    JOIN janis.reared_salmon_rivers_accessible_sections r
+        ON ST_Intersects(r.geom, c.shape)
+    WHERE c.order_ = 1
+    UNION ALL
+    SELECT DISTINCT 
+        c.shape, 
+        c.main_bas, 
+        w."Name" AS river_name
+    FROM h_baltic30to31.catchments c
+    JOIN janis.wild_salmon_rivers_accessible_sections w
+        ON ST_Intersects(w.geom, c.shape)
+    WHERE c.order_ = 1
+),
+basin_names AS(
+	SELECT c.shape, c.main_bas, a.river_name AS river_name
+    FROM h_baltic30to31.catchments c
+    INNER JOIN add_names a ON c.main_bas = a.main_bas
+    WHERE c.order_ = 1
+)
+SELECT DISTINCT ON (shape) * FROM basin_names;
 
 
 
-	
+
+SELECT * FROM h_baltic30to31.catchments c 
+WHERE C.order_ = 1;
+SELECT * FROM h_baltic30to31.riversegments r 
+WHERE r.ord_clas = 1;
+
