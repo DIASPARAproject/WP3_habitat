@@ -1,0 +1,47 @@
+---
+title: "Load habitat data from ZENODO"
+subtitle: "DIASPARA WP3.1 working document"
+author: "Oliviéro Jules, Briand Cédric,  Helminen Jani"
+date: last-modified
+date-format: "DD-MM-YYYY"
+description: "Scripts to download data from ZENODO to R, version = beta 0"
+title-block-banner: "images/diaspara_bandeau.png"
+title-block-banner-color: "white"
+format:
+ html:
+  code-fold: true
+  code-tools: true
+  self-contained: true
+  theme: styles.scss
+  smooth-scroll: true
+  fontcolor: black
+  toc: true
+  toc-location: left
+  toc-title: Summary
+  toc-depth: 3
+execute: 
+ keep-md: true
+filters:
+  - include-code-files
+reference-location: document
+bibliography: diaspara.bib
+include-after-body: "footer.html"
+---
+
+
+
+# Introduction
+
+This script enables to download the habitat database version beta 0.
+Version beta zero 
+
+
+
+The Hydrological data and maps based on SHuttle Elevation Derivatives at multiple Scales (**HydroSHEDS**) and the European Catchments and RIvers Network System (**ECRINS**).
+
+**ECRINS**, being an European only dataset, will not include the Southern Mediterranean.
+
+# Data description
+## HydroSHEDS
+**HydroSHEDS** is a global database providing high-resolution hydrographic data derived from NASA's Shuttle Radar Topography Mission (SRTM). Covering most land areas, it offers structured datasets for hydrological modeling, watershed analysis, and environmental research. The data is available at resolutions up to 3 arc-seconds (~90m) in raster (GeoTIFF) and vector (shapefiles,geodatabases) formats. 
+We opted to use the geodatabases format. It includes river networks, watershed boundaries, drainage directions, and flow accumulation. Core products include **HydroBASINS** for watershed boundaries, **HydroRIVERS** for river networks, **HydroLAKES** for lakes and reservoirs, and **HydroATLAS**, which adds environmental attributes.
