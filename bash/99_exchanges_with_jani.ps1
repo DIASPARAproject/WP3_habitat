@@ -38,10 +38,11 @@ pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostdi
 pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostdiaspara}/diaspara --schema h_baltic27to29_32 -v | psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@${127.0.0.1}/diaspara
 pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostdiaspara}/diaspara --schema h_baltic30to31 -v | psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@${127.0.0.1}/diaspara
 pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostdiaspara}/diaspara --schema h_biscayiberian -v | psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@${127.0.0.1}/diaspara
+pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostdiaspara}/diaspara --schema h_blacksea -v | psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@${127.0.0.1}/diaspara
 
+#OR as a list
 
 $schemas = @(
-    "h_blacksea",
     "h_celtic",
     "h_iceland",
     "h_medcentral",
@@ -63,6 +64,7 @@ $schemas = @(
 foreach ($schema in $schemas) {
     pg_dump --dbname="postgresql://${env:usermercure}:${env:passmercure}@${env:hostdiaspara}/diaspara" --schema $schema -v | psql --dbname="postgresql://${env:userlocal}:${env:passlocal}@127.0.0.1/diaspara"
 }
+
 
 
 
