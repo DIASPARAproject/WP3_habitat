@@ -30,7 +30,8 @@ CREATE SEQUENCE refbast.seq;
 --DELETE FROM refbast.tr_area_are;
 
 ALTER SEQUENCE refbast.seq RESTART WITH 1;
-
+ALTER SEQUENCE refbast.seq OWNER TO diaspara_admin;
+ALTER TABLE refbast.tr_area_are OWNER TO diaspara_admin;
 
 -- Jules I don't see how this one can work when there is nothing in area yet
 -- I tested it on my local server and it does not work
@@ -58,7 +59,7 @@ SELECT
   'Stock' AS are_lev_code,
   --are_wkg_code,  by default
   NULL AS are_ismarine,
-  geom
+  ST_Multi(geom)
   FROM filtered_polygon;
 
 INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
@@ -83,11 +84,20 @@ SELECT nextval('refbast.seq') AS are_id,
 	FROM ref.catchments_baltic
 	WHERE rtrim(tableoid::regclass::text, '.catchments') IN ('h_baltic30to31', 'h_baltic22to26', 'h_baltic27to29_32');
 
+SELECT ST_GeometryType(geom)	 FROM refbast.tr_area_are
+	
+	
+ALTER SEQUENCE refbast.seq RESTART WITH 4;
 
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+SELECT nextval('refbast.seq') AS are_id,
+1 AS are_are_id,
 --SELECT * FROM tempo.
 
 
 
+	
+	--- NAS 
 
 -- Creating NAS Stock Unit
 
@@ -117,7 +127,7 @@ ADD CONSTRAINT fk_area_wkg_code FOREIGN KEY (are_wkg_code) REFERENCES
 DROP SEQUENCE IF EXISTS refnas.seq;
 CREATE SEQUENCE refnas.seq;
 
-ALTER SEQUENCE refbast.seq RESTART WITH 1;
+ALTER SEQUENCE refnas.seq RESTART WITH 1;
 INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
 WITH unioned_polygons AS (
 	SELECT (ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(geom))).geom)),0.0001,FALSE)) AS geom
