@@ -68,3 +68,8 @@ Duckdb/*.parquet
 Duckdb/*.db
 Duckdb/*.duckdb
 Duckdb/*.cli
+Scripts/Script.sql
+
+
+/janis_variables_do_not_commit.ps1
+bash/jani_variables_do_not_commit.ps1
