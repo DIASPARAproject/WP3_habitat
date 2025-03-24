@@ -1,4 +1,4 @@
-﻿# test
+# test
 #env:userjules
 # env:test = 'test' -- to set variables before the script without admin access to path
 # env:userjules
