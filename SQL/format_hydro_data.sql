@@ -910,3 +910,49 @@ COMMENT ON COLUMN hydroa.lakes.hdi_ix_cav IS 'Average human development index in
 --COMMENT ON COLUMN hydroa.lakes.ufid IS '';
 
 
+COMMENT ON TABLE e_gota."euhydro_gota_v013 — River_Net_l" IS 'Table for river network data from EU-Hydro';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."OBJECTID" IS 'Non-unique identifier for the segment';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l".geom IS 'Geometry';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."DFDD" IS 'DGIWG Feature Data Dictionary';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."RN_I_ID" IS 'Connector between line and area data if any overlapping polygon feature exists';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."REX" IS 'Defines the country a hydrological feature is located in';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."HYP" IS 'Degree of persistence of water 1 (perennial) to 4 (dry)';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."LOC" IS 'Vertical position of a hydrological feature relative to the ground surface. Below (40), on (44) or above (45) surface';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."FUN" IS 'The state of planning, construction, repair, and or maintenance of the structures 
+and / or equipment comprising a facility and/or located at a site, as a whole.';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."NVS" IS 'Navigability information';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."LENGTH" IS 'Length of the corresponding line segment in km';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."TR" IS 'Segment ID transferred from the attribute TR in ECRINS if possible, NA otherwise';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."LONGPATH" IS 'Longest path from a mouth, which is not capturing all rivers from the same mouth';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."CUM_LEN" IS 'Cumulated length of all segments upstream in m';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."PENTE" IS 'Slope computed from the EU DEM according to the formula “highest z-value minus lowest
+z-value divided by the length of the line”';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."CGNELIN" IS 'Warning: Incomplete, not updated';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."BEGLIFEVER" IS 'Specifies the date and time at which this version of the
+spatial object was inserted into the data set';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."ENDLIFEVER" IS 'Specifies the date and time at which this version of the
+spatial object was superseded';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."UPDAT_BY" IS 'ID of the updater';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."UPDAT_WHEN" IS 'Date of update';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."ERM_ID" IS 'National Hydrological Identification Code (NHI), transferred from ERM';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."MC" IS 'Watercourse Channel Type. Braided (0) or normal (1)';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."MONOT_Z" IS '0: z-values of the feature do not decrease monotonically along the flow direction
+1: z-values of the feature decrease monotonically along the flow direction';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."LENGTH_GEO" IS 'Feature length (geodetic) in meters. In contrast to the internally managed
+SHAPE_LENGTH attribute, the value of thisattribute is not influenced by the projection settings';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."INSPIRE_ID" IS 'External identifier of the spatial object';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."thematicId" IS 'European WFD code. Transferred from the WISE geospatial dataset';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."OBJECT_ID" IS 'Unique identifier for the segment';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."TNODE" IS 'Downstream node OBJECT_ID';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."STRAHLER" IS 'Strahler level of the segment';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."nameTxtInt" IS 'English version of the name of the geographical feature or spatial object,
+extracted from WISE geospatial dataset';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."nameText" IS 'Name in a national language, extracted from WISE geospatial dataset';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."NEXTUPID" IS 'OBJECT_ID of the previous line object (Canals, River or Ditches) 
+in the upstream direction';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."NEXTDOWNID" IS 'OBJECT_ID of the previous line object (Canals, River or Ditches) 
+in the downstream direction';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."FNODE" IS 'Upstream node OBJECT_ID';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."CatchID" IS 'Number indicating a Catchment ID';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."Shape_Length" IS 'Feature length in meters in case of line geometries';
+COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."PFAFSTETTER" IS 'Pfafstetter indicator';
