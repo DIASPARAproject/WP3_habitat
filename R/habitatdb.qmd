@@ -35,8 +35,8 @@ The Hydrological data and maps based on SHuttle Elevation Derivatives at multipl
 
 **EU-Hydro**, being an European only dataset, will not include the Southern Mediterranean.
 
-# Data description
-## HydroSHEDS
+# HydroSHEDS
+## Data description
 **HydroSHEDS** is a global database providing high-resolution hydrographic data derived from NASA's Shuttle Radar Topography Mission (SRTM). Covering most land areas, it offers structured datasets for hydrological modeling, watershed analysis, and environmental research. The data is available at resolutions up to 3 arc-seconds (~90m) in raster (GeoTIFF) and vector (shapefiles,geodatabases) formats. 
 We opted to use the geodatabases format. It includes river networks, watershed boundaries, drainage directions, and flow accumulation. Core products include **HydroBASINS** for watershed boundaries, **HydroRIVERS** for river networks, **HydroLAKES** for lakes and reservoirs, and **HydroATLAS**, which adds environmental attributes.
 
@@ -701,3 +701,18 @@ FROM filtered_basin;
 ![Map of catchemnts on the Baltic without missing islands basins.](images/fig-full_baltic2732.png "A view of the Baltic without missing islands"){#fig-full_baltic2732}
 
 ![Final map of catchments from HydroSHEDS split into ICES areas and ecoregions.](images/fig-final.png "A view of Europe and Northern Africa catchments"){#fig-final}
+
+
+# EU-Hydro
+## Data description
+
+WIP
+
+
+# Acknowlegment
+
+HydroSHEDS : Lehner, B., Verdin, K., Jarvis, A. (2008). New global hydrography derived from spaceborne elevation data. Eos, Transactions, American Geophysical Union, 89(10): 93–94. https://doi.org/10.1029/2008eo100001
+
+EU-Hydro : COPERNICUS Land Monitoring Service, 2019: EU-Hydro. Last access: 24/03/2025
+https://land.copernicus.eu/imagery-in-situ/eu-hydro
+
