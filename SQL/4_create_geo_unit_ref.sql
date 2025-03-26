@@ -114,7 +114,7 @@ SELECT insert_country_baltic('Lithuania',8);
 SELECT insert_country_baltic('Poland',9);
 SELECT insert_country_baltic('Germany',10);
 SELECT insert_country_baltic('Denmark',11);
-
+SELECT insert_country_baltic('Russia',12);
 
 -- Test for Country level
 --ALTER SEQUENCE refbast.seq RESTART WITH 4;
@@ -176,34 +176,8 @@ SELECT insert_country_baltic('Denmark',11);
 INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
 WITH unit_selection AS (
 	SELECT trc.geom AS geom, trc.main_riv
-	FROM tempo.riversegments_baltic trc, janis.assessment_units jau
-	WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."AU" = 1
-),
-retrieve_rivers AS(
-	SELECT DISTINCT trc.geom
-	FROM tempo.riversegments_baltic trc, unit_selection us
-	WHERE trc.main_riv IN (SELECT main_riv FROM unit_selection)
-),
-retrieve_catchments AS (
-	SELECT DISTINCT ST_Union(tbc.shape) AS geom
-	FROM tempo.catchments_baltic tbc, retrieve_rivers rr
-	WHERE ST_Intersects(tbc.shape,rr.geom)
-)
-SELECT nextval('refbast.seq') AS are_id,
-		12 AS are_are_id,
-		'Northeastern Bothnian Bay' AS are_code,
-		'Assessment_unit' AS are_lev_code,
-		--are_wkg_code,
-		false AS is_marine,
-		ST_Union(geom) AS geom
-		FROM retrieve_catchments;
-	
-	
-INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
-WITH unit_selection AS (
-	SELECT trc.geom AS geom, trc.main_riv
-	FROM tempo.riversegments_baltic trc, janis.assessment_units jau
-	WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."AU" = 2
+	FROM tempo.riversegments_baltic trc, janis.bast_assessment_units jau
+	WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."Ass_unit" = 1
 ),
 retrieve_rivers AS(
 	SELECT DISTINCT trc.geom
@@ -217,19 +191,19 @@ retrieve_catchments AS (
 )
 SELECT nextval('refbast.seq') AS are_id,
 		13 AS are_are_id,
-		'Western Bothnian Bay' AS are_code,
+		'Northeastern Bothnian Bay' AS are_code,
 		'Assessment_unit' AS are_lev_code,
 		--are_wkg_code,
 		false AS is_marine,
 		ST_Union(geom) AS geom
 		FROM retrieve_catchments;
-
+	
 	
 INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
 WITH unit_selection AS (
 	SELECT trc.geom AS geom, trc.main_riv
-	FROM tempo.riversegments_baltic trc, janis.assessment_units jau
-	WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."AU" = 3
+	FROM tempo.riversegments_baltic trc, janis.bast_assessment_units jau
+	WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."Ass_unit" = 2
 ),
 retrieve_rivers AS(
 	SELECT DISTINCT trc.geom
@@ -243,7 +217,7 @@ retrieve_catchments AS (
 )
 SELECT nextval('refbast.seq') AS are_id,
 		14 AS are_are_id,
-		'Bothnian Sea' AS are_code,
+		'Western Bothnian Bay' AS are_code,
 		'Assessment_unit' AS are_lev_code,
 		--are_wkg_code,
 		false AS is_marine,
@@ -254,8 +228,8 @@ SELECT nextval('refbast.seq') AS are_id,
 INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
 WITH unit_selection AS (
 	SELECT trc.geom AS geom, trc.main_riv
-	FROM tempo.riversegments_baltic trc, janis.assessment_units jau
-	WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."AU" = 4
+	FROM tempo.riversegments_baltic trc, janis.bast_assessment_units jau
+	WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."Ass_unit" = 3
 ),
 retrieve_rivers AS(
 	SELECT DISTINCT trc.geom
@@ -269,19 +243,19 @@ retrieve_catchments AS (
 )
 SELECT nextval('refbast.seq') AS are_id,
 		15 AS are_are_id,
-		'Western Main Basin' AS are_code,
+		'Bothnian Sea' AS are_code,
 		'Assessment_unit' AS are_lev_code,
 		--are_wkg_code,
 		false AS is_marine,
 		ST_Union(geom) AS geom
 		FROM retrieve_catchments;
-	
+
 	
 INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
 WITH unit_selection AS (
 	SELECT trc.geom AS geom, trc.main_riv
-	FROM tempo.riversegments_baltic trc, janis.assessment_units jau
-	WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."AU" = 5
+	FROM tempo.riversegments_baltic trc, janis.bast_assessment_units jau
+	WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."Ass_unit" = 4
 ),
 retrieve_rivers AS(
 	SELECT DISTINCT trc.geom
@@ -295,21 +269,19 @@ retrieve_catchments AS (
 )
 SELECT nextval('refbast.seq') AS are_id,
 		16 AS are_are_id,
-		'Eastern Main Basin' AS are_code,
+		'Western Main Basin' AS are_code,
 		'Assessment_unit' AS are_lev_code,
 		--are_wkg_code,
 		false AS is_marine,
 		ST_Union(geom) AS geom
 		FROM retrieve_catchments;
-
-
-
-
+	
+	
 INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
 WITH unit_selection AS (
 	SELECT trc.geom AS geom, trc.main_riv
-	FROM tempo.riversegments_baltic trc, janis.assessment_units jau
-	WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."AU" = 6
+	FROM tempo.riversegments_baltic trc, janis.bast_assessment_units jau
+	WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."Ass_unit" = 5
 ),
 retrieve_rivers AS(
 	SELECT DISTINCT trc.geom
@@ -323,6 +295,34 @@ retrieve_catchments AS (
 )
 SELECT nextval('refbast.seq') AS are_id,
 		17 AS are_are_id,
+		'Eastern Main Basin' AS are_code,
+		'Assessment_unit' AS are_lev_code,
+		--are_wkg_code,
+		false AS is_marine,
+		ST_Union(geom) AS geom
+		FROM retrieve_catchments;
+
+
+
+
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+WITH unit_selection AS (
+	SELECT trc.geom AS geom, trc.main_riv
+	FROM tempo.riversegments_baltic trc, janis.bast_assessment_units jau
+	WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."Ass_unit" = 6
+),
+retrieve_rivers AS(
+	SELECT DISTINCT trc.geom
+	FROM tempo.riversegments_baltic trc, unit_selection us
+	WHERE trc.main_riv IN (SELECT main_riv FROM unit_selection)
+),
+retrieve_catchments AS (
+	SELECT DISTINCT ST_Union(tbc.shape) AS geom
+	FROM tempo.catchments_baltic tbc, retrieve_rivers rr
+	WHERE ST_Intersects(tbc.shape,rr.geom)
+)
+SELECT nextval('refbast.seq') AS are_id,
+		18 AS are_are_id,
 		'Gulf of Finland' AS are_code,
 		'Assessment_unit' AS are_lev_code,
 		--are_wkg_code,
@@ -331,6 +331,107 @@ SELECT nextval('refbast.seq') AS are_id,
 		FROM retrieve_catchments;
 	
 	
+-- ICES Major
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+WITH select_major AS (
+	SELECT geom FROM ref.tr_fishingarea_fia tff
+	WHERE tff.fia_level = 'Major' AND fia_code = '27'
+)
+SELECT nextval('refbast.seq') AS are_id,
+		19 AS are_are_id,
+		'27' AS are_code,
+		'Major' AS are_lev_code,
+		--are_wkg_code,
+		true AS is_marine,
+		geom AS geom
+		FROM select_major;
+	
+-- ICES Subareas
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+WITH select_subarea AS (
+	SELECT geom FROM ref.tr_fishingarea_fia tff
+	WHERE tff.fia_level = 'Subarea' AND tff.fia_code = '27.3'
+)
+SELECT nextval('refbast.seq') AS are_id,
+		20 AS are_are_id,
+		'27.3' AS are_code,
+		'Subarea' AS are_lev_code,
+		--are_wkg_code,
+		true AS is_marine,
+		geom AS geom
+		FROM select_subarea;
+	
+	
+-- ICES Divisions
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+WITH select_division AS (
+	SELECT geom FROM ref.tr_fishingarea_fia tff
+	WHERE tff.fia_level = 'Division' AND tff.fia_division = '27.3.b, c'
+)
+SELECT nextval('refbast.seq') AS are_id,
+		21 AS are_are_id,
+		'27.3.b, c' AS are_code,
+		'Division' AS are_lev_code,
+		--are_wkg_code,
+		true AS is_marine,
+		geom AS geom
+		FROM select_division;
+
+
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+WITH select_division AS (
+	SELECT geom FROM ref.tr_fishingarea_fia tff
+	WHERE tff.fia_level = 'Division' AND tff.fia_division = '27.3.d'
+)
+SELECT nextval('refbast.seq') AS are_id,
+		22 AS are_are_id,
+		'27.3.d' AS are_code,
+		'Division' AS are_lev_code,
+		--are_wkg_code,
+		true AS is_marine,
+		geom AS geom
+		FROM select_division;
+
+-- ICES subdivision
+	
+DROP FUNCTION IF EXISTS insert_fishing_subdivision(subdiv TEXT, p_are_are_id INT);
+CREATE OR REPLACE FUNCTION insert_fishing_subdivision(subdiv TEXT, p_are_are_id INT)
+RETURNS VOID AS 
+$$
+DECLARE 
+  p_are_code TEXT;
+BEGIN
+  p_are_code := '27.3.' || subdiv;
+
+  EXECUTE '
+    INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+    WITH select_subdivision AS (
+      SELECT geom FROM ref.tr_fishingarea_fia tff 
+      WHERE tff.fia_level = ''Subdivision'' AND tff.fia_subdivision = ''' || p_are_code || '''
+    )
+    SELECT nextval(''refbast.seq'') AS are_id,
+           ' || p_are_are_id || ' AS are_are_id,
+           ''' || p_are_code || ''' AS are_code,
+           ''Subdivision'' AS are_lev_code,
+           true AS is_marine,
+           geom AS geom
+    FROM select_subdivision;
+  ';
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT insert_fishing_subdivision('d.31', 23);
+SELECT insert_fishing_subdivision('d.30', 24);
+SELECT insert_fishing_subdivision('d.32', 25);
+SELECT insert_fishing_subdivision('d.27', 26);
+SELECT insert_fishing_subdivision('d.28', 27);
+SELECT insert_fishing_subdivision('d.29', 28);
+SELECT insert_fishing_subdivision('d.24', 29);
+SELECT insert_fishing_subdivision('d.25', 30);
+SELECT insert_fishing_subdivision('d.26', 31);
+SELECT insert_fishing_subdivision('c.22', 32);
+SELECT insert_fishing_subdivision('b.23', 33);
+
 SELECT * FROM refbast.tr_area_are;
 	--- NAS 
 
