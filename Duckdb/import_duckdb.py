@@ -16,7 +16,7 @@ schemas = {
     "h_baltic22to26": ["catchments", "riversegments"],
     "h_baltic30to31": ["catchments", "riversegments"],
     "h_baltic27to29_32": ["catchments", "riversegments"],
-    "h_barent": ["catchments", "riversegments"],
+    "h_barents": ["catchments", "riversegments"],
     "h_biscayiberian": ["catchments", "riversegments"],
     "h_blacksea": ["catchments", "riversegments"],
     "h_celtic": ["catchments", "riversegments"],
