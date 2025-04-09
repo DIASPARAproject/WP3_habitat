@@ -116,63 +116,9 @@ SELECT insert_country_baltic('Germany');
 SELECT insert_country_baltic('Denmark');
 SELECT insert_country_baltic('Russia');
 
--- Test for Country level
---ALTER SEQUENCE refbast.seq RESTART WITH 4;
---INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
---WITH country_selection AS (
---	SELECT ST_Union(tbc.shape) AS geom, rc.cou_country
---		FROM tempo.catchments_baltic tbc
---		JOIN ref.tr_country_cou rc 
---		ON ST_Intersects(tbc.shape, rc.geom)
---		WHERE rc.cou_country = 'Finland'
---		GROUP BY rc.cou_country
---)
---SELECT nextval('refbast.seq') AS are_id,
---	nextval('refbast.seq') AS are_are_id,
---	'Finland' AS are_code,
---	'Country' AS are_lev_code,
---	--are_wkg_code,
---	false AS is_marine,
---	geom AS geom
---	FROM country_selection;
---
---
---
---SELECT tbc.shape, rc.cou_country
---	FROM tempo.catchments_baltic tbc, ref.tr_country_cou rc
---	WHERE ST_Intersects(tbc.shape,rc.geom) AND rc.cou_country = 'Sweden'
---
---	
---SELECT tbc.shape, rc.cou_country
---	FROM tempo.catchments_baltic tbc, ref.tr_country_cou rc
---	WHERE ST_Intersects(tbc.shape,rc.geom) AND rc.cou_country = 'Denmark'
---	
---SELECT tbc.shape, rc.cou_country
---	FROM tempo.catchments_baltic tbc, ref.tr_country_cou rc
---	WHERE ST_Intersects(tbc.shape,rc.geom) AND rc.cou_country = 'Estonia'
---	
---SELECT tbc.shape, rc.cou_country
---	FROM tempo.catchments_baltic tbc, ref.tr_country_cou rc
---	WHERE ST_Intersects(tbc.shape,rc.geom) AND rc.cou_country = 'Latvia'
---	
---SELECT tbc.shape, rc.cou_country
---	FROM tempo.catchments_baltic tbc, ref.tr_country_cou rc
---	WHERE ST_Intersects(tbc.shape,rc.geom) AND rc.cou_country = 'Lithuania'
---	
---SELECT tbc.shape, rc.cou_country
---	FROM tempo.catchments_baltic tbc, ref.tr_country_cou rc
---	WHERE ST_Intersects(tbc.shape,rc.geom) AND rc.cou_country = 'Poland'
---	
---SELECT tbc.shape, rc.cou_country
---	FROM tempo.catchments_baltic tbc, ref.tr_country_cou rc
---	WHERE ST_Intersects(tbc.shape,rc.geom) AND rc.cou_country = 'Germany'
 	
-	
-	
-	
-	
-	
--- Test for assessment unit level
+--Assessment unit level
+
 INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
 WITH unit_selection AS (
 	SELECT trc.geom AS geom, trc.main_riv
@@ -568,7 +514,12 @@ SELECT insert_fishing_subdivision('c.22', 21);
 SELECT insert_fishing_subdivision('b.23', 21);
 
 SELECT * FROM refbast.tr_area_are;
-	--- NAS 
+
+
+
+
+
+---------------------------- NAS -------------------------------------
 
 -- Creating NAS Stock Unit
 
@@ -598,32 +549,10 @@ ADD CONSTRAINT fk_area_wkg_code FOREIGN KEY (are_wkg_code) REFERENCES
 DROP SEQUENCE IF EXISTS refnas.seq;
 CREATE SEQUENCE refnas.seq;
 
-ALTER SEQUENCE refnas.seq RESTART WITH 1;
-INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
-WITH unioned_polygons AS (
-	SELECT (ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(geom))).geom)),0.0001,FALSE)) AS geom
-	FROM refnas.tr_area_are
-),
-area_check AS (
-	SELECT geom, ST_Area(geom) AS area
-	FROM unioned_polygons
-),
-filtered_polygon AS (
-	SELECT geom
-	FROM area_check
-	WHERE area > 1
-)
-SELECT 
-	nextval('refnas.seq') AS are_id,
-	NULL AS are_are_id,
-	'NEAC' AS are_code,
-	'Stock' AS are_lev_code,
-	--are_wkg_code,  by default
-	NULL AS are_ismarine,
-	geom
-	FROM filtered_polygon;
+INSERT INTO refnas.tr_area_are (are_id, are_code, are_lev_code, are_ismarine, geom)
+VALUES (1, 'Temporary Parent', 'Stock', true, NULL);
 
-
+ALTER SEQUENCE refnas.seq RESTART WITH 2;
 
 INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
 WITH selected_level AS (
@@ -656,13 +585,80 @@ WHERE REGEXP_REPLACE(tableoid::regclass::text, '\.catchments$', '') IN (
 
 
 
-SELECT DISTINCT rtrim(tableoid::regclass::text, '.catchments') AS table_name
-FROM tempo.catchments_nas;
-SELECT tableoid::regclass::text AS table_name
-FROM ref.catchments;
+WITH unioned_polygons AS (
+  SELECT (ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(geom))).geom)),0.0001,FALSE)) AS geom
+  FROM refnas.tr_area_are
+),
+area_check AS (
+  SELECT geom, ST_Area(geom) AS area
+  FROM unioned_polygons
+),
+filtered_polygon AS (
+  SELECT geom
+  FROM area_check
+  WHERE area > 1
+)
+UPDATE refnas.tr_area_are
+SET 
+  are_are_id = NULL,
+  are_code = 'NEAC',
+  are_lev_code = 'Stock',
+  are_ismarine = NULL,
+  geom = (SELECT ST_Multi(geom) FROM filtered_polygon)
+WHERE are_id = 1;
+
+
+
+------------------------------- Country level -------------------------------
+DROP FUNCTION IF EXISTS insert_country_nas(country TEXT);
+CREATE OR REPLACE FUNCTION insert_country_nas(country TEXT)
+RETURNS VOID AS 
+$$
+BEGIN
+  EXECUTE '
+    INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+    WITH country_selection AS (
+      SELECT ST_Union(tbc.shape) AS geom, rc.cou_country
+      FROM tempo.catchments_nas tbc
+      JOIN ref.tr_country_cou rc 
+      ON ST_Intersects(tbc.shape, rc.geom)
+      WHERE rc.cou_country = ''' || country || '''
+      GROUP BY rc.cou_country
+    )
+    SELECT nextval(''refnas.seq'') AS are_id,
+           3 AS are_are_id,
+           ''' || country || ''' AS are_code,
+           ''Country'' AS are_lev_code,
+           false AS are_ismarine,
+           geom AS geom
+    FROM country_selection;
+  ';
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT insert_country_nas('Finland');
+SELECT insert_country_nas('Sweden');
+SELECT insert_country_nas('Norway');
+SELECT insert_country_nas('France');
+SELECT insert_country_nas('Svalbard');
+SELECT insert_country_nas('Spain');
+SELECT insert_country_nas('Germany');
+SELECT insert_country_nas('Denmark');
+SELECT insert_country_nas('Russia');
+SELECT insert_country_nas('Portugal');
+SELECT insert_country_nas('Netherlands');
+SELECT insert_country_nas('Belgium');
+SELECT insert_country_nas('Ireland');
+SELECT insert_country_nas('Iceland');
+SELECT insert_country_nas('Great Britain');
+SELECT insert_country_nas('Svalbard and Jan Mayen');
+SELECT insert_country_nas('Luxembourg');
+SELECT insert_country_nas('Czech republic');
+
+
 
 														
--- finding a way to add names to baltic rivers
+--------------------- finding a way to add names to baltic rivers --------------------------
 WITH add_names AS (
     SELECT DISTINCT 
         c.shape, 
