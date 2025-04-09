@@ -615,7 +615,7 @@ filtered_polygon AS (
 )
 SELECT 
 	nextval('refnas.seq') AS are_id,
-	1 AS are_are_id,
+	NULL AS are_are_id,
 	'NEAC' AS are_code,
 	'Stock' AS are_lev_code,
 	--are_wkg_code,  by default
@@ -645,20 +645,21 @@ SELECT nextval('refnas.seq') AS are_id,
 	1 AS are_are_id,
 	'NEAC inland' AS are_code,
 	'Stock' AS are_lev_code,
-	--are_wkg_code,  by default
 	false AS are_ismarine,
 	ST_Union(shape) AS geom
-	FROM ref.catchments_nas
-	WHERE rtrim(tableoid::regclass::text, '.catchments') IN ('h_barents', 'h_biscayiberian', 'h_celtic', 'h_iceland',
-															'h_norwegian', 'h_nseanorth', 'h_nseasouth', 'h_nseauk',
-															'h_svalbard');
-	
+FROM tempo.catchments_nas
+WHERE REGEXP_REPLACE(tableoid::regclass::text, '\.catchments$', '') IN (
+	'h_barents', 'h_biscayiberian', 'h_celtic', 'h_iceland',
+	'h_norwegian', 'h_nseanorth', 'h_nseasouth', 'h_nseauk',
+	'h_svalbard'
+);
 
 
---SELECT DISTINCT trim(tableoid::regclass::text, '.catchments') AS table_name
---FROM ref.catchments_nas;
---SELECT tableoid::regclass::text AS table_name
---FROM ref.catchments;
+
+SELECT DISTINCT rtrim(tableoid::regclass::text, '.catchments') AS table_name
+FROM tempo.catchments_nas;
+SELECT tableoid::regclass::text AS table_name
+FROM ref.catchments;
 
 														
 -- finding a way to add names to baltic rivers
