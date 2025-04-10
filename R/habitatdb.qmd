@@ -702,6 +702,365 @@ FROM filtered_basin;
 ![Final map of catchments from HydroSHEDS split into ICES areas and ecoregions.](images/fig-final.png "A view of Europe and Northern Africa catchments"){#fig-final}
 
 
+## Creating a hierarchical structure 
+
+```{dot}
+//| label: fig-area_hierarchy
+//| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table will be created specifically for each group.
+
+
+digraph {
+    compound=true;
+    newrank=true;
+
+    subgraph clusterA {
+      label = Panpopulation
+      style=full
+      color=black
+      center=true
+
+      subgraph clusterB {
+        label = Complex
+        style=dashed
+        color=black
+        center=true
+
+              subgraph clusterC {
+              label = Stock
+              style=dashed
+              color=black
+              center=true
+    
+                subgraph clusterD {
+                  label = Country
+                  style=dashed
+                  color=firebrick
+                  fontcolor=firebrick
+                  center=true
+
+                  subgraph clusterE {
+                    label = Assessment_unit
+                    style=full
+                    color=green 
+                    fontcolor=green
+                    
+                      subgraph clusterF {
+                        label = Regional;
+                        style=dashed
+                        color=green4
+                        fontcolor=green4
+                        
+                          subgraph clusterG {
+                            label = River
+                            style=dashed
+                            color=green3
+                            fontcolor=green3
+                            
+                                subgraph clusterH {
+                                        label = River_section
+                                        style=dashed
+                                        color=green2
+                                        fontcolor=green2
+                                            section [
+                                                label=data,
+                                                shape=box, 
+                                                style =invis
+                                                ]
+                                }
+                          }
+                      }
+                  }
+                }
+              }
+        subgraph clusterZ{
+          label=Major
+          style=dashed
+          color=royalblue4
+          fontcolor=royalblue4
+          
+                subgraph clusterY{
+                    label=Subareas
+                    style=dashed
+                    color=royalblue3
+                    fontcolor=royalblue3
+                    
+                        subgraph clusterX{
+                            label=Division
+                            style=dashed
+                            color=royalblue2
+                            fontcolor=royalblue2
+                            
+                                subgraph clusterW{
+                                    label=Sudivision
+                                    style=full
+                                    color=royalblue1
+                                    fontcolor=royalblue1
+                                    
+                                       subgraph clusterV{
+                                           label=Unit
+                                            style=dashed
+                                            color=deepskyblue
+                                            fontcolor=deepskyblue
+                                            
+                                                Fishing [
+                                                    style=invis]
+                                       }
+                                }
+                        }
+                }            
+        }          
+      }}}
+```
+
+![Map of the full stock level.](images/fig-full_stock_level.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-fullstocklvl}
+(@fig-inlandstocklvl) (@fig-marinestocklvl)
+### Marine level
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the marine stock level in the Baltic
+#| warning: FALSE
+#| message: FALSE
+
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+SELECT nextval('refbast.seq') AS are_id,
+	1 AS are_are_id,
+	'Baltic marine' AS are_code,
+	'Stock' AS are_lev_code,
+	--are_wkg_code,  by default
+	true AS are_ismarine,
+	ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia 
+	WHERE"fia_level"='Division' AND "fia_division" IN ('27.3.b, c','27.3.d');
+```
+
+![Map of the marine stock level.](images/fig-marine_stock_level.png "A view of of the Baltic with a polygon surrounding the Baltic Sea, Bothian Sea and Finland Gulf"){#fig-marinestocklvl}
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the ICES division level in the Baltic
+#| warning: FALSE
+#| message: FALSE
+
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+WITH select_division AS (
+	SELECT geom FROM ref.tr_fishingarea_fia tff
+	WHERE tff.fia_level = 'Division' AND tff.fia_division = '27.3.b, c'
+)
+SELECT nextval('refbast.seq') AS are_id,
+		3 AS are_are_id,
+		'27.3.b, c' AS are_code,
+		'Division' AS are_lev_code,
+		--are_wkg_code,
+		true AS is_marine,
+		geom AS geom
+		FROM select_division;
+```
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create a function to add all ICES subdivisions level in the Baltic
+#| warning: FALSE
+#| message: FALSE
+
+CREATE OR REPLACE FUNCTION insert_fishing_subdivision(subdiv TEXT, p_are_are_id INT)
+RETURNS VOID AS 
+$$
+DECLARE 
+  p_are_code TEXT;
+BEGIN
+  p_are_code := '27.3.' || subdiv;
+
+  EXECUTE '
+    INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+    WITH select_subdivision AS (
+      SELECT geom FROM ref.tr_fishingarea_fia tff 
+      WHERE tff.fia_level = ''Subdivision'' AND tff.fia_subdivision = ''' || p_are_code || '''
+    )
+    SELECT nextval(''refbast.seq'') AS are_id,
+           ' || p_are_are_id || ' AS are_are_id,
+           ''' || p_are_code || ''' AS are_code,
+           ''Subdivision'' AS are_lev_code,
+           true AS is_marine,
+           geom AS geom
+    FROM select_subdivision;
+  ';
+END;
+$$ LANGUAGE plpgsql;
+```
+
+![Map of the ICES subdivision level.](images/fig-marine_subdivision_level.png "A view of of the Baltic with polygons surrounding each ICES subdivisions"){#fig-marinesubdivlvl}
+
+
+
+
+### Continental level
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the inland stock level in the Baltic
+#| warning: FALSE
+#| message: FALSE
+
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+SELECT nextval('refbast.seq') AS are_id,
+	1 AS are_are_id,
+	'Baltic inland' AS are_code,
+	'Stock' AS are_lev_code,
+	--are_wkg_code,  by default
+	false AS are_ismarine,
+	ST_Union(shape) AS geom
+	FROM tempo.catchments_baltic
+	WHERE rtrim(tableoid::regclass::text, '.catchments') IN ('h_baltic30to31', 'h_baltic22to26', 'h_baltic27to29_32');
+```
+
+![Map of the inland stock level.](images/fig-inland_stock_level.png "A view of Scandinavia with a polygon surrounding the inland stock hierarchical level"){#fig-inlandstocklvl}
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the country level in the Baltic
+#| warning: FALSE
+#| message: FALSE
+
+CREATE OR REPLACE FUNCTION insert_country_baltic(country TEXT)
+RETURNS VOID AS 
+$$
+BEGIN
+  EXECUTE '
+    INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+    WITH country_selection AS (
+      SELECT ST_Union(tbc.shape) AS geom, rc.cou_country
+      FROM tempo.catchments_baltic tbc
+      JOIN ref.tr_country_cou rc 
+      ON ST_Intersects(tbc.shape, rc.geom)
+      WHERE rc.cou_country = ''' || country || '''
+      GROUP BY rc.cou_country
+    )
+    SELECT nextval(''refbast.seq'') AS are_id,
+           3 AS are_are_id,
+           ''' || country || ''' AS are_code,
+           ''Country'' AS are_lev_code,
+           false AS are_ismarine,
+           geom AS geom
+    FROM country_selection;
+  ';
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT insert_country_baltic('Finland');
+SELECT insert_country_baltic('Sweden');
+SELECT insert_country_baltic('Estonia');
+SELECT insert_country_baltic('Latvia');
+SELECT insert_country_baltic('Lithuania');
+SELECT insert_country_baltic('Poland');
+SELECT insert_country_baltic('Germany');
+SELECT insert_country_baltic('Denmark');
+SELECT insert_country_baltic('Russia');
+```
+
+![Map of the country level.](images/fig-country_level.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-countrylvl}
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the BAST assessment unit level in the Baltic
+#| warning: FALSE
+#| message: FALSE
+
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+WITH unit_selection AS (
+	SELECT trc.geom AS geom, trc.main_riv
+	FROM tempo.riversegments_baltic trc, janis.bast_assessment_units jau
+	WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."Ass_unit" = 1
+),
+retrieve_rivers AS(
+	SELECT DISTINCT trc.geom
+	FROM tempo.riversegments_baltic trc, unit_selection us
+	WHERE trc.main_riv IN (SELECT main_riv FROM unit_selection)
+),
+retrieve_catchments AS (
+	SELECT DISTINCT ST_Union(tbc.shape) AS geom
+	FROM tempo.catchments_baltic tbc, retrieve_rivers rr
+	WHERE ST_Intersects(tbc.shape,rr.geom)
+)
+SELECT nextval('refbast.seq') AS are_id,
+		3 AS are_are_id,
+		'1 Northeastern Bothnian Bay' AS are_code,
+		'Assessment_unit' AS are_lev_code,
+		--are_wkg_code,
+		false AS is_marine,
+		ST_Union(geom) AS geom
+		FROM retrieve_catchments;
+```
+
+![Map of WGBAST assessment units.](images/fig-assunit.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-bastassunit}
+
+![Map of WGBAST assessment units level.](images/fig-assunit_level.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-assunitlvl}
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create a function for the main river level in the Baltic 30-31 area
+#| warning: FALSE
+#| message: FALSE
+
+CREATE OR REPLACE FUNCTION insert_area_are(p_are_are_id INT, p_ass_unit INT) 
+RETURNS VOID AS $$
+BEGIN
+  WITH unit_riv AS (
+    SELECT DISTINCT trc.main_riv
+    FROM tempo.riversegments_baltic trc
+    JOIN janis.bast_assessment_units jau
+      ON ST_Intersects(trc.geom, jau.geom)
+    WHERE trc.ord_clas = 1
+      AND jau."Ass_unit" = p_ass_unit
+  ),
+  all_segments AS (
+    SELECT trc.main_riv, trc.geom
+    FROM tempo.riversegments_baltic trc
+    JOIN unit_riv ur ON ur.main_riv = trc.main_riv
+  ),
+  catchments_with_riv AS (
+    SELECT DISTINCT tcb.hybas_id, trc.main_riv, tcb.shape
+    FROM tempo.catchments_baltic tcb
+    JOIN all_segments trc ON ST_Intersects(tcb.shape, trc.geom)
+  ),
+  deduplicated AS (
+    SELECT DISTINCT ON (hybas_id) main_riv, hybas_id, shape
+    FROM catchments_with_riv
+  ),
+  merged AS (
+    SELECT main_riv, ST_Union(shape) AS geom
+    FROM deduplicated
+    GROUP BY main_riv
+  )
+  INSERT INTO refbast.tr_area_are (
+    are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom
+  )
+  SELECT 
+    nextval('refbast.seq'),
+    p_are_are_id,
+    main_riv,
+    'River',
+    false,
+    geom
+  FROM merged
+  WHERE geom IS NOT NULL;
+  
+END;
+$$ LANGUAGE plpgsql;
+```
+
+![Map of WGBAST assessment units level.](images/fig-riverlevel.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-riverlvl}
+
+
+WIP - river section level / fixing issues with overlapping polygons
+
 # EU-Hydro
 ## Data description
 **EU-Hydro** is a pan-European hydrographic dataset developed under the Copernicus Land Monitoring Service. It provides a detailed and consistent interpretation of surface water bodies and river networks across 39 European Environment Agency (EEA) countries. Based on high-resolution remote sensing imagery from 2006, 2009, and 2012, EU-Hydro includes a photo-interpreted river network, inland water bodies, canals, and ditches. From version 1.2, it integrates river segments derived from the EU Digital Elevation Model (EU-DEM), improving the completeness and accuracy of the dataset. It serves as a key resource for environmental monitoring, water resource management, and hydrological studies at the European level.
