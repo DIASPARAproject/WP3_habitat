@@ -334,6 +334,28 @@ SELECT insert_river_areas(17,5);
 SELECT insert_river_areas(18,6);
 	
 	
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+WITH river_level AS (
+  SELECT are_id, geom
+  FROM refbast.tr_area_are
+  WHERE are_lev_code = 'River'
+),
+river_segments AS (
+  SELECT 
+    nextval('refbast.seq') AS are_id,
+    rl.are_id AS are_are_id,
+    rs.hyriv_id::TEXT AS are_code,
+    'river_section' AS are_lev_code,
+    false AS is_marine,
+    rs.geom
+  FROM tempo.riversegments_baltic rs
+  JOIN river_level rl 
+    ON ST_Intersects(rs.geom, rl.geom)
+)
+SELECT * FROM river_segments;
+
+
+
 --DROP FUNCTION IF EXISTS insert_river_areas(p_are_are_id INT, p_ass_unit INT);
 --CREATE OR REPLACE FUNCTION insert_river_areas(p_are_are_id INT, p_ass_unit INT)
 --RETURNS VOID AS 
