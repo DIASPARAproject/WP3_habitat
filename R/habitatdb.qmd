@@ -21,6 +21,7 @@ format:
   toc-depth: 3
 execute: 
  keep-md: true
+ crossref: true
 filters:
   - include-code-files
 reference-location: document
@@ -704,6 +705,8 @@ FROM filtered_basin;
 
 ## Creating a hierarchical structure 
 
+We decided to add a [hierarchical structure](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p7/midb.html#area-tr_area_are) into the database. It will be handled through [referential tables](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p7/midb.html#referential-tables). Several levels will be layed out (@fig-area_hierarchy) depending on the needs of each working group.
+
 ```{dot}
 //| label: fig-area_hierarchy
 //| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table will be created specifically for each group.
@@ -812,9 +815,73 @@ digraph {
       }}}
 ```
 
+
+In this document I will describe how the hierarchical structure has been built in the Baltic for **WGBAST**. All the work is done in a table called `refbast.tr_area_are` that references to the `ref.tr_area_are` table.
+
+The first layer of the structure is the global Stock level (@fig-fullstocklvl). It includes all catchments that have a river flowing into the Baltic (@fig-inlandstocklvl) as well as all ICES subdivisions present in the Baltic (@fig-marinestocklvl), thus this layer is in fact created after the two lower levels.
+
+We use this query to generate a generalized geometry by merging all geometries (inland and marine stock) in the `refbast.tr_area_are` table into a single shape. First, we apply `ST_Union` to dissolve boundaries between geometries, then extract their exterior rings and convert them into polygons. These are passed through `ST_ConcaveHull` to produce a simplified, more natural outer boundary that better follows the actual spatial extent. We then calculate the area of the resulting geometry and filter out any that are too small (area ≤ 1), ensuring only significant shapes are retained and getting rid of some small artifacts. The final geometry is wrapped as a `MultiPolygon` and used to update one entry in the table along with metadata fields. Its `are_id` is 1 since it is the highest level of the hierarchy, `are_are_id` is `NULL` because there is no higher level to reference to, its `are_lev_code` is `Stock` and `are_ismarine` is `NULL` as this level is both inland and marine.
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the global stock level in the Baltic
+#| warning: FALSE
+#| message: FALSE
+
+WITH unioned_polygons AS (
+  SELECT (ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(geom))).geom)),0.0001,FALSE)) AS geom
+  FROM refbast.tr_area_are
+),
+area_check AS (
+  SELECT geom, ST_Area(geom) AS area
+  FROM unioned_polygons
+),
+filtered_polygon AS (
+  SELECT geom
+  FROM area_check
+  WHERE area > 1
+)
+UPDATE refbast.tr_area_are
+SET 
+  are_are_id = NULL,
+  are_code = 'Baltic',
+  are_lev_code = 'Stock',
+  are_ismarine = NULL,
+  geom = (SELECT ST_Multi(geom) FROM filtered_polygon)
+WHERE are_id = 1;
+```
+
+```{r}
+#| label: refbast.tr_area_are Stock level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the global Stock level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refbast.tr_area_are
+  WHERE are_id = 1;")
+
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+
 ![Map of the full stock level.](images/fig-full_stock_level.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-fullstocklvl}
-(@fig-inlandstocklvl) (@fig-marinestocklvl)
+
+
 ### Marine level
+#### Stock
+
+The global Stock level (@fig-fullstocklvl) is then split into two lower layers. The first one is the marine Stock level (@fig-marinestocklvl)
+
+
+We insert a new spatial unit into the `refbast.tr_area_are` table to represent a marine stock area labeled **"Baltic marine"**. This unit is associated with the **"Stock"** level (`are_lev_code`) and is marked as marine (`are_ismarine = true`). 
+To define its geometry, we aggregate spatial features from the `ref.tr_fishingarea_fia` table using `ST_Union`, specifically targeting geometries where the `fia_level` is `'Division'` and the `fia_division` corresponds to either `'27.3.b, c'` or `'27.3.d'`.
+A new unique identifier is generated using the `refbast.seq` sequence for `are_id`, and the new area is linked to the global Stock level through the `are_are_id` of `1`.
+
 
 ```{sql}
 #| eval: FALSE
@@ -835,12 +902,38 @@ SELECT nextval('refbast.seq') AS are_id,
 	WHERE"fia_level"='Division' AND "fia_division" IN ('27.3.b, c','27.3.d');
 ```
 
+
+```{r}
+#| label: refbast.tr_area_are marine Stock level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the marine Stock level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refbast.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,2]);")
+
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+
 ![Map of the marine stock level.](images/fig-marine_stock_level.png "A view of of the Baltic with a polygon surrounding the Baltic Sea, Bothian Sea and Finland Gulf"){#fig-marinestocklvl}
+
+
+#### ICES division
+
+We insert a new level into the `refbast.tr_area_are` table, corresponding to the fishing area **"27.3.b, c"**. The level of the spatial unit is set to **"Division"**, and it is marked as marine (`are_ismarine = true`). 
+The geometry is retrieved from the `ref.tr_fishingarea_fia` table by selecting records where the `fia_level` is `'Division'` and the `fia_division` is `'27.3.b, c'`. This geometry is directly passed into the insert statement without modification. 
+The sequence `refbast.seq` keeps generating a new `are_id`, and the area is assigned the parent `are_are_id` of `3`, linking it to the higher-level of structure (@fig-marinestocklvl).
+
 
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
-#| code-summary: Code to create the ICES division level in the Baltic
+#| code-summary: Code to create the 27.3.b, c ICES division level in the Baltic
 #| warning: FALSE
 #| message: FALSE
 
@@ -858,6 +951,30 @@ SELECT nextval('refbast.seq') AS are_id,
 		geom AS geom
 		FROM select_division;
 ```
+
+```{r}
+#| label: refbast.tr_area_are ICES division level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the ICES division level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refbast.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,2]) OR are_are_id = 2
+  ORDER BY are_id;")
+
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+
+
+#### ICES subdivision
+
+The same method is applied here to create the subdivision level. However, this time the logic is encapsulated in a SQL function, allowing for more flexibility and reusability. The function `insert_fishing_subdivision` takes two parameters: a `subdiv` text representing the subdivision code suffix (e.g., `'d.31'`), and a parent area ID `p_are_are_id` to define the hierarchical relationship. The subdivision code (`are_code`) is dynamically built by concatenating `'27.3.'` with the input `subdiv`. Unlike the previous division-level query, this function filters geometries where `fia_level = 'Subdivision'`, and inserts the corresponding geometry into the `refbast.tr_area_are` table, while maintaining the correct parent-child linkage through `are_are_id`.
+
 
 ```{sql}
 #| eval: FALSE
@@ -892,12 +1009,42 @@ END;
 $$ LANGUAGE plpgsql;
 ```
 
+
+
+```{r}
+#| label: refbast.tr_area_are ICES subdivision level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the ICES subdivision level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refbast.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,2]) OR are_are_id = ANY(ARRAY[2,21,22])
+  ORDER BY are_id;")
+
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+
+
+:::{.callout-note appearance="simple"}
+## WIP
+Here the are_are_id for subdivision is wrong. it should be 504 and 505. To be fixed later on.
+:::
+
+
+
 ![Map of the ICES subdivision level.](images/fig-marine_subdivision_level.png "A view of of the Baltic with polygons surrounding each ICES subdivisions"){#fig-marinesubdivlvl}
 
 
-
-
 ### Continental level
+#### Stock
+
+The inland stock level includes all catchments through which rivers flow into the Baltic Sea.
+In the query above, we insert a new area into the `refbast.tr_area_are` table with the label `'Baltic inland'` at the `'Stock'` level. The geometry is built by merging (`ST_Union`) all relevant catchments from the `tempo.catchments_baltic` table that inherits from previously built catchment tables. These catchments are selected based on their source tables, identified by the suffixes `'h_baltic30to31'`, `'h_baltic22to26'`, and `'h_baltic27to29_32'`. The resulting geometry is tagged as non-marine (`are_ismarine = false`) to distinguish inland from marine stock areas.
 
 ```{sql}
 #| eval: FALSE
@@ -918,7 +1065,33 @@ SELECT nextval('refbast.seq') AS are_id,
 	WHERE rtrim(tableoid::regclass::text, '.catchments') IN ('h_baltic30to31', 'h_baltic22to26', 'h_baltic27to29_32');
 ```
 
+
+```{r}
+#| label: refbast.tr_area_are inland Stock level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the inland Stock level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refbast.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,3]);")
+
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+
 ![Map of the inland stock level.](images/fig-inland_stock_level.png "A view of Scandinavia with a polygon surrounding the inland stock hierarchical level"){#fig-inlandstocklvl}
+
+
+#### Country
+
+This next layer is optional, it is added here as an example to show what it could look like. Only catchments flowing into the Baltic Sea are selected for each countries.
+
+A function is created here to insert the country layer into the talbe. This `insert_country_baltic` function takes a country name as input and inserts a new row into the `refbast.tr_area_are` table representing the specified country at the `'Country'` level. It does so by selecting and merging (`ST_Union`) all catchments from the `tempo.catchments_baltic` table that intersect with the country’s geometry in `ref.tr_country_cou`. The resulting area is non-marine (`are_ismarine = false`), and the function automatically assigns a unique `are_id` from the sequence, while setting the `are_are_id` to `3` to indicate that it is nested under the inland stock level (@fig-inlandstocklvl).
+
 
 ```{sql}
 #| eval: FALSE
@@ -963,7 +1136,43 @@ SELECT insert_country_baltic('Denmark');
 SELECT insert_country_baltic('Russia');
 ```
 
+
+
+```{r}
+#| label: refbast.tr_area_are country level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the country level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refbast.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,3,4,5,6,7,8,9,10,11,12])
+  ORDER BY are_id;")
+
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+
 ![Map of the country level.](images/fig-country_level.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-countrylvl}
+
+:::{.callout-note appearance="simple"}
+## WIP
+Some overlaps are happening at borders. Decisions will be taken later on to decide on how to deal with this.
+:::
+
+
+#### Assessment unit
+
+Assessment units have been created by [WGBAST](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p5/wgbast_database_description.html#assessment-units-within-the-baltic-sea-area) within the Baltic Sea area. There is six of them (@fig-bastassunit) and they are being used to retrieve catchments and rivers that are within their areas.
+This level does not go lower than the country one but stays at the same level, assessment units stretching across several countries.
+
+![Map of WGBAST assessment units.](images/fig-assunit.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-bastassunit}
+
+
+This query creates a new area at the **"Assessment_unit"** level and inserts it into the `refbast.tr_area_are` table. It first identifies all river segments from the main stretch of the reach (`ord_clas = 1`) that intersect with a specific assessment unit (e.g. `Ass_unit = 1`). Then, using the `main_riv` outlet identifier, it retrieves all related river geometries. These river segments are used to locate the associated catchments from the `tempo.catchments_baltic` table via spatial intersection. The geometries of these catchments are merged using `ST_Union` and inserted as a single multipolygon. The resulting area is labeled with the name of the assessment unit (e.g. `'1 Northeastern Bothnian Bay'`), categorized under the `'Assessment_unit'` level, and marked as non-marine (`false`). This level references to `are_are_id` = 3 (@fig-inlandstocklvl). 
 
 ```{sql}
 #| eval: FALSE
@@ -998,14 +1207,51 @@ SELECT nextval('refbast.seq') AS are_id,
 		FROM retrieve_catchments;
 ```
 
-![Map of WGBAST assessment units.](images/fig-assunit.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-bastassunit}
+
+
+
+```{r}
+#| label: refbast.tr_area_are assessment unit level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the assessment unit level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refbast.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,3]) OR are_are_id = 3
+  ORDER BY are_id;")
+
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
 
 ![Map of WGBAST assessment units level.](images/fig-assunit_level.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-assunitlvl}
+
+
+:::{.callout-note appearance="simple"}
+## WIP
+An overlap is happening in Estonia, it will be fixed later on.
+:::
+
+
+#### River
+Within each assessment unit, rivers are split depending on their outlet. This will be used to select specific rivers within each assessment unit with ease.
+
+This function `insert_area_are` creates entries at the **River** level in the `refbast.tr_area_are` table by aggregating catchments associated with rivers flowing through a given assessment unit. We begin by identifying all river outlet IDs (`main_riv`) from the dataset `tempo.riversegments_baltic` that intersect with the assessment unit (@fig-assunitlvl) defined by the input parameter `p_ass_unit`. Only the main stems of rivers, where `ord_clas = 1`, are considered to ensure consistent delineation.
+
+Once the relevant river outlets are selected, we retrieve all associated river segments and then determine which catchments intersect with those segments. As multiple riversegments might intersect with one catchment, we remove duplicates by selecting a single instance per `hybas_id`. The resulting geometries are grouped by river outlet ID and merged into a single polygon using `ST_Union`.
+
+These merged catchments are then inserted into the target table with their corresponding river ID used as the `are_code`, the `are_lev_code` is set to `River`, and the marine flag (`are_ismarine`) is set to false. This ensures that each outlet is associated with a unique, non-overlapping polygon representing its own river stretch.
+Finally, `are_are_id` is linked to the corresponding `are_id` of each assessment unit.
+
 
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
-#| code-summary: Code to create a function for the main river level in the Baltic 30-31 area
+#| code-summary: Code to create a function to retrieve main rivers within an assessment unit
 #| warning: FALSE
 #| message: FALSE
 
@@ -1056,7 +1302,26 @@ END;
 $$ LANGUAGE plpgsql;
 ```
 
-![Map of WGBAST assessment units level.](images/fig-riverlevel.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-riverlvl}
+
+```{r}
+#| label: refbast.tr_area_are main river level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the main river level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refbast.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,3]) OR are_are_id = ANY(ARRAY[3,13])
+  ORDER BY are_id;")
+
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+
+![Map of WGBAST first assessment units level.](images/fig-riverlevel.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-riverlvl}
 
 
 WIP - river section level / fixing issues with overlapping polygons
