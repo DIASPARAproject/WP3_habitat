@@ -549,7 +549,8 @@ SELECT * FROM refbast.tr_area_are;
 
 DROP TABLE IF EXISTS refnas.tr_area_are;
 CREATE TABLE refnas.tr_area_are () INHERITS (ref.tr_area_are);
-
+ALTER TABLE refnas.tr_area_are  OWNER TO diaspara_admin;
+GRANT SELECT ON refnas.tr_area_are  TO diaspara_read;
 
 ALTER TABLE refnas.tr_area_are
 ALTER COLUMN are_wkg_code SET DEFAULT 'WGNAS';
@@ -603,7 +604,7 @@ WHERE REGEXP_REPLACE(tableoid::regclass::text, '\.catchments$', '') IN (
 	'h_barents', 'h_biscayiberian', 'h_celtic', 'h_iceland',
 	'h_norwegian', 'h_nseanorth', 'h_nseasouth', 'h_nseauk',
 	'h_svalbard'
-);
+); --1 SERVER OK
 
 
 
@@ -627,7 +628,10 @@ SET
   are_lev_code = 'Stock',
   are_ismarine = NULL,
   geom = (SELECT ST_Multi(geom) FROM filtered_polygon)
-WHERE are_id = 1;
+WHERE are_id = 1; --1  SERVER OK
+
+
+
 
 
 
@@ -640,7 +644,7 @@ BEGIN
   EXECUTE '
     INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
     WITH country_selection AS (
-      SELECT ST_Union(tbc.shape) AS geom, rc.cou_country
+      SELECT ST_MULTI(ST_Union(tbc.shape)) AS geom, rc.cou_country
       FROM tempo.catchments_nas tbc
       JOIN ref.tr_country_cou rc 
       ON ST_Intersects(tbc.shape, rc.geom)
@@ -658,6 +662,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+ALTER SEQUENCE refnas.seq RESTART WITH 4;
 SELECT insert_country_nas('Finland');
 SELECT insert_country_nas('Sweden');
 SELECT insert_country_nas('Norway');
@@ -669,6 +674,7 @@ SELECT insert_country_nas('Denmark');
 SELECT insert_country_nas('Russia');
 SELECT insert_country_nas('Portugal');
 SELECT insert_country_nas('Netherlands');
+-- CEDRIC FAILS THERE (HAD TO ADD st_multi to function)
 SELECT insert_country_nas('Belgium');
 SELECT insert_country_nas('Ireland');
 SELECT insert_country_nas('Iceland');
@@ -677,8 +683,8 @@ SELECT insert_country_nas('Svalbard and Jan Mayen');
 SELECT insert_country_nas('Luxembourg');
 SELECT insert_country_nas('Czech republic');
 
-
-
+-- CEDRIC STOPPED THERE ...
+--SELECT are_id, are_code FROM refnas.tr_area_are;
 														
 --------------------- finding a way to add names to baltic rivers --------------------------
 WITH add_names AS (
@@ -734,3 +740,59 @@ WHERE C.order_ = 1;
 SELECT * FROM h_baltic30to31.riversegments r 
 WHERE r.ord_clas = 1;
 
+
+-- cedric inserting values from salmoglob
+--SELECT max(are_id)+1 FROM refnas.tr_area_are
+-- TODO : I'm not sure about the level, some of the countries are subcountries,
+-- so will need to reference countries
+-- I'm not sure this is an assessment unit, I think it's just used to store the conservation limits
+ALTER SEQUENCE refnas.seq RESTART WITH 21;
+DELETE FROM refnas.tr_area_are WHERE are_id >=21;
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+WITH countrieswgnas AS (  
+     SELECT DISTINCT DATABASE.area         
+    FROM refsalmoglob.database WHERE area LIKE '%coun%')
+SELECT nextval('refnas.seq') AS are_id,
+       3 AS are_are_id,
+       area,
+       'Assessment_unit' AS are_lev_code,
+        false AS are_ismarine,
+        NULL AS geom
+        FROM countrieswgnas; --17
+        
+-- this is fixed once both on the localhost and server.
+-- I'm adding a level corresponding to 'Fishery'
+/*
+INSERT INTO ref.tr_level_lev VALUES( 
+  'Fisheries',
+  'Specific fisheries area used by some working groups (WGNAS), e.g. FAR fishery,
+GLD fishery, LB fishery, LB/SPM/swNF fishery, neNF fishery');
+*/        
+        
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+WITH fisherieswgnas AS (  
+     SELECT DISTINCT DATABASE.area         
+    FROM refsalmoglob.database WHERE area LIKE '%fish%')
+SELECT nextval('refnas.seq') AS are_id,
+       2 AS are_are_id,
+       area,
+       'Fisheries' AS are_lev_code,
+        true AS are_ismarine,
+        NULL AS geom
+        FROM fisherieswgnas; --5
+        
+        
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+WITH fisherieswgnas AS (  
+     SELECT DISTINCT DATABASE.area         
+    FROM refsalmoglob.database WHERE area NOT LIKE '%fish%' AND AREA NOT LIKE '%coun%')
+SELECT nextval('refnas.seq') AS are_id,
+       2 AS are_are_id,
+       area,
+       'Assessment_unit' AS are_lev_code,
+        true AS are_ismarine,
+        NULL AS geom
+        FROM fisherieswgnas; --28
+       
+
+       

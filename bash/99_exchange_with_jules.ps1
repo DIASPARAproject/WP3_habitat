@@ -61,6 +61,23 @@ psql --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercu
 
 pg_dump --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara --table refnas.tr_version_ver --table refnas.tr_metadata_met -v | psql --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara
 
+# restarting from the version on the server
+
+psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara -c "DROP TABLE if exists ref.tr_area_are CASCADE;"
+
+pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara --table ref.tr_area_are --table refnas.tr_area_are -v | psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara
+
+#now after working in localhost on salmoglob put it back on the server
+
+psql --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara -c "DROP TABLE if exists refnas.tr_area_are;"
+
+psql --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara -c "DROP TABLE if exists refnas.tr_version_ver;"
+
+
+
+pg_dump --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara --table refnas.tr_area_are --table refnas.tr_version_ver -v | psql --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara
+
+pg_dump --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara --table ref.tr_age_age -v | psql --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara
 
 # For Jani and Jules to dump to localhost (normally you don't have these tables
 # or the version needs replacement.)
@@ -80,7 +97,12 @@ psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}
 
 psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara -c "DROP TABLE if exists refnas.tr_version_ver CASCADE;"
 
+psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara -c "DROP TABLE if exists ref.tr_age_age CASCADE;"
 
-pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara  --table ref.tr_lifestage_lfs --table ref.tr_maturity_mat --table ref.tr_quality_qal --table ref.tr_version_ver --table  ref.tr_species_spe --table ref.tr_destination_des --table ref.tr_category_cat --table ref.tr_metadata_met -v | psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara
+psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara -c "DROP TABLE if exists refnas.tg_additional_add CASCADE;"
+
+pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara  --table ref.tr_lifestage_lfs --table ref.tr_maturity_mat --table ref.tr_quality_qal --table ref.tr_version_ver --table  ref.tr_species_spe --table ref.tr_destination_des --table ref.tr_category_cat --table ref.tr_metadata_met --table ref.tr_age_age --table refnas.tg_additional_add -v | psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara
 
 pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara --table refnas.tr_version_ver --table refnas.tr_metadata_met -v | psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara
+
+
