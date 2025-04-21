@@ -79,6 +79,13 @@ pg_dump --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspa
 
 pg_dump --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara --table ref.tr_age_age -v | psql --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara
 
+psql --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara -c "DROP TABLE if exists ref.tr_lifestage_lfs;"
+
+
+pg_dump --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara --table ref.tr_lifestage_lfs -v | psql --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara
+
+
+
 # For Jani and Jules to dump to localhost (normally you don't have these tables
 # or the version needs replacement.)
 
