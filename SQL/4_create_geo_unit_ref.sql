@@ -280,7 +280,7 @@ SELECT nextval('refbast.seq') AS are_id,
 	
 -- Rivers level
 DROP FUNCTION IF EXISTS insert_river_areas(p_are_are_id INT, p_ass_unit INT);
-CREATE OR REPLACE FUNCTION insert_area_are(p_are_are_id INT, p_ass_unit INT) 
+CREATE OR REPLACE FUNCTION insert_river_areas(p_are_are_id INT, p_ass_unit INT) 
 RETURNS VOID AS $$
 BEGIN
   WITH unit_riv AS (
@@ -334,135 +334,26 @@ SELECT insert_river_areas(17,5);
 SELECT insert_river_areas(18,6);
 	
 	
-INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
-WITH river_level AS (
-  SELECT are_id, geom
-  FROM refbast.tr_area_are
-  WHERE are_lev_code = 'River'
-),
-river_segments AS (
-  SELECT 
-    nextval('refbast.seq') AS are_id,
-    rl.are_id AS are_are_id,
-    rs.hyriv_id::TEXT AS are_code,
-    'river_section' AS are_lev_code,
-    false AS is_marine,
-    rs.geom
-  FROM tempo.riversegments_baltic rs
-  JOIN river_level rl 
-    ON ST_Intersects(rs.geom, rl.geom)
-)
-SELECT * FROM river_segments;
-
-
-
---DROP FUNCTION IF EXISTS insert_river_areas(p_are_are_id INT, p_ass_unit INT);
---CREATE OR REPLACE FUNCTION insert_river_areas(p_are_are_id INT, p_ass_unit INT)
---RETURNS VOID AS 
---$$
---DECLARE 
---  rec RECORD;
---BEGIN
---  -- Table temporaire pour suivre les hybas_id déjà utilisés
---  CREATE TEMP TABLE tmp_used_hybas (
---    hybas_id BIGINT PRIMARY KEY
---  ) ON COMMIT DROP;
---
---  -- Boucle sur les main_riv concernés
---  FOR rec IN 
---    SELECT DISTINCT trc.main_riv
---    FROM tempo.riversegments_baltic trc
---    JOIN janis.bast_assessment_units jau
---      ON ST_Intersects(trc.geom, jau.geom)
---    WHERE trc.ord_clas = 1 
---      AND jau."Ass_unit" = p_ass_unit
---  LOOP
---    EXECUTE '
---      WITH all_segments AS (
---        SELECT geom
---        FROM tempo.riversegments_baltic
---        WHERE main_riv = ''' || rec.main_riv || '''
---      ),
---      raw_catchments AS (
---        SELECT tcb.hybas_id, tcb.shape AS geom
---        FROM tempo.catchments_baltic tcb
---        JOIN all_segments seg 
---          ON ST_Intersects(tcb.shape, seg.geom)
---        WHERE tcb.hybas_id NOT IN (
---          SELECT hybas_id FROM tmp_used_hybas
---        )
---      ),
---      merged_geom AS (
---        SELECT ST_Union(geom) AS geom
---        FROM raw_catchments
---      ),
---      insert_result AS (
---        INSERT INTO refbast.tr_area_are (
---          are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom
---        )
---        SELECT 
---          nextval(''refbast.seq'') AS are_id,
---          ' || p_are_are_id || ' AS are_are_id,
---          ''' || rec.main_riv || ''' AS are_code,
---          ''River'' AS are_lev_code,
---          false AS is_marine,
---          geom
---        FROM merged_geom
---        WHERE geom IS NOT NULL
---        RETURNING 1
---      )
---      -- Ajout dans tmp_used_hybas uniquement si on a inséré
---      INSERT INTO tmp_used_hybas (hybas_id)
---	  SELECT DISTINCT hybas_id FROM raw_catchments
---	  ON CONFLICT DO NOTHING;
---
---    ';
---  END LOOP;
---END;
---$$ LANGUAGE plpgsql;
---
---
---
---SELECT insert_river_areas(13,1);
---SELECT insert_river_areas(14,2);
---SELECT insert_river_areas(15,3);
---SELECT insert_river_areas(16,4);
---SELECT insert_river_areas(17,5);
---SELECT insert_river_areas(18,6);
---SELECT * FROM refbast.tr_area_are;
-
-
-
-
--- ICES Major
 --INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
---WITH select_major AS (
---	SELECT geom FROM ref.tr_fishingarea_fia tff
---	WHERE tff.fia_level = 'Major' AND fia_code = '27'
+--WITH river_level AS (
+--  SELECT are_id, geom
+--  FROM refbast.tr_area_are
+--  WHERE are_lev_code = 'River'
+--),
+--river_segments AS (
+--  SELECT 
+--    nextval('refbast.seq') AS are_id,
+--    rl.are_id AS are_are_id,
+--    rs.hyriv_id::TEXT AS are_code,
+--    'river_section' AS are_lev_code,
+--    false AS is_marine,
+--    rs.geom
+--  FROM tempo.riversegments_baltic rs
+--  JOIN river_level rl 
+--    ON ST_Intersects(rs.geom, rl.geom)
 --)
---SELECT nextval('refbast.seq') AS are_id,
---		1 AS are_are_id,
---		'27' AS are_code,
---		'Major' AS are_lev_code,
---		are_wkg_code,
---		true AS is_marine,
---		geom AS geom
---		FROM select_major;
-	
--- ICES Subareas
---INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
---WITH select_subarea AS (
---	SELECT geom FROM ref.tr_fishingarea_fia tff
---	WHERE tff.fia_level = 'Subarea' AND tff.fia_code = '27.3'
---)
---SELECT nextval('refbast.seq') AS are_id,
---		3 AS are_are_id,
---		'27.3' AS are_code,
---		'Subarea' AS are_lev_code,
---		--are_wkg_code,
---		true AS is_marine,
---		geom AS geom
---		FROM select_subarea;
+--SELECT * FROM river_segments;
+
 	
 	
 -- ICES Divisions
@@ -472,7 +363,7 @@ WITH select_division AS (
 	WHERE tff.fia_level = 'Division' AND tff.fia_division = '27.3.b, c'
 )
 SELECT nextval('refbast.seq') AS are_id,
-		3 AS are_are_id,
+		2 AS are_are_id,
 		'27.3.b, c' AS are_code,
 		'Division' AS are_lev_code,
 		--are_wkg_code,
@@ -487,7 +378,7 @@ WITH select_division AS (
 	WHERE tff.fia_level = 'Division' AND tff.fia_division = '27.3.d'
 )
 SELECT nextval('refbast.seq') AS are_id,
-		3 AS are_are_id,
+		2 AS are_are_id,
 		'27.3.d' AS are_code,
 		'Division' AS are_lev_code,
 		--are_wkg_code,
@@ -678,8 +569,42 @@ SELECT insert_country_nas('Luxembourg');
 SELECT insert_country_nas('Czech republic');
 
 
+------------------------------- Subarea -------------------------------
 
-														
+
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+SELECT 
+  nextval('refbast.seq') AS are_id,
+  1 AS are_are_id,
+  fia_code AS are_code,
+  'Subarea' AS are_lev_code,
+  true AS are_ismarine,
+  geom
+FROM ref.tr_fishingarea_fia
+WHERE fia_level = 'Subarea'
+  AND fia_area = '27';
+
+
+ 
+ ------------------------------- Division -------------------------------
+
+
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+SELECT 
+  nextval('refbast.seq') AS are_id,
+  1 AS are_are_id,
+  fia_code AS are_code,
+  'Division' AS are_lev_code,
+  true AS are_ismarine,
+  geom
+FROM ref.tr_fishingarea_fia
+WHERE fia_level = 'Division'
+  AND fia_area = '27';
+ 
+				
+ 
+ 
+ 
 --------------------- finding a way to add names to baltic rivers --------------------------
 WITH add_names AS (
     SELECT DISTINCT 
