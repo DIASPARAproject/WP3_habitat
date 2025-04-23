@@ -830,7 +830,7 @@ We use this query to generate a generalized geometry by merging all geometries (
 #| message: FALSE
 
 WITH unioned_polygons AS (
-  SELECT (ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(geom))).geom)),0.0001,FALSE)) AS geom
+  SELECT (ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(geom_polygon))).geom)),0.0001,FALSE)) AS geom
   FROM refbast.tr_area_are
 ),
 area_check AS (
@@ -848,7 +848,8 @@ SET
   are_code = 'Baltic',
   are_lev_code = 'Stock',
   are_ismarine = NULL,
-  geom = (SELECT ST_Multi(geom) FROM filtered_polygon)
+  geom_polygon = (SELECT ST_Multi(geom) FROM filtered_polygon),
+  geom_line = NULL
 WHERE are_id = 1;
 ```
 
@@ -890,14 +891,15 @@ A new unique identifier is generated using the `refbast.seq` sequence for `are_i
 #| warning: FALSE
 #| message: FALSE
 
-INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
 SELECT nextval('refbast.seq') AS are_id,
 	1 AS are_are_id,
 	'Baltic marine' AS are_code,
 	'Stock' AS are_lev_code,
 	--are_wkg_code,  by default
 	true AS are_ismarine,
-	ST_Union(geom) AS geom
+	ST_Union(geom) AS geom_polygon,
+	NULL AS geom_line
 	FROM ref.tr_fishingarea_fia 
 	WHERE"fia_level"='Division' AND "fia_division" IN ('27.3.b, c','27.3.d');
 ```
@@ -937,18 +939,19 @@ The sequence `refbast.seq` keeps generating a new `are_id`, and the area is assi
 #| warning: FALSE
 #| message: FALSE
 
-INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
 WITH select_division AS (
 	SELECT geom FROM ref.tr_fishingarea_fia tff
 	WHERE tff.fia_level = 'Division' AND tff.fia_division = '27.3.b, c'
 )
 SELECT nextval('refbast.seq') AS are_id,
-		3 AS are_are_id,
+		2 AS are_are_id,
 		'27.3.b, c' AS are_code,
 		'Division' AS are_lev_code,
 		--are_wkg_code,
 		true AS is_marine,
-		geom AS geom
+		geom AS geom_polygon,
+		NULL AS geom_line
 		FROM select_division;
 ```
 
@@ -983,6 +986,7 @@ The same method is applied here to create the subdivision level. However, this t
 #| warning: FALSE
 #| message: FALSE
 
+DROP FUNCTION IF EXISTS insert_fishing_subdivision(subdiv TEXT, p_are_are_id INT);
 CREATE OR REPLACE FUNCTION insert_fishing_subdivision(subdiv TEXT, p_are_are_id INT)
 RETURNS VOID AS 
 $$
@@ -992,7 +996,7 @@ BEGIN
   p_are_code := '27.3.' || subdiv;
 
   EXECUTE '
-    INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+    INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
     WITH select_subdivision AS (
       SELECT geom FROM ref.tr_fishingarea_fia tff 
       WHERE tff.fia_level = ''Subdivision'' AND tff.fia_subdivision = ''' || p_are_code || '''
@@ -1002,7 +1006,8 @@ BEGIN
            ''' || p_are_code || ''' AS are_code,
            ''Subdivision'' AS are_lev_code,
            true AS is_marine,
-           geom AS geom
+           geom AS geom_polygon,
+		   NULL AS geom_line
     FROM select_subdivision;
   ';
 END;
@@ -1030,13 +1035,6 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 
 
 
-:::{.callout-note appearance="simple"}
-## WIP
-Here the are_are_id for subdivision is wrong. it should be 504 and 505. To be fixed later on.
-:::
-
-
-
 ![Map of the ICES subdivision level.](images/fig-marine_subdivision_level.png "A view of of the Baltic with polygons surrounding each ICES subdivisions"){#fig-marinesubdivlvl}
 
 
@@ -1053,14 +1051,15 @@ In the query above, we insert a new area into the `refbast.tr_area_are` table wi
 #| warning: FALSE
 #| message: FALSE
 
-INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
 SELECT nextval('refbast.seq') AS are_id,
 	1 AS are_are_id,
 	'Baltic inland' AS are_code,
 	'Stock' AS are_lev_code,
 	--are_wkg_code,  by default
 	false AS are_ismarine,
-	ST_Union(shape) AS geom
+	ST_Union(shape) AS geom_polygon,
+	NULL AS geom_line
 	FROM tempo.catchments_baltic
 	WHERE rtrim(tableoid::regclass::text, '.catchments') IN ('h_baltic30to31', 'h_baltic22to26', 'h_baltic27to29_32');
 ```
@@ -1088,9 +1087,9 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 
 #### Country
 
-This next layer is optional, it is added here as an example to show what it could look like. Only catchments flowing into the Baltic Sea are selected for each countries.
+This next layer is optional, it is added here as an example to show what it could look like.
 
-A function is created here to insert the country layer into the talbe. This `insert_country_baltic` function takes a country name as input and inserts a new row into the `refbast.tr_area_are` table representing the specified country at the `'Country'` level. It does so by selecting and merging (`ST_Union`) all catchments from the `tempo.catchments_baltic` table that intersect with the country’s geometry in `ref.tr_country_cou`. The resulting area is non-marine (`are_ismarine = false`), and the function automatically assigns a unique `are_id` from the sequence, while setting the `are_are_id` to `3` to indicate that it is nested under the inland stock level (@fig-inlandstocklvl).
+A function is created here to insert the country layer into the talbe. This `insert_country_baltic` function takes a country name as input and inserts a new row into the `refbast.tr_area_are` table representing the specified country at the `'Country'` level. It does so by taking the country’s geometry in `ref.tr_country_cou`. The resulting area is non-marine (`are_ismarine = false`), and the function automatically assigns a unique `are_id` from the sequence, while setting the `are_are_id` to `3` to indicate that it is nested under the inland stock level (@fig-inlandstocklvl).
 
 
 ```{sql}
@@ -1100,40 +1099,37 @@ A function is created here to insert the country layer into the talbe. This `ins
 #| warning: FALSE
 #| message: FALSE
 
+DROP FUNCTION IF EXISTS insert_country_baltic(country TEXT);
 CREATE OR REPLACE FUNCTION insert_country_baltic(country TEXT)
 RETURNS VOID AS 
 $$
 BEGIN
-  EXECUTE '
-    INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
-    WITH country_selection AS (
-      SELECT ST_Union(tbc.shape) AS geom, rc.cou_country
-      FROM tempo.catchments_baltic tbc
-      JOIN ref.tr_country_cou rc 
-      ON ST_Intersects(tbc.shape, rc.geom)
-      WHERE rc.cou_country = ''' || country || '''
-      GROUP BY rc.cou_country
-    )
-    SELECT nextval(''refbast.seq'') AS are_id,
-           3 AS are_are_id,
-           ''' || country || ''' AS are_code,
-           ''Country'' AS are_lev_code,
-           false AS are_ismarine,
-           geom AS geom
-    FROM country_selection;
-  ';
+  INSERT INTO refbast.tr_area_are (
+    are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line
+  )
+  SELECT 
+    nextval('refbast.seq') AS are_id,
+    3 AS are_are_id,
+    cou_iso3code AS are_code,
+    'Country' AS are_lev_code,
+    false AS are_ismarine,
+    geom AS geom_polygon,
+    NULL AS geom_line
+  FROM ref.tr_country_cou
+  WHERE cou_iso3code = country;
 END;
 $$ LANGUAGE plpgsql;
 
-SELECT insert_country_baltic('Finland');
-SELECT insert_country_baltic('Sweden');
-SELECT insert_country_baltic('Estonia');
-SELECT insert_country_baltic('Latvia');
-SELECT insert_country_baltic('Lithuania');
-SELECT insert_country_baltic('Poland');
-SELECT insert_country_baltic('Germany');
-SELECT insert_country_baltic('Denmark');
-SELECT insert_country_baltic('Russia');
+
+SELECT insert_country_baltic('FIN');
+SELECT insert_country_baltic('SWE');
+SELECT insert_country_baltic('EST');
+SELECT insert_country_baltic('LVA');
+SELECT insert_country_baltic('LTU');
+SELECT insert_country_baltic('POL');
+SELECT insert_country_baltic('DEU');
+SELECT insert_country_baltic('DNK');
+SELECT insert_country_baltic('RUS');
 ```
 
 
@@ -1158,10 +1154,6 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 
 ![Map of the country level.](images/fig-country_level.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-countrylvl}
 
-:::{.callout-note appearance="simple"}
-## WIP
-Some overlaps are happening at borders. Decisions will be taken later on to decide on how to deal with this.
-:::
 
 
 #### Assessment unit
@@ -1177,11 +1169,11 @@ This query creates a new area at the **"Assessment_unit"** level and inserts it 
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
-#| code-summary: Code to create the BAST assessment unit level in the Baltic
+#| code-summary: Code to create the WGBAST assessment unit 1 level in the Baltic
 #| warning: FALSE
 #| message: FALSE
 
-INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom)
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
 WITH unit_selection AS (
 	SELECT trc.geom AS geom, trc.main_riv
 	FROM tempo.riversegments_baltic trc, janis.bast_assessment_units jau
@@ -1203,7 +1195,8 @@ SELECT nextval('refbast.seq') AS are_id,
 		'Assessment_unit' AS are_lev_code,
 		--are_wkg_code,
 		false AS is_marine,
-		ST_Union(geom) AS geom
+		ST_Union(geom) AS geom_polygon,
+		NULL AS geom_line
 		FROM retrieve_catchments;
 ```
 
@@ -1231,11 +1224,6 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 ![Map of WGBAST assessment units level.](images/fig-assunit_level.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-assunitlvl}
 
 
-:::{.callout-note appearance="simple"}
-## WIP
-An overlap is happening in Estonia, it will be fixed later on.
-:::
-
 
 #### River
 Within each assessment unit, rivers are split depending on their outlet. This will be used to select specific rivers within each assessment unit with ease.
@@ -1244,7 +1232,7 @@ This function `insert_area_are` creates entries at the **River** level in the `r
 
 Once the relevant river outlets are selected, we retrieve all associated river segments and then determine which catchments intersect with those segments. As multiple riversegments might intersect with one catchment, we remove duplicates by selecting a single instance per `hybas_id`. The resulting geometries are grouped by river outlet ID and merged into a single polygon using `ST_Union`.
 
-These merged catchments are then inserted into the target table with their corresponding river ID used as the `are_code`, the `are_lev_code` is set to `River`, and the marine flag (`are_ismarine`) is set to false. This ensures that each outlet is associated with a unique, non-overlapping polygon representing its own river stretch.
+These merged catchments are then inserted into the target table with their corresponding `main_bas` (that corresponds to the `main_riv` outlet id) used as the `are_code`, the `are_lev_code` is set to `River`, and the marine flag (`are_ismarine`) is set to false. This ensures that each outlet is associated with a unique, non-overlapping polygon representing its own river stretch.
 Finally, `are_are_id` is linked to the corresponding `are_id` of each assessment unit.
 
 
@@ -1255,7 +1243,8 @@ Finally, `are_are_id` is linked to the corresponding `are_id` of each assessment
 #| warning: FALSE
 #| message: FALSE
 
-CREATE OR REPLACE FUNCTION insert_area_are(p_are_are_id INT, p_ass_unit INT) 
+DROP FUNCTION IF EXISTS insert_river_areas(p_are_are_id INT, p_ass_unit INT);
+CREATE OR REPLACE FUNCTION insert_river_areas(p_are_are_id INT, p_ass_unit INT) 
 RETURNS VOID AS $$
 BEGIN
   WITH unit_riv AS (
@@ -1272,29 +1261,30 @@ BEGIN
     JOIN unit_riv ur ON ur.main_riv = trc.main_riv
   ),
   catchments_with_riv AS (
-    SELECT DISTINCT tcb.hybas_id, trc.main_riv, tcb.shape
+    SELECT DISTINCT tcb.hybas_id, tcb.main_bas, trc.main_riv, tcb.shape
     FROM tempo.catchments_baltic tcb
     JOIN all_segments trc ON ST_Intersects(tcb.shape, trc.geom)
   ),
   deduplicated AS (
-    SELECT DISTINCT ON (hybas_id) main_riv, hybas_id, shape
+    SELECT DISTINCT ON (hybas_id) main_riv, main_bas, hybas_id, shape
     FROM catchments_with_riv
   ),
   merged AS (
-    SELECT main_riv, ST_Union(shape) AS geom
+    SELECT main_riv, MIN(main_bas) AS main_bas, ST_Union(shape) AS geom
     FROM deduplicated
     GROUP BY main_riv
   )
   INSERT INTO refbast.tr_area_are (
-    are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom
+    are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line
   )
   SELECT 
     nextval('refbast.seq'),
     p_are_are_id,
-    main_riv,
+    main_bas::TEXT,
     'River',
     false,
-    geom
+    geom,
+    NULL
   FROM merged
   WHERE geom IS NOT NULL;
   
@@ -1323,8 +1313,45 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 
 ![Map of WGBAST first assessment units level.](images/fig-riverlevel.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-riverlvl}
 
+This query inserts entries at the **river_section** level in the `refbast.tr_area_are` table by splitting the main river areas into smaller sections. We start by selecting all polygons corresponding to rivers (`are_lev_code = 'River'`) to define the broader river areas that will serve as the parent units.
 
-WIP - river section level / fixing issues with overlapping polygons
+Next, river segments are selected from the `tempo.riversegments_baltic` table, focusing only on the main channels (`ord_clas = 1`). Each river segment (`hyriv_id`) is spatially matched to its parent river polygon using `ST_Intersects`, ensuring that each segment is properly linked to its broader river unit.
+
+Each selected segment is then assigned a new `are_id` generated from the sequence `refbast.seq`, while the original `hyriv_id` from the river segment dataset is used as the `are_code`. The `are_lev_code` is set to `river_section`, and the marine flag (`are_ismarine`) is set to false. Only one unique entry per `hyriv_id` is inserted to avoid duplication, ensuring a clean and consistent representation of river sections within the database structure.
+
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create a function to retrieve main stretch of river section within each reach
+#| warning: FALSE
+#| message: FALSE
+
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH river_level AS (
+  SELECT are_id, geom_polygon
+  FROM refbast.tr_area_are
+  WHERE are_lev_code = 'River'
+),
+river_segments AS (
+  SELECT DISTINCT ON (rs.hyriv_id)
+    nextval('refbast.seq') AS are_id,
+    rl.are_id AS are_are_id,
+    rs.hyriv_id::TEXT AS are_code,
+    'river_section' AS are_lev_code,
+    false AS is_marine,
+    NULL,
+    rs.geom
+  FROM tempo.riversegments_baltic rs
+  JOIN river_level rl
+    ON ST_Intersects(rs.geom, rl.geom_polygon)
+    WHERE rs.ord_clas = 1
+)
+SELECT DISTINCT ON (are_code) * FROM river_segments;
+```
+
+
+![Map of main stretch of rivers in the Baltic area.](images/fig-river_section_level.png "A view of Scandinavia with lines representing main stretch of rivers that flow into the Baltic"){#fig-riverseclvl}
 
 # EU-Hydro
 ## Data description
