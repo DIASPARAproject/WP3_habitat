@@ -1161,7 +1161,7 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 Assessment units have been created by [WGBAST](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p5/wgbast_database_description.html#assessment-units-within-the-baltic-sea-area) within the Baltic Sea area. There is six of them (@fig-bastassunit) and they are being used to retrieve catchments and rivers that are within their areas.
 This level does not go lower than the country one but stays at the same level, assessment units stretching across several countries.
 
-![Map of WGBAST assessment units.](images/fig-assunit.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-bastassunit}
+![Map of WGBAST assessment units.](images/fig-assunit.png "A view of Scandinavia with polygons representing WGBAST assessment units"){#fig-bastassunit}
 
 
 This query creates a new area at the **"Assessment_unit"** level and inserts it into the `refbast.tr_area_are` table. It first identifies all river segments from the main stretch of the reach (`ord_clas = 1`) that intersect with a specific assessment unit (e.g. `Ass_unit = 1`). Then, using the `main_riv` outlet identifier, it retrieves all related river geometries. These river segments are used to locate the associated catchments from the `tempo.catchments_baltic` table via spatial intersection. The geometries of these catchments are merged using `ST_Union` and inserted as a single multipolygon. The resulting area is labeled with the name of the assessment unit (e.g. `'1 Northeastern Bothnian Bay'`), categorized under the `'Assessment_unit'` level, and marked as non-marine (`false`). This level references to `are_are_id` = 3 (@fig-inlandstocklvl). 
@@ -1221,7 +1221,7 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 ```
 
 
-![Map of WGBAST assessment units level.](images/fig-assunit_level.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-assunitlvl}
+![Map of WGBAST assessment units level.](images/fig-assunit_level.png "A view of the Baltic Sea with polygons surrounding all catchments that belongs to all 6 WGBAST assessment units"){#fig-assunitlvl}
 
 
 
@@ -1311,7 +1311,9 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 ```
 
 
-![Map of WGBAST first assessment units level.](images/fig-riverlevel.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-riverlvl}
+![Map of reaches composing WGBAST first assessment units level.](images/fig-riverlevel.png "A view of the Bothian bay with polygons surrounding each reach within the first assessment unit"){#fig-riverlvl}
+
+#### River sections
 
 This query inserts entries at the **river_section** level in the `refbast.tr_area_are` table by splitting the main river areas into smaller sections. We start by selecting all polygons corresponding to rivers (`are_lev_code = 'River'`) to define the broader river areas that will serve as the parent units.
 
