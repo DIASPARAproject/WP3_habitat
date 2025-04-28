@@ -113,3 +113,7 @@ pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostme
 pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara --table refnas.tr_version_ver --table refnas.tr_metadata_met -v | psql --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara
 
 
+# Dump referientials to server 28/04/25
+pg_dump --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara --table refnas.tr_area_are -v | psql --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara
+
+pg_dump --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara --table refbast.tr_area_are -v | psql --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara
