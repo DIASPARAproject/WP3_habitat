@@ -3583,6 +3583,19 @@ ALTER TABLE h_baltic22to26.catchments INHERIT tempo.catchments_baltic;
 ALTER TABLE h_baltic27to29_32.catchments INHERIT tempo.catchments_baltic;
 
 
+DROP TABLE IF EXISTS tempo.riversegments_nas;
+CREATE TABLE tempo.riversegments_nas (LIKE h_barents.riversegments);
+ALTER TABLE h_barents.riversegments INHERIT tempo.riversegments_nas;
+ALTER TABLE h_biscayiberian.riversegments INHERIT tempo.riversegments_nas;
+ALTER TABLE h_celtic.riversegments INHERIT tempo.riversegments_nas;
+ALTER TABLE h_iceland.riversegments INHERIT tempo.riversegments_nas;
+ALTER TABLE h_norwegian.riversegments INHERIT tempo.riversegments_nas;
+ALTER TABLE h_nseanorth.riversegments INHERIT tempo.riversegments_nas;
+ALTER TABLE h_nseasouth.riversegments INHERIT tempo.riversegments_nas;
+ALTER TABLE h_nseauk.riversegments INHERIT tempo.riversegments_nas;
+ALTER TABLE h_svalbard.riversegments INHERIT tempo.riversegments_nas;
+
+DROP TABLE IF EXISTS tempo.catchments_nas;
 CREATE TABLE tempo.catchments_nas (LIKE h_barents.catchments);
 ALTER TABLE h_barents.catchments INHERIT tempo.catchments_nas;
 ALTER TABLE h_biscayiberian.catchments INHERIT tempo.catchments_nas;
@@ -3593,3 +3606,36 @@ ALTER TABLE h_nseanorth.catchments INHERIT tempo.catchments_nas;
 ALTER TABLE h_nseasouth.catchments INHERIT tempo.catchments_nas;
 ALTER TABLE h_nseauk.catchments INHERIT tempo.catchments_nas;
 ALTER TABLE h_svalbard.catchments INHERIT tempo.catchments_nas;
+
+DROP TABLE IF EXISTS tempo.catchments_nac;
+CREATE TABLE tempo.catchments_nac AS(
+WITH selectlarge AS (
+SELECT shape FROM basinatlas.basinatlas_v10_lev02
+WHERE hybas_id = ANY(ARRAY[7020024600,7020038340])),
+selectsmall AS (
+SELECT *
+FROM basinatlas.basinatlas_v10_lev12 bs
+WHERE EXISTS (
+  SELECT 1
+  FROM selectlarge bl
+  WHERE ST_Within(bs.shape,bl.shape)
+  )
+)
+SELECT * FROM selectsmall
+);--30504
+CREATE INDEX idx_tempo_nac_catchments ON tempo.catchments_nac USING GIST(shape);
+
+DROP TABLE IF EXISTS tempo.riversegments_nac;
+CREATE TABLE tempo.riversegments_nac AS(
+	SELECT * FROM riveratlas.riveratlas_v10 r
+	WHERE EXISTS (
+		SELECT 1
+		FROM tempo.catchments_nac e
+		WHERE ST_Intersects(r.geom,e.shape)
+	)
+);--434740
+CREATE INDEX idx_tempo_nac_riversegments ON tempo.riversegments_nac USING GIST(geom);
+
+
+
+

@@ -273,6 +273,7 @@ retrieve_catchments AS (
 	SELECT DISTINCT ST_Union(tbc.shape) AS geom
 	FROM tempo.catchments_baltic tbc, retrieve_rivers rr
 	WHERE ST_Intersects(tbc.shape,rr.geom)
+	AND tbc.main_bas <> 2120027530
 )
 SELECT nextval('refbast.seq') AS are_id,
 		3 AS are_are_id,
@@ -751,6 +752,188 @@ SELECT nextval('refnas.seq') AS are_id,
         FROM fisherieswgnas; --5
         
         
+
+        
+---------------------- Creating marine areas ----------------------
+-- Post smolt 6
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH geomunion AS(
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia tff 
+	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['27.8.a','27.8.b','27.8.c','27.8.d']))
+SELECT nextval('refnas.seq') AS are_id,
+       2 AS are_are_id,
+       'postsmolt 6' AS are_code,
+       'Assessment_unit' AS are_lev_code,
+        true AS are_ismarine,
+        geom AS geom_polygon,
+		NULL AS geom_line
+        FROM geomunion;
+
+
+-- Post smolt 7
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH geomunion AS(
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia tff 
+	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['27.7.j','27.7.h','27.7.g','27.7.f','27.4.c','27.7.e','27.7.b','27.7.d','27.7.a']))
+SELECT nextval('refnas.seq') AS are_id,
+       2 AS are_are_id,
+       'postsmolt 7' AS are_code,
+       'Assessment_unit' AS are_lev_code,
+        true AS are_ismarine,
+        geom AS geom_polygon,
+		NULL AS geom_line
+        FROM geomunion;
+
+
+-- Post smolt 8
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH geomunion AS(
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia tff 
+	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['27.6.a','27.4.b','27.4.a']))
+SELECT nextval('refnas.seq') AS are_id,
+       2 AS are_are_id,
+       'postsmolt 8' AS are_code,
+       'Assessment_unit' AS are_lev_code,
+        true AS are_ismarine,
+        geom AS geom_polygon,
+		NULL AS geom_line
+        FROM geomunion;
+
+
+-- Post smolt 9
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH geomunion AS(
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia tff 
+	WHERE fia_level = 'Division' AND fia_division = '27.14.b')
+SELECT nextval('refnas.seq') AS are_id,
+       2 AS are_are_id,
+       'postsmolt 9' AS are_code,
+       'Assessment_unit' AS are_lev_code,
+        true AS are_ismarine,
+        geom AS geom_polygon,
+		NULL AS geom_line
+        FROM geomunion;
+
+
+-- Post smolt 1
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH geomunion AS(
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia tff 
+	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.4.X','21.4.W','21.5.Y']))
+SELECT nextval('refnas.seq') AS are_id,
+       2 AS are_are_id,
+       'postsmolt 1' AS are_code,
+       'Assessment_unit' AS are_lev_code,
+        true AS are_ismarine,
+        geom AS geom_polygon,
+		NULL AS geom_line
+        FROM geomunion;
+
+
+-- Post smolt 2
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH geomunion AS(
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia tff 
+	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.4.T','21.4.S','21.4.R']))
+SELECT nextval('refnas.seq') AS are_id,
+       2 AS are_are_id,
+       'postsmolt 2' AS are_code,
+       'Assessment_unit' AS are_lev_code,
+        true AS are_ismarine,
+        geom AS geom_polygon,
+		NULL AS geom_line
+        FROM geomunion;
+
+
+
+-- Post smolt 3
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH geomunion AS(
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia tff 
+	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.4.V','21.3.O','21.3.P']))
+SELECT nextval('refnas.seq') AS are_id,
+       2 AS are_are_id,
+       'postsmolt 3' AS are_code,
+       'Assessment_unit' AS are_lev_code,
+        true AS are_ismarine,
+        geom AS geom_polygon,
+		NULL AS geom_line
+        FROM geomunion;
+
+-- Post smolt 4
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH geomunion AS(
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia tff 
+	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.2.J','21.3.K','21.3.L']))
+SELECT nextval('refnas.seq') AS are_id,
+       2 AS are_are_id,
+       'postsmolt 4' AS are_code,
+       'Assessment_unit' AS are_lev_code,
+        true AS are_ismarine,
+        geom AS geom_polygon,
+		NULL AS geom_line
+        FROM geomunion;
+
+
+-- Post smolt 5
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH geomunion AS(
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia tff 
+	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.2.J','21.2.G','21.2.H']))
+SELECT nextval('refnas.seq') AS are_id,
+       2 AS are_are_id,
+       'postsmolt 5' AS are_code,
+       'Assessment_unit' AS are_lev_code,
+        true AS are_ismarine,
+        geom AS geom_polygon,
+		NULL AS geom_line
+        FROM geomunion;
+
+
+-- WGLD
+WITH geomunion AS(
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia tff 
+	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.0.A','21.1.A','21.1.B','21.0.B','21.1.C','21.1.D','21.1.E']))
+UPDATE refnas.tr_area_are
+SET geom_polygon = geom
+FROM geomunion
+WHERE are_code = 'GLD fishery';
+
+
+-- Fisheries A
+WITH geomunion AS(
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia tff 
+	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.2.J','21.3.K','21.3.L','21.3.O','21.2.G','21.1.F','21.2.H',
+															'21.3.M','21.3.L','21.3.N']))
+UPDATE refnas.tr_area_are
+SET geom_polygon = geom
+FROM geomunion
+WHERE are_code = 'LB/SPM/swNF fishery';
+
+													
+-- Fisheries B
+WITH geomunion AS(
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia tff 
+	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['27.2.a','27.5.b']))
+UPDATE refnas.tr_area_are
+SET geom_polygon = geom
+FROM geomunion
+WHERE are_code = 'FAR fishery';
+
+					
+
 INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
 WITH fisherieswgnas AS (  
      SELECT DISTINCT DATABASE.area         
@@ -759,15 +942,244 @@ SELECT nextval('refnas.seq') AS are_id,
        2 AS are_are_id,
        area,
        'Assessment_unit' AS are_lev_code,
-        true AS are_ismarine,
+        false AS are_ismarine,
         NULL AS geom_polygon,
 		NULL AS geom_line
         FROM fisherieswgnas; --28
        
 
-        
-        
-        
+DROP FUNCTION IF EXISTS update_geom_from_wgnas(p_are_code TEXT, p_are_are_id INT);
+CREATE OR REPLACE FUNCTION update_geom_from_wgnas(p_are_code TEXT, p_are_are_id INT)
+RETURNS void AS
+$$
+BEGIN
+  UPDATE refnas.tr_area_are tgt
+  SET 
+    geom_polygon = src.geom,
+    are_are_id = p_are_are_id
+  FROM janis.wgnas_su src
+  WHERE tgt.are_code = p_are_code
+    AND src.su_ab = p_are_code
+    AND tgt.are_lev_code = 'Assessment_unit';
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+SELECT update_geom_from_wgnas('NEC', NULL);
+SELECT update_geom_from_wgnas('FR', 44);
+SELECT update_geom_from_wgnas('FI', 44);
+SELECT update_geom_from_wgnas('RU_AK', 44);
+SELECT update_geom_from_wgnas('RU_KB', 44);
+SELECT update_geom_from_wgnas('RU_KW', 44);
+SELECT update_geom_from_wgnas('RU_RP', 44);
+SELECT update_geom_from_wgnas('EW', 44);
+SELECT update_geom_from_wgnas('IR', 44);
+SELECT update_geom_from_wgnas('SC_EA', 44);
+SELECT update_geom_from_wgnas('SC_WE', 44);
+SELECT update_geom_from_wgnas('IC_NE', 44);
+SELECT update_geom_from_wgnas('IC_SW', 44);
+SELECT update_geom_from_wgnas('NI_FB', 44);
+SELECT update_geom_from_wgnas('NI_FO', 44);
+SELECT update_geom_from_wgnas('SW', 44);
+SELECT update_geom_from_wgnas('NO_SE', 44);
+SELECT update_geom_from_wgnas('NO_NO', 44);
+SELECT update_geom_from_wgnas('NO_SW', 44);
+SELECT update_geom_from_wgnas('NO_MI', 44);
+
+SELECT update_geom_from_wgnas('NAC', NULL);
+SELECT update_geom_from_wgnas('US', 61);
+SELECT update_geom_from_wgnas('QC', 61);
+SELECT update_geom_from_wgnas('NF', 61);
+SELECT update_geom_from_wgnas('SF', 61);
+SELECT update_geom_from_wgnas('GF', 61);
+SELECT update_geom_from_wgnas('LB', 61);
+
+
+------------------------------- River -------------------------------
+
+DROP FUNCTION IF EXISTS insert_river_areas_nac(p_are_are_id INT, p_ass_unit TEXT);
+CREATE OR REPLACE FUNCTION insert_river_areas_nac(p_are_are_id INT, p_ass_unit TEXT) 
+RETURNS VOID AS $$
+BEGIN
+  WITH unit_riv AS (
+    SELECT DISTINCT trc.main_riv
+    FROM tempo.riversegments_nac trc 
+    JOIN janis.wgnas_su jau
+      ON ST_Intersects(trc.geom, jau.geom)
+    WHERE trc.ord_clas = 1
+      AND jau.su_ab = p_ass_unit
+  ),
+  river_segments AS (
+    SELECT *
+    FROM tempo.riversegments_nac
+    WHERE main_riv IN (SELECT main_riv FROM unit_riv)
+  ),
+  catchments_with_riv AS (
+    SELECT DISTINCT tcb.main_bas, tcb.shape
+    FROM tempo.catchments_nac tcb
+    JOIN river_segments rs
+      ON ST_Intersects(tcb.shape, rs.geom)
+  ),
+  merged AS (
+    SELECT main_bas, ST_Union(shape) AS geom
+    FROM catchments_with_riv
+    GROUP BY main_bas
+  ),
+  filtered AS (
+    SELECT m.*
+    FROM merged m
+    LEFT JOIN refnas.tr_area_are a
+      ON m.main_bas::TEXT = a.are_code
+    WHERE a.are_code IS NULL
+  )
+  INSERT INTO refnas.tr_area_are (
+    are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line
+  )
+  SELECT
+    nextval('refnas.seq'),
+    p_are_are_id,
+    main_bas::TEXT,
+    'River',
+    false,
+    geom,
+    NULL
+  FROM filtered
+  WHERE geom IS NOT NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+SELECT insert_river_areas_nac(73,'US');
+SELECT insert_river_areas_nac(69,'SF');
+SELECT insert_river_areas_nac(59,'NF');
+SELECT insert_river_areas_nac(70,'GF');
+SELECT insert_river_areas_nac(82,'LB');
+SELECT insert_river_areas_nac(58,'QC');
+
+
+DROP FUNCTION IF EXISTS insert_river_areas_nas(p_are_are_id INT, p_ass_unit TEXT);
+CREATE OR REPLACE FUNCTION insert_river_areas_nas(p_are_are_id INT, p_ass_unit TEXT) 
+RETURNS VOID AS $$
+BEGIN
+  WITH unit_riv AS (
+    SELECT DISTINCT trc.main_riv
+    FROM tempo.riversegments_nas trc 
+    JOIN janis.wgnas_su jau
+      ON ST_Intersects(trc.geom, jau.geom)
+    WHERE trc.ord_clas = 1
+      AND jau.su_ab = p_ass_unit
+  ),
+  river_segments AS (
+    SELECT *
+    FROM tempo.riversegments_nas
+    WHERE main_riv IN (SELECT main_riv FROM unit_riv)
+  ),
+  catchments_with_riv AS (
+    SELECT DISTINCT tcb.main_bas, tcb.shape
+    FROM tempo.catchments_nas tcb
+    JOIN river_segments rs
+      ON ST_Intersects(tcb.shape, rs.geom)
+  ),
+  merged AS (
+    SELECT main_bas, ST_Union(shape) AS geom
+    FROM catchments_with_riv
+    GROUP BY main_bas
+  ),
+  filtered AS (
+    SELECT m.*
+    FROM merged m
+    LEFT JOIN refnas.tr_area_are a
+      ON m.main_bas::TEXT = a.are_code
+    WHERE a.are_code IS NULL
+  )
+  INSERT INTO refnas.tr_area_are (
+    are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line
+  )
+  SELECT
+    nextval('refnas.seq'),
+    p_are_are_id,
+    main_bas::TEXT,
+    'River',
+    false,
+    geom,
+    NULL
+  FROM filtered
+  WHERE geom IS NOT NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+
+SELECT insert_river_areas_nas(80,'FR');
+SELECT insert_river_areas_nas(67,'FI');
+SELECT insert_river_areas_nas(60,'RU_AK');
+SELECT insert_river_areas_nas(68,'RU_KB');
+SELECT insert_river_areas_nas(64,'RU_KW');
+SELECT insert_river_areas_nas(66,'RU_RP');
+SELECT insert_river_areas_nas(61,'EW');
+SELECT insert_river_areas_nas(74,'IR');
+SELECT insert_river_areas_nas(77,'SC_EA');
+SELECT insert_river_areas_nas(62,'SC_WE');
+SELECT insert_river_areas_nas(56,'IC_NE');
+SELECT insert_river_areas_nas(76,'IC_SW');
+SELECT insert_river_areas_nas(71,'SW');
+SELECT insert_river_areas_nas(81,'NO_SE');
+SELECT insert_river_areas_nas(65,'NO_NO');
+SELECT insert_river_areas_nas(79,'NO_SW');
+SELECT insert_river_areas_nas(78,'NO_MI');
+SELECT insert_river_areas_nas(63,'NI_FB');
+SELECT insert_river_areas_nas(75,'NI_FO');
+
+
+-------------------------------- River section level --------------------------------
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH river_level AS (
+  SELECT are_id, geom_polygon
+  FROM refnas.tr_area_are
+  WHERE are_lev_code = 'River'
+),
+river_segments AS (
+  SELECT DISTINCT ON (rs.hyriv_id)
+    nextval('refnas.seq') AS are_id,
+    rl.are_id AS are_are_id,
+    rs.hyriv_id::TEXT AS are_code,
+    'river_section' AS are_lev_code,
+    false AS is_marine,
+    NULL,
+    rs.geom
+  FROM tempo.riversegments_nas rs
+  JOIN river_level rl
+    ON ST_Intersects(rs.geom, rl.geom_polygon)
+    WHERE rs.ord_clas = 1
+)
+SELECT DISTINCT ON (are_code) * FROM river_segments;
+
+
+
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH river_level AS (
+  SELECT are_id, geom_polygon
+  FROM refnas.tr_area_are
+  WHERE are_lev_code = 'River'
+),
+river_segments AS (
+  SELECT DISTINCT ON (rs.hyriv_id)
+    nextval('refnas.seq') AS are_id,
+    rl.are_id AS are_are_id,
+    rs.hyriv_id::TEXT AS are_code,
+    'river_section' AS are_lev_code,
+    false AS is_marine,
+    NULL,
+    rs.geom
+  FROM tempo.riversegments_nac rs
+  JOIN river_level rl
+    ON ST_Intersects(rs.geom, rl.geom_polygon)
+    WHERE rs.ord_clas = 1
+)
+SELECT DISTINCT ON (are_code) * FROM river_segments;
+
+
 ------------------------------- Subarea -------------------------------
 
 
