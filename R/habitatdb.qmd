@@ -703,116 +703,104 @@ FROM filtered_basin;
 ![Final map of catchments from HydroSHEDS split into ICES areas and ecoregions.](images/fig-final.png "A view of Europe and Northern Africa catchments"){#fig-final}
 
 
-## Creating a hierarchical structure 
+## Creating a hierarchical structure for WGBAST
 
 We decided to add a [hierarchical structure](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p7/midb.html#area-tr_area_are) into the database. It will be handled through [referential tables](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p7/midb.html#referential-tables). Several levels will be layed out (@fig-area_hierarchy) depending on the needs of each working group.
 
 ```{dot}
-//| label: fig-area_hierarchy
-//| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table will be created specifically for each group.
+//| label: fig-area_hierarchy_nas
+//| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refnas.
 
 
 digraph {
     compound=true;
     newrank=true;
 
-    subgraph clusterA {
-      label = Panpopulation
+    subgraph clusterZ {
+      label = Stock
       style=full
       color=black
       center=true
 
-      subgraph clusterB {
-        label = Complex
-        style=dashed
-        color=black
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=green
+        fontcolor=green
         center=true
 
-              subgraph clusterC {
-              label = Stock
-              style=dashed
-              color=black
-              center=true
-    
-                subgraph clusterD {
-                  label = Country
-                  style=dashed
-                  color=firebrick
-                  fontcolor=firebrick
-                  center=true
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=green3
+        fontcolor=green3
+        center=true
 
-                  subgraph clusterE {
-                    label = Assessment_unit
-                    style=full
-                    color=green 
-                    fontcolor=green
-                    
-                      subgraph clusterF {
-                        label = Regional;
-                        style=dashed
-                        color=green4
-                        fontcolor=green4
-                        
-                          subgraph clusterG {
-                            label = River
-                            style=dashed
-                            color=green3
-                            fontcolor=green3
-                            
-                                subgraph clusterH {
-                                        label = River_section
-                                        style=dashed
-                                        color=green2
-                                        fontcolor=green2
-                                            section [
-                                                label=data,
-                                                shape=box, 
-                                                style =invis
-                                                ]
-                                }
-                          }
-                      }
-                  }
-                }
-              }
-        subgraph clusterZ{
-          label=Major
-          style=dashed
-          color=royalblue4
-          fontcolor=royalblue4
-          
-                subgraph clusterY{
-                    label=Subareas
-                    style=dashed
-                    color=royalblue3
-                    fontcolor=royalblue3
-                    
-                        subgraph clusterX{
-                            label=Division
-                            style=dashed
-                            color=royalblue2
-                            fontcolor=royalblue2
-                            
-                                subgraph clusterW{
-                                    label=Sudivision
-                                    style=full
-                                    color=royalblue1
-                                    fontcolor=royalblue1
-                                    
-                                       subgraph clusterV{
-                                           label=Unit
-                                            style=dashed
-                                            color=deepskyblue
-                                            fontcolor=deepskyblue
-                                            
-                                                Fishing [
-                                                    style=invis]
-                                       }
-                                }
-                        }
-                }            
-        }          
-      }}}
+          subgraph clusterC {
+          label = River
+          style=full
+          color=green2
+          fontcolor=green2
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=green1
+            fontcolor=green1
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=firebrick
+        fontcolor=firebrick
+          Fishing [
+          style=invis
+          shape=square
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=royalblue4
+      fontcolor=royalblue4
+      center=true
+
+        subgraph clusterG {
+        label = Division
+        style=full
+        color=royalblue3
+        fontcolor=royalblue3
+        center=true
+
+          subgraph clusterH {
+          label = Subdivision
+          style=full
+          color=royalblue2
+          fontcolor=royalblue2
+          center=true
+            here [
+            label=data,
+            shape=box, 
+            style =invis
+            ]  
+            }
+          }
+        }   
+      }
+}
+
+         
 ```
 
 
@@ -1026,7 +1014,7 @@ $$ LANGUAGE plpgsql;
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
   "SELECT * FROM refbast.tr_area_are
-  WHERE are_id = ANY(ARRAY[1,2]) OR are_are_id = ANY(ARRAY[2,21,22])
+  WHERE are_id = ANY(ARRAY[1,2]) OR are_are_id = ANY(ARRAY[2,5684,5685])
   ORDER BY are_id;")
 
 knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
@@ -1354,6 +1342,120 @@ SELECT DISTINCT ON (are_code) * FROM river_segments;
 
 
 ![Map of main stretch of rivers in the Baltic area.](images/fig-river_section_level.png "A view of Scandinavia with lines representing main stretch of rivers that flow into the Baltic"){#fig-riverseclvl}
+
+## Creating a hierarchical structure for WGNAS
+
+
+```{dot}
+//| label: fig-area_hierarchy_nas
+//| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refnas.
+
+
+digraph {
+    compound=true;
+    newrank=true;
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=black
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=green
+        fontcolor=green
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=green3
+        fontcolor=green3
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=green2
+          fontcolor=green2
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=green1
+            fontcolor=green1
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=firebrick
+        fontcolor=firebrick
+          Fishing [
+          style=invis
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=royalblue4
+      fontcolor=royalblue4
+      center=true
+
+        subgraph clusterG {
+        label = Subarea
+        style=full
+        color=royalblue3
+        fontcolor=royalblue3
+        center=true
+
+          subgraph clusterH {
+          label = Division
+          style=full
+          color=royalblue2
+          fontcolor=royalblue2
+          center=true
+                
+            subgraph clusterI {
+            label = Assessment_unit
+            style=full
+            color=royalblue
+            fontcolor=royalblue
+              here [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+
+            subgraph clusterJ{
+            label=Fisheries
+            style=full
+            color=royalblue
+            fontcolor=royalblue
+            other [
+            style=invis
+            ]
+            }
+          }
+        }   
+      }
+    }
+}
+         
+```
 
 # EU-Hydro
 ## Data description
