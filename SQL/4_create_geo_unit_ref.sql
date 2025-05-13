@@ -410,7 +410,32 @@ river_segments AS (
 )
 SELECT DISTINCT ON (are_code) * FROM river_segments;
 	
-	
+
+-------------------------------- Matching names to rivers --------------------------------
+
+WITH outlets AS (
+  SELECT DISTINCT trb.main_riv, wgb.name
+  FROM tempo.riversegments_baltic trb
+  JOIN janis.wgbast_combined wgb
+    ON ST_Intersects(trb.geom, ST_Buffer(wgb.geom, 0.01))
+  WHERE trb.ord_clas = 1
+    AND trb.hyriv_id = trb.main_riv
+),
+main_stretch AS (
+  SELECT trb.*, o.name
+  FROM tempo.riversegments_baltic trb
+  JOIN outlets o
+    ON trb.main_riv = o.main_riv
+  WHERE trb.ord_clas = 1
+)
+SELECT DISTINCT ON (hyriv_id) geom, name
+FROM main_stretch;
+
+
+
+
+
+
 -- ICES Divisions
 INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
 WITH select_division AS (
@@ -490,7 +515,7 @@ SELECT * FROM refbast.tr_area_are;
 
 
 
----------------------------- NAS -------------------------------------
+------------------------------------- NAS -------------------------------------
 
 -- Creating NAS Stock Unit
 
@@ -998,8 +1023,8 @@ SELECT update_geom_from_wgnas('LB', 61);
 
 ------------------------------- River -------------------------------
 
-DROP FUNCTION IF EXISTS insert_river_areas_nac(p_are_are_id INT, p_ass_unit TEXT);
-CREATE OR REPLACE FUNCTION insert_river_areas_nac(p_are_are_id INT, p_ass_unit TEXT) 
+DROP FUNCTION IF EXISTS insert_river_areas_nac(p_are_are_id INT, p_ass_unit TEXT, p_excluded_id bigint[]);
+CREATE OR REPLACE FUNCTION insert_river_areas_nac(p_are_are_id INT, p_ass_unit TEXT, p_excluded_id bigint[]) 
 RETURNS VOID AS $$
 BEGIN
   WITH unit_riv AS (
@@ -1045,22 +1070,24 @@ BEGIN
     geom,
     NULL
   FROM filtered
-  WHERE geom IS NOT NULL;
+  WHERE geom IS NOT NULL
+  AND main_bas <> ALL(p_excluded_id);
 END;
 $$ LANGUAGE plpgsql;
 
 
 
-SELECT insert_river_areas_nac(73,'US');
-SELECT insert_river_areas_nac(69,'SF');
-SELECT insert_river_areas_nac(59,'NF');
-SELECT insert_river_areas_nac(70,'GF');
-SELECT insert_river_areas_nac(82,'LB');
-SELECT insert_river_areas_nac(58,'QC');
+SELECT insert_river_areas_nac(73,'US',ARRAY[]::integer[]);
+SELECT insert_river_areas_nac(69,'SF',ARRAY[7120064150,7120036180,7120036200,7120036270,7120036420,7120036560,7120035860,7120036230]);
+SELECT insert_river_areas_nac(59,'NF',ARRAY[]::integer[]);
+SELECT insert_river_areas_nac(70,'GF',ARRAY[]::integer[]);
+SELECT insert_river_areas_nac(82,'LB',ARRAY[7120033390,7120033110,7120032940,7120032780,7120032730,7120032800,7120032690,7120032930]);
+SELECT insert_river_areas_nac(58,'QC',ARRAY[]::integer[]);
 
 
-DROP FUNCTION IF EXISTS insert_river_areas_nas(p_are_are_id INT, p_ass_unit TEXT);
-CREATE OR REPLACE FUNCTION insert_river_areas_nas(p_are_are_id INT, p_ass_unit TEXT) 
+
+DROP FUNCTION IF EXISTS insert_river_areas_nas(p_are_are_id INT, p_ass_unit TEXT, p_excluded_id bigint[]);
+CREATE OR REPLACE FUNCTION insert_river_areas_nas(p_are_are_id INT, p_ass_unit TEXT, p_excluded_id bigint[]) 
 RETURNS VOID AS $$
 BEGIN
   WITH unit_riv AS (
@@ -1106,30 +1133,32 @@ BEGIN
     geom,
     NULL
   FROM filtered
-  WHERE geom IS NOT NULL;
+  WHERE geom IS NOT NULL
+  AND main_bas <> ALL(p_excluded_id);
 END;
 $$ LANGUAGE plpgsql;
 
 
-SELECT insert_river_areas_nas(80,'FR');
-SELECT insert_river_areas_nas(67,'FI');
-SELECT insert_river_areas_nas(60,'RU_AK');
-SELECT insert_river_areas_nas(68,'RU_KB');
-SELECT insert_river_areas_nas(64,'RU_KW');
-SELECT insert_river_areas_nas(66,'RU_RP');
-SELECT insert_river_areas_nas(61,'EW');
-SELECT insert_river_areas_nas(74,'IR');
-SELECT insert_river_areas_nas(77,'SC_EA');
-SELECT insert_river_areas_nas(62,'SC_WE');
-SELECT insert_river_areas_nas(56,'IC_NE');
-SELECT insert_river_areas_nas(76,'IC_SW');
-SELECT insert_river_areas_nas(71,'SW');
-SELECT insert_river_areas_nas(81,'NO_SE');
-SELECT insert_river_areas_nas(65,'NO_NO');
-SELECT insert_river_areas_nas(79,'NO_SW');
-SELECT insert_river_areas_nas(78,'NO_MI');
-SELECT insert_river_areas_nas(63,'NI_FB');
-SELECT insert_river_areas_nas(75,'NI_FO');
+SELECT insert_river_areas_nas(80,'FR',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas(67,'FI',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas(60,'RU_AK',ARRAY[2120043040,2120043080]::integer[]);
+SELECT insert_river_areas_nas(68,'RU_KB',ARRAY[2120039590,2120040190,2120040210,2120040230,2120040150,2120040160,2120040170,2120040180]::integer[]);
+SELECT insert_river_areas_nas(64,'RU_KW',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas(66,'RU_RP',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas(61,'EW',ARRAY[2120052940]::integer[]);
+SELECT insert_river_areas_nas(63,'NI_FB',ARRAY[2120055740]::integer[]);
+SELECT insert_river_areas_nas(75,'NI_FO',ARRAY[2120055750,2120055770,2120055300]::integer[]);
+SELECT insert_river_areas_nas(74,'IR',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas(77,'SC_EA',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas(62,'SC_WE',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas(76,'IC_SW',ARRAY[2120057770,2120058240,2120058560]::integer[]);
+SELECT insert_river_areas_nas(56,'IC_NE',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas(71,'SW',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas(81,'NO_SE',ARRAY[2120035150,2120035190,2120035250,2120035630,2120036280,2120036340,2120034510,2120034520,2120034540]::integer[]);
+SELECT insert_river_areas_nas(65,'NO_NO',ARRAY[2120037610]::integer[]);
+SELECT insert_river_areas_nas(79,'NO_SW',ARRAY[2120035780]::integer[]);
+SELECT insert_river_areas_nas(78,'NO_MI',ARRAY[]::integer[]);
+
 
 
 -------------------------------- River section level --------------------------------
@@ -1153,7 +1182,7 @@ river_segments AS (
     ON ST_Intersects(rs.geom, rl.geom_polygon)
     WHERE rs.ord_clas = 1
 )
-SELECT DISTINCT ON (are_code) * FROM river_segments;
+SELECT DISTINCT ON (are_code) * FROM river_segments;--29339
 
 
 
@@ -1177,7 +1206,29 @@ river_segments AS (
     ON ST_Intersects(rs.geom, rl.geom_polygon)
     WHERE rs.ord_clas = 1
 )
-SELECT DISTINCT ON (are_code) * FROM river_segments;
+SELECT DISTINCT ON (are_code) * FROM river_segments;--14936
+
+
+
+---------------------------- matching names to rivers ---------------------------- 
+
+WITH outlets AS (
+  SELECT DISTINCT trb.main_riv, rdg.rivername
+  FROM tempo.riversegments_baltic trb
+  JOIN janis.rivers_db_graeme rdg
+    ON ST_DWithin(trb.geom, rdg.geom, 200)
+  WHERE trb.ord_clas = 1
+    AND trb.hyriv_id = trb.main_riv
+),
+main_stretch AS (
+  SELECT trb.*, o.rivername
+  FROM tempo.riversegments_baltic trb
+  JOIN outlets o
+    ON trb.main_riv = o.main_riv
+  WHERE trb.ord_clas = 1
+)
+SELECT DISTINCT ON (hyriv_id) geom, rivername
+FROM main_stretch;
 
 
 ------------------------------- Subarea -------------------------------
