@@ -3575,6 +3575,8 @@ CREATE TABLE tempo.riversegments_baltic (LIKE h_baltic30to31.riversegments);
 ALTER TABLE h_baltic30to31.riversegments INHERIT tempo.riversegments_baltic;
 ALTER TABLE h_baltic22to26.riversegments INHERIT tempo.riversegments_baltic;
 ALTER TABLE h_baltic27to29_32.riversegments INHERIT tempo.riversegments_baltic;
+CREATE INDEX idx_tempo_balt_catchments ON tempo.catchments_baltic USING GIST(geom);
+
 
 DROP TABLE IF EXISTS tempo.catchments_baltic;
 CREATE TABLE tempo.catchments_baltic (LIKE h_baltic30to31.catchments);

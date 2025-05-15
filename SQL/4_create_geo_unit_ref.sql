@@ -337,6 +337,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
+
 SELECT insert_river_areas(13,1);
 SELECT insert_river_areas(14,2);
 SELECT insert_river_areas(15,3);
@@ -386,6 +387,40 @@ FROM merged
 WHERE geom IS NOT NULL
   AND main_bas <> 2120027530;
 	
+ 
+ 
+ 
+ -------------------------------- Matching names to rivers --------------------------------
+
+WITH river_names AS (
+  SELECT
+    trb.main_riv,
+    wgb.name,
+    ST_Union(trb.geom) AS geom_union,
+    ST_Length(ST_Union(trb.geom)::geography) AS river_length
+  FROM tempo.riversegments_baltic trb
+  JOIN janis.wgbast_combined wgb
+    ON ST_Intersects(trb.geom, ST_Buffer(wgb.geom, 0.01))
+  WHERE trb.ord_clas = 1
+    AND trb.hyriv_id = trb.main_riv
+  GROUP BY trb.main_riv, wgb.name
+),
+ranked_river_names AS (
+  SELECT *,
+         ROW_NUMBER() OVER (PARTITION BY main_riv ORDER BY river_length DESC) AS rn
+  FROM river_names
+),
+named_rivers AS (
+  SELECT main_riv, name, geom_union
+  FROM ranked_river_names
+  WHERE rn = 1
+)
+UPDATE refbast.tr_area_are a
+SET are_code = nr.name
+FROM named_rivers nr
+WHERE a.are_code = nr.main_riv::TEXT
+  AND a.are_code IS DISTINCT FROM nr.name;
+
 	
 -------------------------------- River section level --------------------------------
 INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
@@ -411,25 +446,7 @@ river_segments AS (
 SELECT DISTINCT ON (are_code) * FROM river_segments;
 	
 
--------------------------------- Matching names to rivers --------------------------------
 
-WITH outlets AS (
-  SELECT DISTINCT trb.main_riv, wgb.name
-  FROM tempo.riversegments_baltic trb
-  JOIN janis.wgbast_combined wgb
-    ON ST_Intersects(trb.geom, ST_Buffer(wgb.geom, 0.01))
-  WHERE trb.ord_clas = 1
-    AND trb.hyriv_id = trb.main_riv
-),
-main_stretch AS (
-  SELECT trb.*, o.name
-  FROM tempo.riversegments_baltic trb
-  JOIN outlets o
-    ON trb.main_riv = o.main_riv
-  WHERE trb.ord_clas = 1
-)
-SELECT DISTINCT ON (hyriv_id) geom, name
-FROM main_stretch;
 
 
 
@@ -1214,21 +1231,49 @@ SELECT DISTINCT ON (are_code) * FROM river_segments;--14936
 
 WITH outlets AS (
   SELECT DISTINCT trb.main_riv, rdg.rivername
-  FROM tempo.riversegments_baltic trb
+  FROM tempo.riversegments_nas trb
   JOIN janis.rivers_db_graeme rdg
-    ON ST_DWithin(trb.geom, rdg.geom, 200)
+    ON ST_DWithin(trb.geom, rdg.geom, 0.01)
   WHERE trb.ord_clas = 1
     AND trb.hyriv_id = trb.main_riv
 ),
-main_stretch AS (
-  SELECT trb.*, o.rivername
-  FROM tempo.riversegments_baltic trb
-  JOIN outlets o
-    ON trb.main_riv = o.main_riv
+outlets2 AS (
+  SELECT DISTINCT trb.main_riv, rdg.rivername
+  FROM tempo.riversegments_nas trb
+  JOIN janis.rivers_db_graeme rdg
+    ON ST_DWithin(trb.geom, rdg.geom, 0.05)
   WHERE trb.ord_clas = 1
+    AND trb.hyriv_id = trb.main_riv
+    AND trb.main_riv NOT IN (SELECT main_riv FROM outlets)
+),
+all_outlets AS (
+  SELECT * FROM outlets
+  UNION
+  SELECT * FROM outlets2
+),
+main_stretch AS (
+  SELECT trb.*, ao.rivername
+  FROM tempo.riversegments_nas trb
+  JOIN all_outlets ao
+    ON trb.main_riv = ao.main_riv
+  WHERE trb.ord_clas = 1
+),
+river_with_counts AS (
+  SELECT main_riv, COUNT(*) AS segment_count
+  FROM main_stretch
+  GROUP BY main_riv
+  HAVING COUNT(*) > 1
+),
+final_stretch AS (
+  SELECT ms.*
+  FROM main_stretch ms
+  JOIN river_with_counts rc
+    ON ms.main_riv = rc.main_riv
 )
 SELECT DISTINCT ON (hyriv_id) geom, rivername
-FROM main_stretch;
+FROM final_stretch;
+
+
 
 
 ------------------------------- Subarea -------------------------------
