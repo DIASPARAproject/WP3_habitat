@@ -1,0 +1,258 @@
+---
+title: "DIASPARA WP3 workshop"
+subtitle: "How to retrieve and use the habitat database"
+author: "Oliviéro Jules, Briand Cédric, Helminen Jani"
+date: last-modified
+date-format: "DD-MM-YYYY"
+description: "Creation of the database, download of the data and usage on QGIS and R"
+title-block-banner: "images/diaspara_bandeau.png"
+title-block-banner-color: "white"
+format:
+ html:
+  code-fold: true
+  code-tools: true
+  self-contained: true
+  theme: styles.scss
+  smooth-scroll: true
+  fontcolor: black
+  toc: true
+  toc-location: left
+  toc-title: Summary
+  toc-depth: 3
+execute: 
+ keep-md: true
+ crossref: true
+filters:
+  - include-code-files
+reference-location: document
+bibliography: diaspara.bib
+include-after-body: "footer.html"
+---
+
+To use the database, two methods are possible.
+The first method will be to create the database locally and then to populate it with the data. With this method you will then be able to use the data either on R, QGIS or PostgreSQL. 
+
+# Creation of the PostgreSQL database
+
+First you will have to launch postgres through the terminal using this command.
+```{bash}
+#| echo: TRUE
+#| eval: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| code-summary: Starting postgres
+
+psql -U postgres
+```
+
+Once psql running you will have to follow those steps.
+
+```{sql}
+#| echo: TRUE
+#| eval: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| code-summary: Creation of the diaspara database
+
+-- 1. Database creation
+CREATE DATABASE diaspara;
+
+-- 2. Connection to the database
+\c diaspara
+
+-- 3. Role diaspara_admin creation with password
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'diaspara_admin') THEN
+        CREATE ROLE diaspara_admin WITH LOGIN PASSWORD '*********';
+    END IF;
+END$$;
+
+-- 4. Granting privileges to diaspara_admin
+GRANT ALL PRIVILEGES ON DATABASE diaspara TO diaspara_admin;
+ALTER DATABASE "diaspara" OWNER TO diaspara_admin;
+
+-- 5. Creating a user role
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'user') THEN
+        CREATE ROLE user WITH 
+            NOSUPERUSER
+            CREATEDB
+            CREATEROLE
+            INHERIT
+            LOGIN
+            CONNECTION LIMIT -1;
+            ALTER ROLE user WITH password '*****************';
+    END IF;
+END$$;
+
+GRANT diaspara_admin TO "user";
+
+-- 6. Managing extension
+CREATE EXTENSION postgis SCHEMA "public";
+
+-- 7. Exiting psql
+/q
+
+```
+
+db creation script (cf habitat doc)
+
+# Download PostgreSQL data from Zenodo
+
+Once the DB is created we can now populate it with the data. They are available on [Zenodo](https://doi.org/10.5281/zenodo.14726598).
+Files that will be of use in this first part will be the .pgc files. You can either download all of them if you wish to retrieve the whole network, or download the area that you need.
+Once the files are downloaded you will have to open a powershell terminal and change your root directory to where you have the downloaded files using the command `cd C:/path/to/my/folder`.
+If you wish to restore the whole database, you will be able to simply use the code from the next chunk.
+
+```{bash}
+#| echo: TRUE
+#| eval: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| code-summary: Restoring .pgc files
+
+# File list to restore
+schemas=(
+  h_adriatic
+  h_baltic22to26
+  h_baltic27to29_32
+  h_baltic30to31
+  h_barents
+  h_biscayiberian
+  h_blacksea
+  h_celtic
+  h_iceland
+  h_medcentral
+  h_medeast
+  h_medwest
+  h_norwegian
+  h_nseanorth
+  h_nseasouth
+  h_nseauk
+  h_southatlantic
+  h_southmedcentral
+  h_southmedeast
+  h_southmedwest
+  h_svalbard
+)
+
+echo "Starting restoration......"
+
+for schema in "${schemas[@]}"
+do
+  file="${schema}.pgc"
+  echo "Restoring $file..."
+  pg_restore -U postgres -d diaspara -n "$schema" "$file"
+done
+
+echo "Restoration done."
+
+```
+
+Otherwise, if you wish to restore the database only partially, you will have to specify which files you want to restore : e.g. `pg_restore -U postgres -f h_med_central.pgc `.
+
+Once the files are restored, you should now be able to access to the data straight from DBeaver, once you created the connection to the DB.
+
+# Using the data
+## PostgreSQL
+![New connection](images\fig-new_con.png){#fig-con}
+![New psql connection](images\fig-new_con_psql.png){#fig-conpsql}
+
+I would recommend to create two connections. One using postgres (superuser) and one with the user profile that you set up earlier.
+
+Host : localhost
+Database : diaspara
+User : postgres / user
+Password : ******
+
+Once the connection set up you will be able to create your own queries on the data with DBeaver.
+
+## R
+
+To use data from the psql DB straight from R you can use the [DBI](https://cran.r-project.org/web/packages/DBI/DBI.pdf) package. I will briefly explain how to use the main features of the package but more details are available in the doc (@DBI). 
+
+### Connecting to the DB
+```{r }
+#| echo: TRUE
+#| warning: FALSE
+#| message: FALSE
+
+install.packages("DBI")
+install.packages("RPostgres")
+library(DBI)
+library(RPostgres)
+
+# Create a connection to a PostgreSQL database
+con <- dbConnect(
+  RPostgres::Postgres(),
+  dbname = "diaspara",
+  host = "localhost",
+  port = 5432,
+  user = "postgres" or "user",
+  password = "*******"
+)
+```
+
+### Reading the data
+dbReadTable can be used to read complete tables from the DB
+dbGetQuery can be used to retrieve specific data from a table. It will return the result of the SQL query. No modification can be applied with this function.
+```{r }
+#| echo: TRUE
+#| warning: FALSE
+#| message: FALSE
+
+# Read entire table
+data <- dbReadTable(con, "your_table")
+
+# Or run a custom query
+result <- dbGetQuery(con, "SELECT * FROM your_table WHERE value > 100")
+```
+
+### Modifying the data
+dbWriteTable can be used to create a new table, importing data from outside the DB.
+dbRemoveTable can be used to delete a table.
+dbExecute can be used to modify the DB using a SQL query. When using it be very careful and be sure of what you are doing. Changes are permanent. 
+```{r }
+#| echo: TRUE
+#| warning: FALSE
+#| message: FALSE
+
+# Create a new table from a data frame
+dbWriteTable(con, "new_table", data_frame, overwrite = TRUE)
+
+# Delete a table
+dbRemoveTable(con, "new_table")
+
+# Or send any SQL command
+dbExecute(con, "DELETE FROM your_table WHERE value < 0")
+```
+
+### Disconnecting from the DB
+Once you are done, you should disconnect from the database using this function.
+```{r }
+#| echo: TRUE
+#| warning: FALSE
+#| message: FALSE
+
+dbDisconnect(con)
+```
+
+## QGIS
+
+![New connection](images\fig-qgis_con.png){#fig-qgiscon}
+
+Name : Name that will appear in your list
+Host : 127.0.0.1 (localhost)
+Port : 5432
+Data base : diaspara
+
+For every connection a password will be asked to you. You can otherwise store your credentials within QGIS if you wish to have it automatically filled.
+Once the connection is successful, you have access to all the schema within your database. Although only tables with geometries will appear. Modifications that you may do within QGIS can be saved straight onto the database.
+
+# Download parquet data from Zenodo
+
+Usage in QGIS
+Usage in R
+    - Arrow
