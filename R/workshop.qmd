@@ -31,8 +31,11 @@ include-after-body: "footer.html"
 
 To use the database, two methods are possible.
 The first method will be to create the database locally and then to populate it with the data. With this method you will then be able to use the data either on R, QGIS or PostgreSQL. 
+The second method will be to use data straight from parquet files. No database will be created. Data will be pulled from files ensuring a good efficiency and quicker computation. Data will be usable within QGIS or R.
 
-# Creation of the PostgreSQL database
+# 1st method : creating the database locally
+
+## Creation of the PostgreSQL database
 
 First you will have to launch postgres through the terminal using this command.
 ```{bash}
@@ -97,9 +100,8 @@ CREATE EXTENSION postgis SCHEMA "public";
 
 ```
 
-db creation script (cf habitat doc)
 
-# Download PostgreSQL data from Zenodo
+## Download PostgreSQL data from Zenodo
 
 Once the DB is created we can now populate it with the data. They are available on [Zenodo](https://doi.org/10.5281/zenodo.14726598).
 Files that will be of use in this first part will be the .pgc files. You can either download all of them if you wish to retrieve the whole network, or download the area that you need.
@@ -151,33 +153,43 @@ echo "Restoration done."
 
 ```
 
-Otherwise, if you wish to restore the database only partially, you will have to specify which files you want to restore : e.g. `pg_restore -U postgres -f h_med_central.pgc `.
+Otherwise, if you wish to restore the database only partially, you will have to specify which files you want to restore : e.g. `pg_restore -U postgres -d diaspara -f h_med_central.pgc `.
 
 Once the files are restored, you should now be able to access to the data straight from DBeaver, once you created the connection to the DB.
 
-# Using the data
-## PostgreSQL
+## Using the data
+### PostgreSQL
 ![New connection](images\fig-new_con.png){#fig-con}
 ![New psql connection](images\fig-new_con_psql.png){#fig-conpsql}
 
 I would recommend to create two connections. One using postgres (superuser) and one with the user profile that you set up earlier.
 
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| code-summary: Connection parameters
+
 Host : localhost
 Database : diaspara
 User : postgres / user
 Password : ******
+```
 
 Once the connection set up you will be able to create your own queries on the data with DBeaver.
 
-## R
+### R
 
-To use data from the psql DB straight from R you can use the [DBI](https://cran.r-project.org/web/packages/DBI/DBI.pdf) package. I will briefly explain how to use the main features of the package but more details are available in the doc (@DBI). 
+To use data from the psql DB straight from R you can use the [DBI](https://cran.r-project.org/web/packages/DBI/DBI.pdf) package. I will briefly explain how to use the main features of the package but more details are available in the doc. 
 
-### Connecting to the DB
+#### Connecting to the DB
 ```{r }
 #| echo: TRUE
+#| eval: FALSE
 #| warning: FALSE
 #| message: FALSE
+#| code-summary: Code to set up connection to the database
 
 install.packages("DBI")
 install.packages("RPostgres")
@@ -195,13 +207,15 @@ con <- dbConnect(
 )
 ```
 
-### Reading the data
-dbReadTable can be used to read complete tables from the DB
-dbGetQuery can be used to retrieve specific data from a table. It will return the result of the SQL query. No modification can be applied with this function.
+#### Reading the data
+`dbReadTable` can be used to read complete tables from the DB.
+`dbGetQuery` can be used to retrieve specific data from a table. It will return the result of the SQL query. No modification can be applied with this function.
 ```{r }
 #| echo: TRUE
+#| eval: FALSE
 #| warning: FALSE
 #| message: FALSE
+#| code-summary: Reading data
 
 # Read entire table
 data <- dbReadTable(con, "your_table")
@@ -210,14 +224,16 @@ data <- dbReadTable(con, "your_table")
 result <- dbGetQuery(con, "SELECT * FROM your_table WHERE value > 100")
 ```
 
-### Modifying the data
-dbWriteTable can be used to create a new table, importing data from outside the DB.
-dbRemoveTable can be used to delete a table.
-dbExecute can be used to modify the DB using a SQL query. When using it be very careful and be sure of what you are doing. Changes are permanent. 
+#### Modifying the data
+`dbWriteTable` can be used to create a new table, importing data from outside the DB.
+`dbRemoveTable` can be used to delete a table.
+`dbExecute` can be used to modify the DB using a SQL query. When using it be very careful and be sure of what you are doing. Changes are permanent. 
 ```{r }
 #| echo: TRUE
+#| eval: FALSE
 #| warning: FALSE
 #| message: FALSE
+#| code-summary: Writing data
 
 # Create a new table from a data frame
 dbWriteTable(con, "new_table", data_frame, overwrite = TRUE)
@@ -229,30 +245,112 @@ dbRemoveTable(con, "new_table")
 dbExecute(con, "DELETE FROM your_table WHERE value < 0")
 ```
 
-### Disconnecting from the DB
+#### Disconnecting from the DB
 Once you are done, you should disconnect from the database using this function.
 ```{r }
 #| echo: TRUE
+#| eval: FALSE
 #| warning: FALSE
 #| message: FALSE
+#| code-summary: Disconnect from the DB
 
 dbDisconnect(con)
 ```
 
-## QGIS
+### QGIS
 
 ![New connection](images\fig-qgis_con.png){#fig-qgiscon}
+
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| code-summary: QGIS connection parameters
 
 Name : Name that will appear in your list
 Host : 127.0.0.1 (localhost)
 Port : 5432
 Data base : diaspara
 
+```
+
 For every connection a password will be asked to you. You can otherwise store your credentials within QGIS if you wish to have it automatically filled.
 Once the connection is successful, you have access to all the schema within your database. Although only tables with geometries will appear. Modifications that you may do within QGIS can be saved straight onto the database.
 
-# Download parquet data from Zenodo
+# 2nd method : pulling data from .parquet files
+## Download .parquet data from Zenodo
 
-Usage in QGIS
-Usage in R
-    - Arrow
+Data in the parquet format are available on [Zenodo](https://doi.org/10.5281/zenodo.14726598). They are available table by table. Each schema having a `riversegments` and a `catchments` table. You will be able to retrieve only one part or both for each schema.
+
+## QGIS
+Usage in QGIS is pretty straight forward. You can simply drag and drop .parquet files within QGIS and you should have access to the data.
+
+## R
+To be able to use .parquet files in R you will have to use the [Arrow](https://cran.r-project.org/web/packages/arrow/arrow.pdf) and the [DuckDB](https://cran.r-project.org/web/packages/duckdb/duckdb.pdf) packages.
+Parquet being a compressed, columnar format, it is ideal for large datasets. Working with Arrow allows you to work lazily with parquet files, filtering and selecting columns without loading everything into memory. On the other hand, DuckDB brings fast SQL querying directly on parquet files, avoiding costly data imports.
+
+```{r }
+#| echo: TRUE
+#| eval: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| code-summary: Installing needed packages
+
+install.packages("arrow")
+install.packages("duckdb")
+install.packages("dplyr")
+library(arrow)
+library(duckdb)
+library(dplyr)
+
+```
+
+### Working with Arrow
+With Arrow you can read, filter or even convert your parquet data without loading them into memory. This helps to keep a fast workflow while working with large dataset. 
+```{r }
+#| echo: TRUE
+#| eval: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| code-summary: Example of use of Arrow
+
+ds <- open_dataset("data.parquet")
+
+ds %>%
+  select(country, year, value) %>%
+  filter(year >= 2020) %>%
+  head()
+
+```
+
+### Working in SQL with DuckDB
+With DuckDB you can work with SQL queries on R without having to create a database locally. DuckDB opens a temporary local database onto which you will be working. Applications are multiple, you can run queries, join multiple parquet files or write query results into a new parquet file.
+```{r }
+#| echo: TRUE
+#| eval: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| code-summary: Example of use of DuckDB
+
+# Connection to a temporary DuckDB database
+con <- dbConnect(duckdb::duckdb())
+
+# Querying the parquet file without loading it into R
+res <- dbGetQuery(con, "
+  SELECT country, AVG(value) as avg_val
+  FROM 'data.parquet'
+  WHERE year >= 2020
+  GROUP BY country
+  ORDER BY avg_val DESC
+  LIMIT 5
+")
+
+```
+
+
+# Ressources
+- [Zenodo](https://doi.org/10.5281/zenodo.14726598)
+- [DBI](https://cran.r-project.org/web/packages/DBI/DBI.pdf)
+- [Arrow](https://cran.r-project.org/web/packages/arrow/arrow.pdf)
+- [DuckDB](https://cran.r-project.org/web/packages/duckdb/duckdb.pdf)
