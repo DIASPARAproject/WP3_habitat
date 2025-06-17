@@ -14,6 +14,8 @@ footer: ""
 format: 
   revealjs :
     self-contained: true
+    center: false
+    css: styles.scss
   pdf:
     speakernotes:
       displayNotes: true
@@ -31,9 +33,8 @@ background-transition: fade
 editor: visual
 ---
 
-OBJECTIVES
+## Timeline
 
-Blablabla
 
 ## Habitat DB
 Catchments and riversegments from HydroSHEDS
@@ -84,14 +85,14 @@ graph {
 
 ```
 
-## WGBAST
+## Structure of the referential tables
 
+## WGBAST
 
 ### Hierarchical structure of the database
 
 ```{dot}
 //| label: fig-area_hierarchy_bast
-//| fig-align: left
 
 
 digraph {
@@ -187,11 +188,17 @@ digraph {
 ```
 
 
-### Stock
+## Stock
+
 :::::: columns
 :::: column
+
 ```{dot}
 //| label: fig-area_hierarchy_bast1
+//| eval: false
+//| echo: false
+//| include: false
+
 
 digraph {
     compound=true;
@@ -287,18 +294,22 @@ digraph {
 
 ```
 
+![Map of the full stock level.](images/fig-area_hierarchy_bast1.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast1}
+
 ::::
 :::: column
+
 ![Map of the full stock level.](images/fig-full_stock_level.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-fullstocklvl}
+
 ::::
 ::::::
 
-### Inland Stock
+## Inland Stock
 :::::: columns
 :::: column
 ```{dot}
 //| label: fig-area_hierarchy_bast2
-//| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refnas.
+//| eval: false
 
 
 digraph {
@@ -394,19 +405,20 @@ digraph {
 
 ```
 
+![Map of the full stock level.](images/fig-area_hierarchy_bast2.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast2}
+
 ::::
 :::: column
 ![Map of the inland stock level.](images/fig-inland_stock_level.png "A view of Scandinavia with a polygon surrounding the inland stock hierarchical level"){#fig-inlandstocklvl}
 ::::
 ::::::
 
-### Assessment unit
+## Assessment unit
 :::::: columns
 :::: column
 ```{dot}
 //| label: fig-area_hierarchy_bast3
-//| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refnas.
-
+//| eval: false
 
 digraph {
     compound=true;
@@ -501,19 +513,20 @@ digraph {
 
 ```
 
+![Map of the full stock level.](images/fig-area_hierarchy_bast3.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast3}
+
 ::::
 :::: column
 ![Map of WGBAST assessment units level.](images/fig-assunit_level.png "A view of the Baltic Sea with polygons surrounding all catchments that belongs to all 6 WGBAST assessment units"){#fig-assunitlvl}
 ::::
 ::::::
 
-### River
+## River
 :::::: columns
 :::: column
 ```{dot}
 //| label: fig-area_hierarchy_bast4
-//| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refnas.
-
+//| eval: false
 
 digraph {
     compound=true;
@@ -608,19 +621,20 @@ digraph {
 
 ```
 
+![Map of the full stock level.](images/fig-area_hierarchy_bast4.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast4}
+
 ::::
 :::: column
 ![Map of reaches composing WGBAST first assessment units level.](images/fig-riverlevel.png "A view of the Bothian bay with polygons surrounding each reach within the first assessment unit"){#fig-riverlvl}
 ::::
 ::::::
 
-### River section
+## River section
 :::::: columns
 :::: column
 ```{dot}
 //| label: fig-area_hierarchy_bast5
-//| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refnas.
-
+//| eval: false
 
 digraph {
     compound=true;
@@ -715,19 +729,20 @@ digraph {
 
 ```
 
+![Map of the full stock level.](images/fig-area_hierarchy_bast5.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast5}
+
 ::::
 :::: column
 ![Map of main stretch of rivers in the Baltic area.](images/fig-river_section_level.png "A view of Scandinavia with lines representing main stretch of rivers that flow into the Baltic"){#fig-riverseclvl}
 ::::
 ::::::
 
-### Country
+## Country
 :::::: columns
 :::: column
 ```{dot}
 //| label: fig-area_hierarchy_bast6
-//| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refnas.
-
+//| eval: false
 
 digraph {
     compound=true;
@@ -822,18 +837,20 @@ digraph {
 
 ```
 
+![Map of the full stock level.](images/fig-area_hierarchy_bast6.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast6}
+
 ::::
 :::: column
 ![Map of the country level.](images/fig-country_level.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-countrylvl}
 ::::
 ::::::
 
-### Marine stock
+## Marine stock
 :::::: columns
 :::: column
 ```{dot}
 //| label: fig-area_hierarchy_bast7
-//| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refnas.
+//| eval: false
 
 
 digraph {
@@ -929,16 +946,18 @@ digraph {
 
 ```
 
+![Map of the full stock level.](images/fig-area_hierarchy_bast7.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast7}
+
 ::::
 :::: column
 ![Map of the marine stock level.](images/fig-marine_stock_level.png "A view of of the Baltic with a polygon surrounding the Baltic Sea, Bothian Sea and Finland Gulf"){#fig-marinestocklvl}
 ::::
 ::::::
 
-### Division
+## Division
 ```{dot}
 //| label: fig-area_hierarchy_bast8
-//| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refnas.
+//| eval: true
 
 
 digraph {
@@ -1035,12 +1054,12 @@ digraph {
 ```
 
 
-### Subdivision
+## Subdivision
 :::::: columns
 :::: column
 ```{dot}
 //| label: fig-area_hierarchy_bast9
-//| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refnas.
+//| eval: false
 
 
 digraph {
@@ -1136,6 +1155,8 @@ digraph {
 
 ```
 
+![Map of the full stock level.](images/fig-area_hierarchy_bast9.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast9}
+
 ::::
 :::: column
 ![Map of the ICES subdivision level.](images/fig-marine_subdivision_level.png "A view of of the Baltic with polygons surrounding each ICES subdivisions"){#fig-marinesubdivlvl}
@@ -1148,8 +1169,6 @@ digraph {
 
 ```{dot}
 //| label: fig-area_hierarchy_nas
-//| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refnas.
-
 
 digraph {
     compound=true;
@@ -1259,9 +1278,12 @@ digraph {
          
 ```
 
-### Stock
+## Stock
+:::::: columns
+:::: {.column width="50%"}
 ```{dot}
 //| label: fig-area_hierarchy_nas1
+//| eval: false
 
 digraph {
     compound=true;
@@ -1372,10 +1394,20 @@ digraph {
          
 ```
 
-### Inland stock
+![Map of the full stock level.](images/fig-area_hierarchy_nas1.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas1}
 
+::::
+:::: {.column width="50%"}
+![Map of the full stock level.](images/fig-full_stock_nas.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-fullnas1}
+::::
+::::::
+
+## Inland stock
+:::::: columns
+:::: column
 ```{dot}
-//| label: fig-area_hierarchy_nas1
+//| label: fig-area_hierarchy_nas2
+//| eval: false
 
 digraph {
     compound=true;
@@ -1486,9 +1518,20 @@ digraph {
          
 ```
 
-### Assessment unit
+![Map of the full stock level.](images/fig-area_hierarchy_nas2.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas2}
+
+::::
+:::: column
+![Map of the full stock level.](images/fig-stock_inland_nas.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-inlandnas1}
+::::
+::::::
+
+## Assessment unit
+:::::: columns
+:::: column
 ```{dot}
-//| label: fig-area_hierarchy_nas1
+//| label: fig-area_hierarchy_nas3
+//| eval: false
 
 digraph {
     compound=true;
@@ -1599,9 +1642,18 @@ digraph {
          
 ```
 
-### River
+![Map of the full stock level.](images/fig-area_hierarchy_nas3.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas3}
+
+::::
+:::: column
+![Map of the full stock level.](images/fig-au_inland_nas.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-auinnas1}
+::::
+::::::
+
+## River
 ```{dot}
-//| label: fig-area_hierarchy_nas1
+//| label: fig-area_hierarchy_nas4
+//| eval: false
 
 digraph {
     compound=true;
@@ -1712,9 +1764,11 @@ digraph {
          
 ```
 
-### River section
+![Map of the full stock level.](images/fig-area_hierarchy_nas4.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas4}
+
+## River section
 ```{dot}
-//| label: fig-area_hierarchy_nas1
+//| label: fig-area_hierarchy_nas5
 
 digraph {
     compound=true;
@@ -1825,9 +1879,12 @@ digraph {
          
 ```
 
-### Country
+![Map of the full stock level.](images/fig-area_hierarchy_nas5.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas5}
+
+## Country
 ```{dot}
-//| label: fig-area_hierarchy_nas1
+//| label: fig-area_hierarchy_nas6
+//| eval: false
 
 digraph {
     compound=true;
@@ -1939,9 +1996,12 @@ digraph {
 ```
 Same as WGBAST
 
-### Marine stock
+![Map of the full stock level.](images/fig-area_hierarchy_nas6.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas6}
+
+## Marine stock
 ```{dot}
-//| label: fig-area_hierarchy_nas1
+//| label: fig-area_hierarchy_nas7
+//| eval: false
 
 digraph {
     compound=true;
@@ -2052,9 +2112,12 @@ digraph {
          
 ```
 
-### Subarea
+![Map of the full stock level.](images/fig-area_hierarchy_nas7.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas7}
+
+## Subarea
 ```{dot}
-//| label: fig-area_hierarchy_nas1
+//| label: fig-area_hierarchy_nas8
+//| eval: false
 
 digraph {
     compound=true;
@@ -2165,9 +2228,12 @@ digraph {
          
 ```
 
-### Division
+![Map of the full stock level.](images/fig-area_hierarchy_nas8.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas8}
+
+## Division
 ```{dot}
-//| label: fig-area_hierarchy_nas1
+//| label: fig-area_hierarchy_nas9
+//| eval: false
 
 digraph {
     compound=true;
@@ -2278,9 +2344,12 @@ digraph {
          
 ```
 
-### Assessment unit
+![Map of the full stock level.](images/fig-area_hierarchy_nas9.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas9}
+
+## Assessment unit
 ```{dot}
-//| label: fig-area_hierarchy_nas1
+//| label: fig-area_hierarchy_nas10
+//| eval: false
 
 digraph {
     compound=true;
@@ -2391,9 +2460,12 @@ digraph {
          
 ```
 
-### Fisheries
+![Map of the full stock level.](images/fig-area_hierarchy_nas10.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas10}
+
+## Fisheries
 ```{dot}
-//| label: fig-area_hierarchy_nas1
+//| label: fig-area_hierarchy_nas11
+//| eval: false
 
 digraph {
     compound=true;
@@ -2503,6 +2575,8 @@ digraph {
 }
          
 ```
+
+![Map of the full stock level.](images/fig-area_hierarchy_nas11.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas11}
 
 ## WGEEL
 
