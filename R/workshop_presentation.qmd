@@ -1,21 +1,18 @@
 ---
-title: "DIASPARA WP3 webinar :  Habitat Database"
-subtitle: "What is it, and how can Working Groups and users benefit?"
-author: "Oliviéro Jules, Cédric Briand, Jani Helminen"
+title: "Diaspara WP3, 2025"
+author: "Cédric Briand, Jules Oliviéro, Jani Helminen"
+fontsize: 20pt
 filters:
   - quarto-kroki
   - speakernotes
 title-slide-attributes:
-  data-background-image: images/title_slide.png
+  data-background-image: images/diaspara_background.png
   data-background-size: stretch
   data-background-opacity: "0.5"
-logo: images/diaspara_participants_logo.png
-footer: "DIASPARA - WP3 webinar"
+logo: images/diaspara_participants_logo_withEUlogo.png
+footer: ""
 format: 
   revealjs :
-    speakernotes:
-      displayNotes: true
-    slide-number: false  
     self-contained: true
   pdf:
     speakernotes:
@@ -38,7 +35,7 @@ OBJECTIVES
 
 Blablabla
 
-# Habitat DB
+## Habitat DB
 Catchments and riversegments from HydroSHEDS
 
 ## What data is available ?
@@ -87,10 +84,10 @@ graph {
 
 ```
 
-# WGBAST
+## WGBAST
 
 
-## Hierarchical structure of the database
+### Hierarchical structure of the database
 
 ```{dot}
 //| label: fig-area_hierarchy_bast
@@ -190,7 +187,7 @@ digraph {
 ```
 
 
-## Stock
+### Stock
 :::::: columns
 :::: column
 ```{dot}
@@ -296,7 +293,7 @@ digraph {
 ::::
 ::::::
 
-## Inland Stock
+### Inland Stock
 :::::: columns
 :::: column
 ```{dot}
@@ -403,7 +400,7 @@ digraph {
 ::::
 ::::::
 
-## Assessment unit
+### Assessment unit
 :::::: columns
 :::: column
 ```{dot}
@@ -510,7 +507,7 @@ digraph {
 ::::
 ::::::
 
-## River
+### River
 :::::: columns
 :::: column
 ```{dot}
@@ -617,7 +614,7 @@ digraph {
 ::::
 ::::::
 
-## River section
+### River section
 :::::: columns
 :::: column
 ```{dot}
@@ -724,7 +721,7 @@ digraph {
 ::::
 ::::::
 
-## Country
+### Country
 :::::: columns
 :::: column
 ```{dot}
@@ -831,7 +828,7 @@ digraph {
 ::::
 ::::::
 
-## Marine stock
+### Marine stock
 :::::: columns
 :::: column
 ```{dot}
@@ -938,7 +935,7 @@ digraph {
 ::::
 ::::::
 
-## Division
+### Division
 ```{dot}
 //| label: fig-area_hierarchy_bast8
 //| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refnas.
@@ -1038,7 +1035,7 @@ digraph {
 ```
 
 
-## Subdivision
+### Subdivision
 :::::: columns
 :::: column
 ```{dot}
@@ -1145,9 +1142,9 @@ digraph {
 ::::
 ::::::
 
-# WGNAS
+## WGNAS
 
-## Hierarchical structure of the database
+### Hierarchical structure of the database
 
 ```{dot}
 //| label: fig-area_hierarchy_nas
@@ -1262,7 +1259,7 @@ digraph {
          
 ```
 
-## Stock
+### Stock
 ```{dot}
 //| label: fig-area_hierarchy_nas1
 
@@ -1375,7 +1372,7 @@ digraph {
          
 ```
 
-## Inland stock
+### Inland stock
 
 ```{dot}
 //| label: fig-area_hierarchy_nas1
@@ -1489,7 +1486,7 @@ digraph {
          
 ```
 
-## Assessment unit
+### Assessment unit
 ```{dot}
 //| label: fig-area_hierarchy_nas1
 
@@ -1602,7 +1599,7 @@ digraph {
          
 ```
 
-## River
+### River
 ```{dot}
 //| label: fig-area_hierarchy_nas1
 
@@ -1715,7 +1712,7 @@ digraph {
          
 ```
 
-## River section
+### River section
 ```{dot}
 //| label: fig-area_hierarchy_nas1
 
@@ -1828,7 +1825,7 @@ digraph {
          
 ```
 
-## Country
+### Country
 ```{dot}
 //| label: fig-area_hierarchy_nas1
 
@@ -1942,7 +1939,7 @@ digraph {
 ```
 Same as WGBAST
 
-## Marine stock
+### Marine stock
 ```{dot}
 //| label: fig-area_hierarchy_nas1
 
@@ -2055,7 +2052,7 @@ digraph {
          
 ```
 
-## Subarea
+### Subarea
 ```{dot}
 //| label: fig-area_hierarchy_nas1
 
@@ -2168,7 +2165,7 @@ digraph {
          
 ```
 
-## Division
+### Division
 ```{dot}
 //| label: fig-area_hierarchy_nas1
 
@@ -2281,7 +2278,7 @@ digraph {
          
 ```
 
-## Assessment unit
+### Assessment unit
 ```{dot}
 //| label: fig-area_hierarchy_nas1
 
@@ -2394,7 +2391,7 @@ digraph {
          
 ```
 
-## Fisheries
+### Fisheries
 ```{dot}
 //| label: fig-area_hierarchy_nas1
 
@@ -2507,3 +2504,54 @@ digraph {
          
 ```
 
+## WGEEL
+
+-   examples (Cedric)
+
+-   Split, examples. e.g. gulf of bothnia
+
+-   
+
+    ```         
+    EMU split - should they still follow WFD areas
+    ```
+
+-   How do we split the sea in a consistent way: We could show examples: showing different countries (Germany, PL, Estonia) how they handle the limitations, how could we unify this consistently
+
+## WGTRUTTA
+
+-   examples (Cedric)
+-   For WGTRUTTA: theyre using an app to do a manual edition of the basins using periclis software, they also have this big database structure where they want to gather information on the population. Think of something how we could work with them! (Check their presentation)
+-   work that has been done by Andrew
+-   Flow!
+-   More discussions on how to incorporate the WGTRUTTA work
+
+## Other migratory species
+
+DIADSEA. Future collaboration opportunities
+
+![](images/clipboard-4112571689.png){width="468"}
+
+![](images/clipboard-4003305238.png){width="505"}
+
+## Opinions?
+
+-   Validate spatial structure
+-   the structure might be different for different species
+-   Starting from wide area to lower level: question how do we split
+
+## Thank you!
+
+Last hour (and more if needed) open for discussion
+
+We want to have people go into the WG and come back with it
+
+emails:
+
+Webpage!
+
+## Feedback
+
+Webinar questions: we will collate and add answers to the HTML
+
+SHOW TIMELINES! Habitat first, then REMIND THERE IS OTHERS TOO
