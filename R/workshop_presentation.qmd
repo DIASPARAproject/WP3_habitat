@@ -2506,6 +2506,115 @@ digraph {
 
 ## WGEEL
 
+```{dot}
+//| label: fig-area_hierarchy_eel
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=black
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=green
+        fontcolor=green
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=green3
+        fontcolor=green3
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=green2
+          fontcolor=green2
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=green1
+            fontcolor=green1
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=firebrick
+        fontcolor=firebrick
+        center=true
+        
+            subgraph clusterK{
+          label=EMU
+          style=dashed
+          color=firebrick2
+          fontcolor=firebrick2
+            Fishing [
+            style=invis
+            ]
+          }
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=royalblue4
+      fontcolor=royalblue4
+      center=true
+
+        subgraph clusterG {
+        label = Subarea
+        style=full
+        color=royalblue3
+        fontcolor=royalblue3
+        center=true
+
+          subgraph clusterH {
+          label = Division
+          style=full
+          color=royalblue2
+          fontcolor=royalblue2
+          center=true
+                
+            subgraph clusterI {
+            label = Assessment_unit
+            style=full
+            color=royalblue
+            fontcolor=royalblue
+              here [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }   
+      }
+    }
+    section -> Fishing -> here [style=invis];
+}
+         
+```
+
 -   examples (Cedric)
 
 -   Split, examples. e.g. gulf of bothnia
