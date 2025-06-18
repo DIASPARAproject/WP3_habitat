@@ -348,6 +348,9 @@ res <- dbGetQuery(con, "
 
 ```
 
+# Need help ? Have a feedback ?
+Please feel free to contact us if you encounter any issue during this process. Morever, to give us your feedback, questions and remarks, send us mails, we’ll answer promptly.
+Jules Oliviéro [jules.oliviero@inrae.fr](jules.oliviero@inrae.fr) Cedric Briand [cedric.briand@eaux-et-vilaine.bzh](cedric.briand@eaux-et-vilaine.bzh) Jani Helminen [jani.helminen@luke.fi](jani.helminen@luke.fi) 
 
 # Ressources
 - [Zenodo](https://doi.org/10.5281/zenodo.14726598)

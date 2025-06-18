@@ -15,7 +15,17 @@ format:
   revealjs :
     self-contained: true
     center: false
-    css: styles.scss
+    speakernotes:
+      displayNotes: true
+      customStyle: |
+        roundcorner=5pt,
+        subtitlebelowline=true,
+        subtitleaboveline=true,
+        subtitlebackgroundcolor=yellow!70!white,
+        backgroundcolor=blue!20!white,
+        frametitle={Theorem},
+        frametitlerule=true,
+        frametitlebackgroundcolor=yellow!70!white,
   pdf:
     speakernotes:
       displayNotes: true
@@ -33,34 +43,70 @@ background-transition: fade
 editor: visual
 ---
 
-## Timeline
+## Habitat DB
+HydroSHEDS data forming the basis of the habitat database
 
+- HydroBASIN
+- HydroRIVERS
+- HydroLAKES (to be included)
+
+
+::: {.notes}
+To be able to create this habitat database, we decided to use data from HydroSHEDS.
+HydroSHEDS is a global database providing high-resolution hydrographic data. We will be using three of its components : HydroBASIN for catchments and HydroRIVERS for the river network.
+HydroLAKES will be added later on.
+:::
 
 ## Habitat DB
-Catchments and riversegments from HydroSHEDS
-
-## What data is available ?
 ![Final map of catchments from HydroSHEDS split into ICES areas and ecoregions.](images/fig-final.png "A view of Europe and Northern Africa catchments"){#fig-final}
+
+::: {.notes}
+The first work that needed to be done was to split those catchments and river segments into smaller groups. We did this for efficiency reasons. To create those we decided to make them fit with ICES Areas and Ecoregions. Basically, all reach that are flowing into a same ICES Area have been grouped together. More details on that work is available on DIASPARA website.
+:::
 
 ## What data is available ?
 ![Description of natural discharge variable](images/fig-h_nat_dis.png){#fig-natdis}
 
+::: {.notes}
+Alongside the geometries, environmental data comes with HydroSHEDS. For instance, the natural discharge is available. Its estimation is  based on long term average with annual average, min and max.
+:::
+
 ## What data is available ?
 ![Description of river area variable](images/fig-h_riv_are.png){#fig-rivare}
+
+::: {.notes}
+The river area is also a data within HydroSHEDS. Either for the selected river segment or for the total watershed upstream of the reach pour point.
+:::
 
 ## What data is available ?
 ![Description of elevation variable](images/fig-h_elev.png){#fig-elev}
 
+::: {.notes}
+You can also find elevation values
+:::
+
 ## What data is available ?
 ![Description of terrain slope variable](images/fig-h_ter_slp.png){#fig-terslp}
 
+::: {.notes}
+Terrain slope
+:::
+
 ## What data is available ?
 ![Description of stream gradient variable](images/fig-h_st_gra.png){#fig-st_gra}
+
+::: {.notes}
+Or the average stream gradient along the reach segments.
+:::
 
 ## What data is available ?
 - Temperature
 - Precipitation
 - River class order and Strahler number
+
+::: {.notes}
+Informations like temp, precipitaion, river class order or Strahler number are also available within the dataset.
+:::
 
 ## Structuring the database with referentials
 ```{dot}
@@ -85,7 +131,25 @@ graph {
 
 ```
 
+::: {.notes}
+Once we gathered the data we needed we now had to create a structure within it, so it would be easier to use. To do so we decided to use referential tables with inheritance. Basically, we have a main ref table that dictates the structure of the referentials. This structure is inherited by our working group referential tables, which are here named refbast, refnas and refeel.
+:::
+
 ## Structure of the referential tables
+
+- are_id
+- are_are_id
+- are_code
+- are_lev_code
+- are_wkg_code
+- are_ismarine
+- geom (polygon & line)
+
+![Structure of the ref table.](images/fig-ref_structure.png "A view of the ref table"){#fig-refstr}
+
+::: {.notes}
+The referential table is structured like this. First you have a are_id for each line, then a are_are_id that makes said line reference to its higher hierarchical level (more on this a bit later), then the are_code that is like the name of the data, the are_lev_code which corresponds to the hierarchical level, are_wkg_code for the working group, are_ismarine which is a boolean value to know weither the data is marine or continental and finally geometries.
+:::
 
 ## WGBAST
 
@@ -93,6 +157,7 @@ graph {
 
 ```{dot}
 //| label: fig-area_hierarchy_bast
+//| fig-cap: Hierarchical structure of WGBAST habitat database
 
 
 digraph {
@@ -187,114 +252,17 @@ digraph {
 
 ```
 
+::: {.notes}
+First I going to show you the hierarchical structure we chose for WGBAST, then I'll move on to WGNAS and finally Cedric will go on about WGEEL.
+So, as stated before, each data will be referencing a level a hierarchy and also to its higher level if it exists. For WGBAST we will be following this graph
+:::
 
 ## Stock
 
 :::::: columns
 :::: column
 
-```{dot}
-//| label: fig-area_hierarchy_bast1
-//| eval: false
-//| echo: false
-//| include: false
-
-
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
-
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=red
-      fontcolor=red
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgray
-            fontcolor=lightgray
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgray
-        fontcolor=lightgray
-          Fishing [
-          style=invis
-          shape=square
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-        subgraph clusterG {
-        label = Division
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterH {
-          label = Subdivision
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-            here [
-            label=data,
-            shape=box, 
-            style =invis
-            ]  
-            }
-          }
-        }   
-      }
-      
-      section -> Fishing -> here [style=invis];
-}
-
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_bast1.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast1}
+![Stock level](images/fig-area_hierarchy_bast1.svg "A graph representing the hierarchical structure. The Stock level is highlited in red"){#fig-hierbast1}
 
 ::::
 :::: column
@@ -304,108 +272,16 @@ digraph {
 ::::
 ::::::
 
+::: {.notes}
+Fisrt, The full stock level is the highest level. Thus it doesn't references to any other level.
+As you can see it is composed of all areas covered by the wg, being at inland or at sea.
+:::
+
 ## Inland Stock
 :::::: columns
 :::: column
-```{dot}
-//| label: fig-area_hierarchy_bast2
-//| eval: false
 
-
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
-
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=green
-        fontcolor=green
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgray
-            fontcolor=lightgray
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgray
-        fontcolor=lightgray
-          Fishing [
-          style=invis
-          shape=square
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-        subgraph clusterG {
-        label = Division
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterH {
-          label = Subdivision
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-            here [
-            label=data,
-            shape=box, 
-            style =invis
-            ]  
-            }
-          }
-        }   
-      }
-      section -> Fishing -> here [style=invis];
-}
-
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_bast2.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast2}
+![Inland stock level](images/fig-area_hierarchy_bast2.svg "A graph representing the hierarchical structure. The Inland Stock level is highlited in green"){#fig-hierbast2}
 
 ::::
 :::: column
@@ -413,107 +289,15 @@ digraph {
 ::::
 ::::::
 
+::: {.notes}
+So I'm moving on to the inland part. First is the stock level for the inland area. It represents a merge of all catchments that are flowing into the Baltic Sea. 
+:::
+
 ## Assessment unit
 :::::: columns
 :::: column
-```{dot}
-//| label: fig-area_hierarchy_bast3
-//| eval: false
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
-
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=green3
-        fontcolor=green3
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgray
-            fontcolor=lightgray
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgray
-        fontcolor=lightgray
-          Fishing [
-          style=invis
-          shape=square
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-        subgraph clusterG {
-        label = Division
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterH {
-          label = Subdivision
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-            here [
-            label=data,
-            shape=box, 
-            style =invis
-            ]  
-            }
-          }
-        }   
-      }
-      section -> Fishing -> here [style=invis];
-}
-
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_bast3.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast3}
+![Assessment unit level](images/fig-area_hierarchy_bast3.svg "A graph representing the hierarchical structure. The Assessment Unit level is highlited in green"){#fig-hierbast3}
 
 ::::
 :::: column
@@ -521,107 +305,15 @@ digraph {
 ::::
 ::::::
 
+::: {.notes}
+Assessment units were given to us by WGBAST. Thanks to that we were able to integrate them into the structure. Here 6 assessment units are included.
+:::
+
 ## River
 :::::: columns
 :::: column
-```{dot}
-//| label: fig-area_hierarchy_bast4
-//| eval: false
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
-
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=green2
-          fontcolor=green2
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgray
-            fontcolor=lightgray
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgray
-        fontcolor=lightgray
-          Fishing [
-          style=invis
-          shape=square
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-        subgraph clusterG {
-        label = Division
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterH {
-          label = Subdivision
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-            here [
-            label=data,
-            shape=box, 
-            style =invis
-            ]  
-            }
-          }
-        }   
-      }
-      section -> Fishing -> here [style=invis];
-}
-
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_bast4.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast4}
+![River level](images/fig-area_hierarchy_bast4.svg "A graph representing the hierarchical structure. The River level is highlited in light green"){#fig-hierbast4}
 
 ::::
 :::: column
@@ -629,107 +321,15 @@ digraph {
 ::::
 ::::::
 
+::: {.notes}
+Within each of those assessment units, the main river stretch have been gathered into polygons. What you see here are reaches for the Assessment Unit numer 1. All of them thus are referencing to said AU. 
+:::
+
 ## River section
 :::::: columns
 :::: column
-```{dot}
-//| label: fig-area_hierarchy_bast5
-//| eval: false
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
-
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=green1
-            fontcolor=green1
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgray
-        fontcolor=lightgray
-          Fishing [
-          style=invis
-          shape=square
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-        subgraph clusterG {
-        label = Division
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterH {
-          label = Subdivision
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-            here [
-            label=data,
-            shape=box, 
-            style =invis
-            ]  
-            }
-          }
-        }   
-      }
-      section -> Fishing -> here [style=invis];
-}
-
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_bast5.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast5}
+![River section level](images/fig-area_hierarchy_bast5.svg "A graph representing the hierarchical structure. The River Section level is highlited in light green"){#fig-hierbast5}
 
 ::::
 :::: column
@@ -737,107 +337,16 @@ digraph {
 ::::
 ::::::
 
+::: {.notes}
+Now we have the river section level. It is made of the actual river segments. We only kept the main stretch of river. Each river section is referencing to its right River level that I just showed you. If tributaries were to be needed, they can easily be retrieved from the dataset and selected using the river section id of choice.
+Moreover, I am currently finalising some work on the river section level. Depending on data availability, river names will be link to each river sections. Some fiedeling might be needed later on, but most of the work should be done. Note that ICES vocab already exists for the names and that it is what we are using. It will allow us all to be consistent without having issues with accents for instance.
+:::
+
 ## Country
 :::::: columns
 :::: column
-```{dot}
-//| label: fig-area_hierarchy_bast6
-//| eval: false
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
-
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgray
-            fontcolor=lightgray
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=firebrick
-        fontcolor=firebrick
-          Fishing [
-          style=invis
-          shape=square
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-        subgraph clusterG {
-        label = Division
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterH {
-          label = Subdivision
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-            here [
-            label=data,
-            shape=box, 
-            style =invis
-            ]  
-            }
-          }
-        }   
-      }
-      section -> Fishing -> here [style=invis];
-}
-
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_bast6.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast6}
+![Country level](images/fig-area_hierarchy_bast6.svg "A graph representing the hierarchical structure. The Country level is highlited in firebrick red"){#fig-hierbast6}
 
 ::::
 :::: column
@@ -845,108 +354,15 @@ digraph {
 ::::
 ::::::
 
+::: {.notes}
+Now the country level is not linked to the levels I just presented but goes back as high as the Inland Stock level. It is just a layer with the countries that are within reach of the Baltic. It could help you to select only data that you might need while working at a national level.
+:::
+
 ## Marine stock
 :::::: columns
 :::: column
-```{dot}
-//| label: fig-area_hierarchy_bast7
-//| eval: false
 
-
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
-
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgray
-            fontcolor=lightgray
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgray
-        fontcolor=lightgray
-          Fishing [
-          style=invis
-          shape=square
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=royalblue4
-      fontcolor=royalblue4
-      center=true
-
-        subgraph clusterG {
-        label = Division
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterH {
-          label = Subdivision
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-            here [
-            label=data,
-            shape=box, 
-            style =invis
-            ]  
-            }
-          }
-        }   
-      }
-      section -> Fishing -> here [style=invis];
-}
-
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_bast7.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast7}
+![Marine stock level](images/fig-area_hierarchy_bast7.svg "A graph representing the hierarchical structure. The Marine Stock level is highlited in deep blue"){#fig-hierbast7}
 
 ::::
 :::: column
@@ -954,208 +370,30 @@ digraph {
 ::::
 ::::::
 
+::: {.notes}
+After that, we can move on to the Marine part. First is the Marine stock level, that is basically all the Baltic Sea.
+:::
+
 ## Division
-```{dot}
-//| label: fig-area_hierarchy_bast8
-//| eval: true
+:::::: columns
+:::: column
+![ICES Division level](images/fig-area_hierarchy_bast8.svg "A graph representing the hierarchical structure. The ICES division level is highlited in blue"){#fig-hierbast8}
 
+::::
+:::: column
+![Map of the ICES division level.](images/fig-marine_division_level.png "A view of of the Baltic with polygons surrounding each ICES divisions"){#fig-marinedivlvl}
+::::
+::::::
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
-
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgray
-            fontcolor=lightgray
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgray
-        fontcolor=lightgray
-          Fishing [
-          style=invis
-          shape=square
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-        subgraph clusterG {
-        label = Division
-        style=full
-        color=royalblue3
-        fontcolor=royalblue3
-        center=true
-
-          subgraph clusterH {
-          label = Subdivision
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-            here [
-            label=data,
-            shape=box, 
-            style =invis
-            ]  
-            }
-          }
-        }   
-      }
-      section -> Fishing -> here [style=invis];
-}
-
-```
-
+::: {.notes}
+Then we have the ICES Division level, that takes most of the Baltic as one Unit and the part around Denmark as another Unit.
+:::
 
 ## Subdivision
 :::::: columns
 :::: column
-```{dot}
-//| label: fig-area_hierarchy_bast9
-//| eval: false
 
-
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
-
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgray
-          fontcolor=lightgray
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgray
-            fontcolor=lightgray
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgray
-        fontcolor=lightgray
-          Fishing [
-          style=invis
-          shape=square
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
-
-        subgraph clusterG {
-        label = Division
-        style=full
-        color=lightgray
-        fontcolor=lightgray
-        center=true
-
-          subgraph clusterH {
-          label = Subdivision
-          style=full
-          color=royalblue2
-          fontcolor=royalblue2
-          center=true
-            here [
-            label=data,
-            shape=box, 
-            style =invis
-            ]  
-            }
-          }
-        }   
-      }
-      section -> Fishing -> here [style=invis];
-}
-
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_bast9.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hierbast9}
+![ICES subdivision level](images/fig-area_hierarchy_bast9.svg "A graph representing the hierarchical structure. The ICES Subdivision level is highlited in blue"){#fig-hierbast9}
 
 ::::
 :::: column
@@ -1163,12 +401,17 @@ digraph {
 ::::
 ::::::
 
+::: {.notes}
+And finally we used the ICES subdivision level, that I believe was already kind of used by WGBAST. You can see the split of it on this image and we would need some feedback from you to know if this would be of use for you, if the level of detail is enough, or things like that ?
+:::
+
 ## WGNAS
 
 ### Hierarchical structure of the database
 
 ```{dot}
 //| label: fig-area_hierarchy_nas
+//| fig-cap: Hierarchical structure of WGNAS habitat database
 
 digraph {
     compound=true;
@@ -1277,1464 +520,145 @@ digraph {
 }
          
 ```
+
+::: {.notes}
+Now moving on to WGNAS. The structure is just slightly different as you can see here. 
+:::
 
 ## Stock
-:::::: columns
-:::: {.column width="50%"}
-```{dot}
-//| label: fig-area_hierarchy_nas1
-//| eval: false
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
+![Stock level](images/fig-area_hierarchy_nas1.svg "A graph representing the hierarchical structure. The Stock level is highlited in red"){#fig-hiernas1}
 
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=red
-      fontcolor=red
-      center=true
+## Stock
+![Map of the full stock level.](images/fig-full_stock_nas.png "A view of of the Europe with a polygon surrounding the stock hierarchical level"){#fig-fullnas1}
 
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgrey
-        fontcolor=lightgrey
-          Fishing [
-          style=invis
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-        subgraph clusterG {
-        label = Subarea
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterH {
-          label = Division
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterI {
-            label = Assessment_unit
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              here [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-
-            subgraph clusterJ{
-            label=Fisheries
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-            other [
-            style=invis
-            ]
-            }
-          }
-        }   
-      }
-    }
-    section -> Fishing -> here -> other [style=invis];
-}
-         
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_nas1.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas1}
-
-::::
-:::: {.column width="50%"}
-![Map of the full stock level.](images/fig-full_stock_nas.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-fullnas1}
-::::
-::::::
+::: {.notes}
+As for WGBAST the full stock level consists of a merge between inland and marine areas of interest for the wg.
+:::
 
 ## Inland stock
-:::::: columns
-:::: column
-```{dot}
-//| label: fig-area_hierarchy_nas2
-//| eval: false
+![Inland stock level](images/fig-area_hierarchy_nas2.svg "A graph representing the hierarchical structure. The Inland stock level is highlited in deep green"){#fig-hiernas2}
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
+## Inland stock
+![Map of the inland stock level.](images/fig-stock_inland_nas.png "A view of Europe with a polygon surrounding the inland stock hierarchical level"){#fig-inlandnas1}
 
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=green
-        fontcolor=green
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgrey
-        fontcolor=lightgrey
-          Fishing [
-          style=invis
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-        subgraph clusterG {
-        label = Subarea
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterH {
-          label = Division
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterI {
-            label = Assessment_unit
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              here [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-
-            subgraph clusterJ{
-            label=Fisheries
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-            other [
-            style=invis
-            ]
-            }
-          }
-        }   
-      }
-    }
-    section -> Fishing -> here -> other [style=invis];
-}
-         
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_nas2.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas2}
-
-::::
-:::: column
-![Map of the full stock level.](images/fig-stock_inland_nas.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-inlandnas1}
-::::
-::::::
+::: {.notes}
+Then inland stock.
+:::
 
 ## Assessment unit
-:::::: columns
-:::: column
-```{dot}
-//| label: fig-area_hierarchy_nas3
-//| eval: false
+![Assessment unit level](images/fig-area_hierarchy_nas3.svg "A graph representing the hierarchical structure. The Assessment unit level is highlited in deep green"){#fig-hiernas3}
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
+::: {.notes}
+Now for assessment unit we had some talks with some of you within WGNAS. We ended up using AUs that were present within Olmos et al. paper from 2020
+:::
 
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
+## Assessment unit
+![Map of the assessment unit level.](images/fig-au_inland_nas.png "A view with polygons surrounding the assessment units spread across Europe and North America"){#fig-auinnas1}
 
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=green3
-        fontcolor=green3
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgrey
-        fontcolor=lightgrey
-          Fishing [
-          style=invis
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-        subgraph clusterG {
-        label = Subarea
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterH {
-          label = Division
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterI {
-            label = Assessment_unit
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              here [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-
-            subgraph clusterJ{
-            label=Fisheries
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-            other [
-            style=invis
-            ]
-            }
-          }
-        }   
-      }
-    }
-    section -> Fishing -> here -> other [style=invis];
-}
-         
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_nas3.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas3}
-
-::::
-:::: column
-![Map of the full stock level.](images/fig-au_inland_nas.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-auinnas1}
-::::
-::::::
+::: {.notes}
+Those assessment units were reaching as far as nothern america so we added them to the database. 
+:::
 
 ## River
-```{dot}
-//| label: fig-area_hierarchy_nas4
-//| eval: false
+![River level](images/fig-area_hierarchy_nas4.svg "A graph representing the hierarchical structure. The River level is highlited in green"){#fig-hiernas4}
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
+::: {.notes}
+Since the river layer references to the assessment unit one, we gathered main river reach for all areas concered by the AUs.
+:::
 
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
+## River
+![Map of the River level.](images/fig-river_nas.png "A view with polygons surrounding the river level spread across Europe and North America"){#fig-rivnas1}
 
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=green2
-          fontcolor=green2
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgrey
-        fontcolor=lightgrey
-          Fishing [
-          style=invis
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-        subgraph clusterG {
-        label = Subarea
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterH {
-          label = Division
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterI {
-            label = Assessment_unit
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              here [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-
-            subgraph clusterJ{
-            label=Fisheries
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-            other [
-            style=invis
-            ]
-            }
-          }
-        }   
-      }
-    }
-    section -> Fishing -> here -> other [style=invis];
-}
-         
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_nas4.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas4}
+::: {.notes}
+The same method has been used here as for WGBAST. All rivers flowing into the same pour point are grouped together.
+:::
 
 ## River section
-```{dot}
-//| label: fig-area_hierarchy_nas5
+![River section level](images/fig-area_hierarchy_nas5.svg "A graph representing the hierarchical structure. The River section level is highlited in light green"){#fig-hiernas5}
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
+## River section
+![Map of the river section level.](images/fig-river_section_nas.png "A view with lines representing the river sections spread across Europe and North America"){#fig-rivsecnas1}
 
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=green1
-            fontcolor=green1
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgrey
-        fontcolor=lightgrey
-          Fishing [
-          style=invis
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-        subgraph clusterG {
-        label = Subarea
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterH {
-          label = Division
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterI {
-            label = Assessment_unit
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              here [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-
-            subgraph clusterJ{
-            label=Fisheries
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-            other [
-            style=invis
-            ]
-            }
-          }
-        }   
-      }
-    }
-    section -> Fishing -> here -> other [style=invis];
-}
-         
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_nas5.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas5}
+::: {.notes}
+Same goes here with the river section level. Work on names is also done and will be released soon. As for WGBAST, ICES vocab is being used.
+:::
 
 ## Country
-```{dot}
-//| label: fig-area_hierarchy_nas6
-//| eval: false
+![Country level](images/fig-area_hierarchy_nas6.svg "A graph representing the hierarchical structure. The Country level is highlited in firebrick red"){#fig-hiernas6}
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
-
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=firebrick
-        fontcolor=firebrick
-          Fishing [
-          style=invis
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-        subgraph clusterG {
-        label = Subarea
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterH {
-          label = Division
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterI {
-            label = Assessment_unit
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              here [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-
-            subgraph clusterJ{
-            label=Fisheries
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-            other [
-            style=invis
-            ]
-            }
-          }
-        }   
-      }
-    }
-    section -> Fishing -> here -> other [style=invis];
-}
-         
-```
-Same as WGBAST
-
-![Map of the full stock level.](images/fig-area_hierarchy_nas6.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas6}
+::: {.notes}
+This layer is the same as for WGBAST
+:::
 
 ## Marine stock
-```{dot}
-//| label: fig-area_hierarchy_nas7
-//| eval: false
+![Marine stock level](images/fig-area_hierarchy_nas7.svg "A graph representing the hierarchical structure. The Marine stock level is highlited in deep blue"){#fig-hiernas7}
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
+## Marine stock
+![Map of the full stock level.](images/fig-stock_marine_nas.png "A view of of the North Atlantic with two polygons surrounding the marine stock hierarchical level"){#fig-stcknas1}
 
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgrey
-        fontcolor=lightgrey
-          Fishing [
-          style=invis
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=royalblue4
-      fontcolor=royalblue4
-      center=true
-
-        subgraph clusterG {
-        label = Subarea
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterH {
-          label = Division
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterI {
-            label = Assessment_unit
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              here [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-
-            subgraph clusterJ{
-            label=Fisheries
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-            other [
-            style=invis
-            ]
-            }
-          }
-        }   
-      }
-    }
-    section -> Fishing -> here -> other [style=invis];
-}
-         
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_nas7.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas7}
+::: {.notes}
+This time the Marine Stock consists of two polygons, one with the European part and one with the NA one. The lines that you see there are just artifacts, they will be delt with later on.
+:::
 
 ## Subarea
-```{dot}
-//| label: fig-area_hierarchy_nas8
-//| eval: false
+![ICES Subarea level](images/fig-area_hierarchy_nas8.svg "A graph representing the hierarchical structure. The ICES Subarea level is highlited in blue"){#fig-hiernas8}
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
+## Subarea
+![Map of the full stock level.](images/fig-subarea_nas.png "A view of the European side of the North Atlantic with polygons surrounding the ICES subarea level"){#fig-subnas1}
 
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgrey
-        fontcolor=lightgrey
-          Fishing [
-          style=invis
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-        subgraph clusterG {
-        label = Subarea
-        style=full
-        color=royalblue3
-        fontcolor=royalblue3
-        center=true
-
-          subgraph clusterH {
-          label = Division
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterI {
-            label = Assessment_unit
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              here [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-
-            subgraph clusterJ{
-            label=Fisheries
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-            other [
-            style=invis
-            ]
-            }
-          }
-        }   
-      }
-    }
-    section -> Fishing -> here -> other [style=invis];
-}
-         
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_nas8.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas8}
+::: {.notes}
+We are then using ICES Subareas
+:::
 
 ## Division
-```{dot}
-//| label: fig-area_hierarchy_nas9
-//| eval: false
+![ICES Division level](images/fig-area_hierarchy_nas9.svg "A graph representing the hierarchical structure. The ICES Division level is highlited in blue"){#fig-hiernas9}
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
+## Division
+![Map of the full stock level.](images/fig-division_nas.png "A view of the European side of the North Atlantic with polygons surrounding the ICES division level"){#fig-divnas1}
 
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgrey
-        fontcolor=lightgrey
-          Fishing [
-          style=invis
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-        subgraph clusterG {
-        label = Subarea
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterH {
-          label = Division
-          style=full
-          color=royalblue2
-          fontcolor=royalblue2
-          center=true
-                
-            subgraph clusterI {
-            label = Assessment_unit
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              here [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-
-            subgraph clusterJ{
-            label=Fisheries
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-            other [
-            style=invis
-            ]
-            }
-          }
-        }   
-      }
-    }
-    section -> Fishing -> here -> other [style=invis];
-}
-         
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_nas9.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas9}
+::: {.notes}
+ICES Divison which is slightly more detailed. Here, same as for WGBAST we are wondering if this level of detail is satisfying for you ? 
+:::
 
 ## Assessment unit
-```{dot}
-//| label: fig-area_hierarchy_nas10
-//| eval: false
+![Assessment unit level](images/fig-area_hierarchy_nas10.svg "A graph representing the hierarchical structure. The Assessment unit level is highlited in light blue"){#fig-hiernas10}
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
+::: {.notes}
+As for assessment units we are also using the AUs used in Olmos et al. paper from 2020 as close as we can following ICES layout. 
+:::
 
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
+## Assessment unit
+![Map of the Assessment unit level.](images/fig-postsmolt.png "A view of of the North Atlantic with polygons surrounding the assessment unit level"){#fig-psnas10}
 
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgrey
-        fontcolor=lightgrey
-          Fishing [
-          style=invis
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
-
-        subgraph clusterG {
-        label = Subarea
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
-
-          subgraph clusterH {
-          label = Division
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterI {
-            label = Assessment_unit
-            style=full
-            color=royalblue
-            fontcolor=royalblue
-              here [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-
-            subgraph clusterJ{
-            label=Fisheries
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-            other [
-            style=invis
-            ]
-            }
-          }
-        }   
-      }
-    }
-    section -> Fishing -> here -> other [style=invis];
-}
-         
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_nas10.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas10}
+::: {.notes}
+Don't hesitate to make comments on this or raise any issue that you might have.
+:::
 
 ## Fisheries
-```{dot}
-//| label: fig-area_hierarchy_nas11
-//| eval: false
+![Fisheries level](images/fig-area_hierarchy_nas11.svg "A graph representing the hierarchical structure. The fisheries level is highlited in light blue"){#fig-hiernas11}
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
+::: {.notes}
+And to finish with WGNAS structure we've added Fisheries as they were present in WGNAS database.
+:::
 
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
+## Fisheries
+![Map of the fisheries level.](images/fig-fisheries_nas.png "A view of of the North Atlantic with three polygons surrounding the fisheries level"){#fig-fishnas10}
 
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
+::: {.notes}
+On this slide there is only 3 of the 5 fisheries present in the data. We would need some more precise information on the last two to be able to add them in.
+Here we can see the GLD fishery, then the LB/SPM/swNF fishery and the FAR fishery. LB and neNF fisheries are missing.
+If any of you have information on this, or can look into it, I'd be glad to retrieve them so I can add those two last fisheries.
+:::
 
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
+## Why is this useful ?
+- Grouping data quickly
+- Keeping consistency throughout the data
 
-          subgraph clusterC {
-          label = River
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=lightgrey
-        fontcolor=lightgrey
-          Fishing [
-          style=invis
-          ]
-        }
-      }
 
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=lightgrey
-      fontcolor=lightgrey
-      center=true
+::: {.notes}
+if you want to group things using this ref you can do it very quickly because the relationship between the different levels are already created. Like you could just gather all catch data from a AU directly.
+:::
 
-        subgraph clusterG {
-        label = Subarea
-        style=full
-        color=lightgrey
-        fontcolor=lightgrey
-        center=true
 
-          subgraph clusterH {
-          label = Division
-          style=full
-          color=lightgrey
-          fontcolor=lightgrey
-          center=true
-                
-            subgraph clusterI {
-            label = Assessment_unit
-            style=full
-            color=lightgrey
-            fontcolor=lightgrey
-              here [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-
-            subgraph clusterJ{
-            label=Fisheries
-            style=full
-            color=royalblue
-            fontcolor=royalblue
-            other [
-            style=invis
-            ]
-            }
-          }
-        }   
-      }
-    }
-    section -> Fishing -> here -> other [style=invis];
-}
-         
-```
-
-![Map of the full stock level.](images/fig-area_hierarchy_nas11.svg "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-hiernas11}
-
-## WGEEL
-
-```{dot}
-//| label: fig-area_hierarchy_eel
-
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
-
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=black
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=green
-        fontcolor=green
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=green3
-        fontcolor=green3
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=green2
-          fontcolor=green2
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=green1
-            fontcolor=green1
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=firebrick
-        fontcolor=firebrick
-        center=true
-        
-            subgraph clusterK{
-          label=EMU
-          style=dashed
-          color=firebrick2
-          fontcolor=firebrick2
-            Fishing [
-            style=invis
-            ]
-          }
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=royalblue4
-      fontcolor=royalblue4
-      center=true
-
-        subgraph clusterG {
-        label = Subarea
-        style=full
-        color=royalblue3
-        fontcolor=royalblue3
-        center=true
-
-          subgraph clusterH {
-          label = Division
-          style=full
-          color=royalblue2
-          fontcolor=royalblue2
-          center=true
-                
-            subgraph clusterI {
-            label = Assessment_unit
-            style=full
-            color=royalblue
-            fontcolor=royalblue
-              here [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }   
-      }
-    }
-    section -> Fishing -> here [style=invis];
-}
-         
-```
-
--   examples (Cedric)
-
--   Split, examples. e.g. gulf of bothnia
-
--   
-
-    ```         
-    EMU split - should they still follow WFD areas
-    ```
-
--   How do we split the sea in a consistent way: We could show examples: showing different countries (Germany, PL, Estonia) how they handle the limitations, how could we unify this consistently
-
-## WGTRUTTA
-
--   examples (Cedric)
--   For WGTRUTTA: theyre using an app to do a manual edition of the basins using periclis software, they also have this big database structure where they want to gather information on the population. Think of something how we could work with them! (Check their presentation)
--   work that has been done by Andrew
--   Flow!
--   More discussions on how to incorporate the WGTRUTTA work
-
-## Other migratory species
-
-DIADSEA. Future collaboration opportunities
-
-![](images/clipboard-4112571689.png){width="468"}
-
-![](images/clipboard-4003305238.png){width="505"}
-
-## Opinions?
-
--   Validate spatial structure
--   the structure might be different for different species
--   Starting from wide area to lower level: question how do we split
-
-## Thank you!
-
-Last hour (and more if needed) open for discussion
-
-We want to have people go into the WG and come back with it
-
-emails:
-
-Webpage!
-
-## Feedback
-
-Webinar questions: we will collate and add answers to the HTML
-
-SHOW TIMELINES! Habitat first, then REMIND THERE IS OTHERS TOO
+# Now it's time for a coffee break !

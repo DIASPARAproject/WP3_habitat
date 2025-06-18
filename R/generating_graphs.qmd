@@ -1,0 +1,2170 @@
+# WGBAST
+
+## Stock
+```{dot}
+//| label: fig-area_hierarchy_bast1
+//| eval: false
+//| echo: false
+//| include: false
+
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=red
+      fontcolor=red
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgray
+            fontcolor=lightgray
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgray
+        fontcolor=lightgray
+          Fishing [
+          style=invis
+          shape=square
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+        subgraph clusterG {
+        label = Division
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterH {
+          label = Subdivision
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+            here [
+            label=data,
+            shape=box, 
+            style =invis
+            ]  
+            }
+          }
+        }   
+      }
+      
+      section -> Fishing -> here [style=invis];
+}
+
+```
+
+
+## Inland Stock
+:::::: columns
+:::: column
+```{dot}
+//| label: fig-area_hierarchy_bast2
+//| eval: false
+
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=green
+        fontcolor=green
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgray
+            fontcolor=lightgray
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgray
+        fontcolor=lightgray
+          Fishing [
+          style=invis
+          shape=square
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+        subgraph clusterG {
+        label = Division
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterH {
+          label = Subdivision
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+            here [
+            label=data,
+            shape=box, 
+            style =invis
+            ]  
+            }
+          }
+        }   
+      }
+      section -> Fishing -> here [style=invis];
+}
+
+```
+
+## Assessment unit
+:::::: columns
+:::: column
+```{dot}
+//| label: fig-area_hierarchy_bast3
+//| eval: false
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=green3
+        fontcolor=green3
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgray
+            fontcolor=lightgray
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgray
+        fontcolor=lightgray
+          Fishing [
+          style=invis
+          shape=square
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+        subgraph clusterG {
+        label = Division
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterH {
+          label = Subdivision
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+            here [
+            label=data,
+            shape=box, 
+            style =invis
+            ]  
+            }
+          }
+        }   
+      }
+      section -> Fishing -> here [style=invis];
+}
+
+```
+
+
+## River
+:::::: columns
+:::: column
+```{dot}
+//| label: fig-area_hierarchy_bast4
+//| eval: false
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=green2
+          fontcolor=green2
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgray
+            fontcolor=lightgray
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgray
+        fontcolor=lightgray
+          Fishing [
+          style=invis
+          shape=square
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+        subgraph clusterG {
+        label = Division
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterH {
+          label = Subdivision
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+            here [
+            label=data,
+            shape=box, 
+            style =invis
+            ]  
+            }
+          }
+        }   
+      }
+      section -> Fishing -> here [style=invis];
+}
+
+```
+
+
+## River section
+:::::: columns
+:::: column
+```{dot}
+//| label: fig-area_hierarchy_bast5
+//| eval: false
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=green1
+            fontcolor=green1
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgray
+        fontcolor=lightgray
+          Fishing [
+          style=invis
+          shape=square
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+        subgraph clusterG {
+        label = Division
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterH {
+          label = Subdivision
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+            here [
+            label=data,
+            shape=box, 
+            style =invis
+            ]  
+            }
+          }
+        }   
+      }
+      section -> Fishing -> here [style=invis];
+}
+
+```
+
+
+## Country
+:::::: columns
+:::: column
+```{dot}
+//| label: fig-area_hierarchy_bast6
+//| eval: false
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgray
+            fontcolor=lightgray
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=firebrick
+        fontcolor=firebrick
+          Fishing [
+          style=invis
+          shape=square
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+        subgraph clusterG {
+        label = Division
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterH {
+          label = Subdivision
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+            here [
+            label=data,
+            shape=box, 
+            style =invis
+            ]  
+            }
+          }
+        }   
+      }
+      section -> Fishing -> here [style=invis];
+}
+
+```
+
+
+## Marine stock
+:::::: columns
+:::: column
+```{dot}
+//| label: fig-area_hierarchy_bast7
+//| eval: false
+
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgray
+            fontcolor=lightgray
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgray
+        fontcolor=lightgray
+          Fishing [
+          style=invis
+          shape=square
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=royalblue4
+      fontcolor=royalblue4
+      center=true
+
+        subgraph clusterG {
+        label = Division
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterH {
+          label = Subdivision
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+            here [
+            label=data,
+            shape=box, 
+            style =invis
+            ]  
+            }
+          }
+        }   
+      }
+      section -> Fishing -> here [style=invis];
+}
+
+```
+
+
+## Division
+```{dot}
+//| label: fig-area_hierarchy_bast8
+//| eval: true
+
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgray
+            fontcolor=lightgray
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgray
+        fontcolor=lightgray
+          Fishing [
+          style=invis
+          shape=square
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+        subgraph clusterG {
+        label = Division
+        style=full
+        color=royalblue3
+        fontcolor=royalblue3
+        center=true
+
+          subgraph clusterH {
+          label = Subdivision
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+            here [
+            label=data,
+            shape=box, 
+            style =invis
+            ]  
+            }
+          }
+        }   
+      }
+      section -> Fishing -> here [style=invis];
+}
+
+```
+
+
+## Subdivision
+:::::: columns
+:::: column
+```{dot}
+//| label: fig-area_hierarchy_bast9
+//| eval: false
+
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgray
+            fontcolor=lightgray
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgray
+        fontcolor=lightgray
+          Fishing [
+          style=invis
+          shape=square
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+        subgraph clusterG {
+        label = Division
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterH {
+          label = Subdivision
+          style=full
+          color=royalblue2
+          fontcolor=royalblue2
+          center=true
+            here [
+            label=data,
+            shape=box, 
+            style =invis
+            ]  
+            }
+          }
+        }   
+      }
+      section -> Fishing -> here [style=invis];
+}
+
+```
+
+
+# WGNAS
+
+## Stock
+:::::: columns
+:::: {.column width="50%"}
+```{dot}
+//| label: fig-area_hierarchy_nas1
+//| eval: false
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=red
+      fontcolor=red
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgrey
+        fontcolor=lightgrey
+          Fishing [
+          style=invis
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+        subgraph clusterG {
+        label = Subarea
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterH {
+          label = Division
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterI {
+            label = Assessment_unit
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              here [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+
+            subgraph clusterJ{
+            label=Fisheries
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+            other [
+            style=invis
+            ]
+            }
+          }
+        }   
+      }
+    }
+    section -> Fishing -> here -> other [style=invis];
+}
+         
+```
+
+## Inland stock
+```{dot}
+//| label: fig-area_hierarchy_nas2
+//| eval: false
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=green
+        fontcolor=green
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgrey
+        fontcolor=lightgrey
+          Fishing [
+          style=invis
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+        subgraph clusterG {
+        label = Subarea
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterH {
+          label = Division
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterI {
+            label = Assessment_unit
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              here [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+
+            subgraph clusterJ{
+            label=Fisheries
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+            other [
+            style=invis
+            ]
+            }
+          }
+        }   
+      }
+    }
+    section -> Fishing -> here -> other [style=invis];
+}
+         
+```
+
+## Assessment unit
+```{dot}
+//| label: fig-area_hierarchy_nas3
+//| eval: false
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=green3
+        fontcolor=green3
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgrey
+        fontcolor=lightgrey
+          Fishing [
+          style=invis
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+        subgraph clusterG {
+        label = Subarea
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterH {
+          label = Division
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterI {
+            label = Assessment_unit
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              here [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+
+            subgraph clusterJ{
+            label=Fisheries
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+            other [
+            style=invis
+            ]
+            }
+          }
+        }   
+      }
+    }
+    section -> Fishing -> here -> other [style=invis];
+}
+         
+```
+
+## River
+```{dot}
+//| label: fig-area_hierarchy_nas4
+//| eval: false
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=green2
+          fontcolor=green2
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgrey
+        fontcolor=lightgrey
+          Fishing [
+          style=invis
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+        subgraph clusterG {
+        label = Subarea
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterH {
+          label = Division
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterI {
+            label = Assessment_unit
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              here [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+
+            subgraph clusterJ{
+            label=Fisheries
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+            other [
+            style=invis
+            ]
+            }
+          }
+        }   
+      }
+    }
+    section -> Fishing -> here -> other [style=invis];
+}
+         
+```
+
+## River section
+```{dot}
+//| label: fig-area_hierarchy_nas5
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=green1
+            fontcolor=green1
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgrey
+        fontcolor=lightgrey
+          Fishing [
+          style=invis
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+        subgraph clusterG {
+        label = Subarea
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterH {
+          label = Division
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterI {
+            label = Assessment_unit
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              here [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+
+            subgraph clusterJ{
+            label=Fisheries
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+            other [
+            style=invis
+            ]
+            }
+          }
+        }   
+      }
+    }
+    section -> Fishing -> here -> other [style=invis];
+}
+         
+```
+
+## Country
+```{dot}
+//| label: fig-area_hierarchy_nas6
+//| eval: false
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=firebrick
+        fontcolor=firebrick
+          Fishing [
+          style=invis
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+        subgraph clusterG {
+        label = Subarea
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterH {
+          label = Division
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterI {
+            label = Assessment_unit
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              here [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+
+            subgraph clusterJ{
+            label=Fisheries
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+            other [
+            style=invis
+            ]
+            }
+          }
+        }   
+      }
+    }
+    section -> Fishing -> here -> other [style=invis];
+}
+         
+```
+
+## Marine stock
+```{dot}
+//| label: fig-area_hierarchy_nas7
+//| eval: false
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgrey
+        fontcolor=lightgrey
+          Fishing [
+          style=invis
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=royalblue4
+      fontcolor=royalblue4
+      center=true
+
+        subgraph clusterG {
+        label = Subarea
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterH {
+          label = Division
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterI {
+            label = Assessment_unit
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              here [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+
+            subgraph clusterJ{
+            label=Fisheries
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+            other [
+            style=invis
+            ]
+            }
+          }
+        }   
+      }
+    }
+    section -> Fishing -> here -> other [style=invis];
+}
+         
+```
+
+## Subarea
+```{dot}
+//| label: fig-area_hierarchy_nas8
+//| eval: false
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgrey
+        fontcolor=lightgrey
+          Fishing [
+          style=invis
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+        subgraph clusterG {
+        label = Subarea
+        style=full
+        color=royalblue3
+        fontcolor=royalblue3
+        center=true
+
+          subgraph clusterH {
+          label = Division
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterI {
+            label = Assessment_unit
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              here [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+
+            subgraph clusterJ{
+            label=Fisheries
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+            other [
+            style=invis
+            ]
+            }
+          }
+        }   
+      }
+    }
+    section -> Fishing -> here -> other [style=invis];
+}
+         
+```
+
+## Division
+```{dot}
+//| label: fig-area_hierarchy_nas9
+//| eval: false
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgrey
+        fontcolor=lightgrey
+          Fishing [
+          style=invis
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+        subgraph clusterG {
+        label = Subarea
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterH {
+          label = Division
+          style=full
+          color=royalblue2
+          fontcolor=royalblue2
+          center=true
+                
+            subgraph clusterI {
+            label = Assessment_unit
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              here [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+
+            subgraph clusterJ{
+            label=Fisheries
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+            other [
+            style=invis
+            ]
+            }
+          }
+        }   
+      }
+    }
+    section -> Fishing -> here -> other [style=invis];
+}
+         
+```
+
+## Assessment unit
+```{dot}
+//| label: fig-area_hierarchy_nas10
+//| eval: false
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgrey
+        fontcolor=lightgrey
+          Fishing [
+          style=invis
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+        subgraph clusterG {
+        label = Subarea
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterH {
+          label = Division
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterI {
+            label = Assessment_unit
+            style=full
+            color=royalblue
+            fontcolor=royalblue
+              here [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+
+            subgraph clusterJ{
+            label=Fisheries
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+            other [
+            style=invis
+            ]
+            }
+          }
+        }   
+      }
+    }
+    section -> Fishing -> here -> other [style=invis];
+}
+         
+```
+
+## Fisheries
+```{dot}
+//| label: fig-area_hierarchy_nas11
+//| eval: false
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+        subgraph clusterB {
+        label = Assessment_unit
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterC {
+          label = River
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterD {
+            label = River_section
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              section [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+          }
+        }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgrey
+        fontcolor=lightgrey
+          Fishing [
+          style=invis
+          ]
+        }
+      }
+
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgrey
+      fontcolor=lightgrey
+      center=true
+
+        subgraph clusterG {
+        label = Subarea
+        style=full
+        color=lightgrey
+        fontcolor=lightgrey
+        center=true
+
+          subgraph clusterH {
+          label = Division
+          style=full
+          color=lightgrey
+          fontcolor=lightgrey
+          center=true
+                
+            subgraph clusterI {
+            label = Assessment_unit
+            style=full
+            color=lightgrey
+            fontcolor=lightgrey
+              here [
+              label=data,
+              shape=box, 
+              style =invis
+              ]  
+            }
+
+            subgraph clusterJ{
+            label=Fisheries
+            style=full
+            color=royalblue
+            fontcolor=royalblue
+            other [
+            style=invis
+            ]
+            }
+          }
+        }   
+      }
+    }
+    section -> Fishing -> here -> other [style=invis];
+}
+         
+```
