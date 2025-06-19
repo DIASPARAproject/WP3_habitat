@@ -32,7 +32,10 @@ schemas = {
     "h_southmedcentral": ["catchments", "riversegments"],
     "h_southmedeast": ["catchments", "riversegments"],
     "h_southmedwest": ["catchments", "riversegments"],
-    "h_svalbard": ["catchments", "riversegments"]
+    "h_svalbard": ["catchments", "riversegments"],
+    "ref": ["tr_area_are"],
+    "refnas": ["tr_area_are"],
+    "refbast": ["tr_area_are"]
 }
 
 for schema, tables in schemas.items():

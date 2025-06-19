@@ -21,3 +21,7 @@ pg_dump -U postgres -F custom -d diaspara -n h_southmedcentral > h_southmedcentr
 pg_dump -U postgres -F custom -d diaspara -n h_southmedeast > h_southmedeast.pgc
 pg_dump -U postgres -F custom -d diaspara -n h_southmedwest > h_southmedwest.pgc
 pg_dump -U postgres -F custom -d diaspara -n h_svalbard > h_svalbard.pgc
+
+pg_dump -U postgres -F custom -d diaspara -t ref.tr_area_are > ref_area.pgc
+pg_dump -U postgres -F custom -d diaspara -t refnas.tr_area_are > refnas_area.pgc
+pg_dump -U postgres -F custom -d diaspara -t refbast.tr_area_are > refbast_area.pgc
