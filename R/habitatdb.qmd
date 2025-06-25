@@ -705,10 +705,10 @@ FROM filtered_basin;
 
 ## Creating a hierarchical structure for WGBAST
 
-We decided to add a [hierarchical structure](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p7/midb.html#area-tr_area_are) into the database. It will be handled through [referential tables](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p7/midb.html#referential-tables). Several levels will be layed out (@fig-area_hierarchy) depending on the needs of each working group.
+We decided to add a [hierarchical structure](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p7/midb.html#area-tr_area_are) into the database. It will be handled through [referential tables](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p7/midb.html#referential-tables). Several levels will be layed out (@fig-area_hierarchy_bast) depending on the needs of each working group.
 
 ```{dot}
-//| label: fig-area_hierarchy_nas
+//| label: fig-area_hierarchy_bast
 //| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refnas.
 
 
@@ -960,7 +960,7 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 
 ```
 
-
+![Map of the ICES division level.](images/fig-marine_division_level.png "A view of of the Baltic with polygons surrounding each ICES divisions"){#fig-marinedivlvl}
 
 #### ICES subdivision
 
@@ -1014,10 +1014,16 @@ $$ LANGUAGE plpgsql;
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
   "SELECT * FROM refbast.tr_area_are
-  WHERE are_id = ANY(ARRAY[1,2]) OR are_are_id = ANY(ARRAY[2,5684,5685])
+  WHERE are_id = ANY(ARRAY[1,2]) OR are_lev_code = ANY(ARRAY['Division', 'Subdivision'])
   ORDER BY are_id;")
 
-knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+DT::datatable(fstock_lvl,
+                rownames = FALSE, 
+                class = "stripe hover compact", 
+                options = list(dom = 't',
+                          pageLength = 100))
+
+#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1073,7 +1079,7 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 ![Map of the inland stock level.](images/fig-inland_stock_level.png "A view of Scandinavia with a polygon surrounding the inland stock hierarchical level"){#fig-inlandstocklvl}
 
 
-#### Country
+#### Country {#sec-wgbast-country}
 
 This next layer is optional, it is added here as an example to show what it could look like.
 
@@ -1135,7 +1141,13 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id = ANY(ARRAY[1,3,4,5,6,7,8,9,10,11,12])
   ORDER BY are_id;")
 
-knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+DT::datatable(fstock_lvl,
+                rownames = FALSE,
+                class = "stripe hover compact", 
+                options = list(dom = 't',
+                          pageLength = 100))
+
+#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1201,10 +1213,16 @@ SELECT nextval('refbast.seq') AS are_id,
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
   "SELECT * FROM refbast.tr_area_are
-  WHERE are_id = ANY(ARRAY[1,3]) OR are_are_id = 3
+  WHERE are_id = ANY(ARRAY[1,3]) OR are_lev_code = 'Assessment_unit' 
   ORDER BY are_id;")
 
-knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+DT::datatable(fstock_lvl,
+                rownames = FALSE,
+                class = "stripe hover compact", 
+                options = list(dom = 't',
+                          pageLength = 100))
+
+#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1291,17 +1309,24 @@ $$ LANGUAGE plpgsql;
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
   "SELECT * FROM refbast.tr_area_are
-  WHERE are_id = ANY(ARRAY[1,3]) OR are_are_id = ANY(ARRAY[3,13])
+  WHERE are_id = ANY(ARRAY[1,3]) OR are_lev_code = 'Assessment_unit' 
+  OR are_are_id = 13
   ORDER BY are_id;")
 
-knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+DT::datatable(fstock_lvl,
+                rownames = FALSE,
+                class = "stripe hover compact", 
+                options = list(dom = 't',
+                          pageLength = 100))
+
+#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
 
 ![Map of reaches composing WGBAST first assessment units level.](images/fig-riverlevel.png "A view of the Bothian bay with polygons surrounding each reach within the first assessment unit"){#fig-riverlvl}
 
-#### River sections
+#### River section
 
 This query inserts entries at the **river_section** level in the `refbast.tr_area_are` table by splitting the main river areas into smaller sections. We start by selecting all polygons corresponding to rivers (`are_lev_code = 'River'`) to define the broader river areas that will serve as the parent units.
 
@@ -1344,16 +1369,15 @@ SELECT DISTINCT ON (are_code) * FROM river_segments;
 ![Map of main stretch of rivers in the Baltic area.](images/fig-river_section_level.png "A view of Scandinavia with lines representing main stretch of rivers that flow into the Baltic"){#fig-riverseclvl}
 
 ## Creating a hierarchical structure for WGNAS
-
-
+The work done on the structural hierarchy for WGNAS follows what has been done for WGBAST, although there is some differences in the layers used. Futhermore, in parallel of the Assessment Unit level, a Fisheries level has been added (@fig-area_hierarchy_nas).
 ```{dot}
 //| label: fig-area_hierarchy_nas
-//| fig-cap: The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refnas.
-
+//| fig-cap: Hierarchical structure of WGNAS habitat database
 
 digraph {
     compound=true;
     newrank=true;
+    rankdir="LR";
 
     subgraph clusterZ {
       label = Stock
@@ -1453,9 +1477,651 @@ digraph {
         }   
       }
     }
+    section -> Fishing -> here -> other [style=invis];
 }
          
 ```
+
+This structure will be added into a table called `refnas.tr_area_are`.
+As for **WGBAST** hierarchy, the first layer of the structure is the global Stock level (@fig-fullnas1). It includes all catchments that have a river flowing into areas studied by WGNAS (@fig-inlandnas1) as well as all ICES Subareas corresponding to said areas of interest (@fig-stcknas1). 
+
+This query performs an update of the main **NEAC** area, corresponding to the record with the identifier (`are_id`) equal to `1`. It begins by merging (`ST_Union`) all geometries found in the `geom_polygon` column of the `refnas.tr_area_are` table, then creates a concave hull around this union using the `ST_ConcaveHull` function. The resulting geometry is filtered to retain only shapes with an area (`ST_Area`) greater than `1`, thereby eliminating artifacts or small fragments. The final `UPDATE` statement modifies the record with `are_id = 1`: the parent area reference (`are_are_id`) is set to `NULL`, the area code becomes simply `'NEAC'`, the level remains `'Stock'`, the marine status is left undefined (`are_ismarine = NULL`), the main geometry is replaced with the filtered shape converted into a multipolygon via `ST_Multi`, and the linear geometry (`geom_line`) is set to `NULL`.
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the global stock level for WGNAS
+#| warning: FALSE
+#| message: FALSE
+
+WITH unioned_polygons AS (
+  SELECT (ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(geom_polygon))).geom)),0.0001,FALSE)) AS geom
+  FROM refnas.tr_area_are
+),
+area_check AS (
+  SELECT geom, ST_Area(geom) AS area
+  FROM unioned_polygons
+),
+filtered_polygon AS (
+  SELECT geom
+  FROM area_check
+  WHERE area > 1
+)
+UPDATE refnas.tr_area_are
+SET 
+  are_are_id = NULL,
+  are_code = 'NEAC',
+  are_lev_code = 'Stock',
+  are_ismarine = NULL,
+  geom_polygon = (SELECT ST_Multi(geom) FROM filtered_polygon),
+  geom_line = NULL
+WHERE are_id = 1;
+```
+
+```{r}
+#| label: refnas.tr_area_are Stock level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the global Stock level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refnas.tr_area_are
+  WHERE are_id = 1
+  ORDER BY are_id;")
+
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+![Map of the full stock level.](images/fig-full_stock_nas.png "A view of of the Europe with a polygon surrounding the stock hierarchical level"){#fig-fullnas1}
+
+## Marine level
+### Stock
+
+The first query inserts a new record into the `refnas.tr_area_are` table representing the marine area called **NEAC marine**. It begins with a `WITH` clause named `selected_level`, which aggregates (`ST_Union`) geometries from the `ref.tr_fishingarea_fia` table where the area level (`fia_level`) is `'Division'` and the area code (`fia_area`) is `'27'`. Specific divisions — `'27.3.b, c'` and `'27.3.d'` — are explicitly excluded from the selection. The resulting geometry (`geom`) is then inserted into the `geom_polygon` column. The area identifier (`are_id`) is automatically generated using a sequence (`nextval('refnas.seq')`), the parent area (`are_are_id`) is set to `1`, the area code (`are_code`) is set to `'NEAC marine'`, the level is defined as `'Stock'` (`are_lev_code`), the area is marked as marine (`are_ismarine = true`), and the line geometry (`geom_line`) is left empty (`NULL`).
+
+Similarly, the second query inserts a marine area called **NAC marine** using the same structure. It also begins with a `WITH` clause named `selected_level`, which merges (`ST_Union(geom)`) geometries from the `ref.tr_fishingarea_fia` table, but this time focusing on area `'21'` at the `'Division'` level. The resulting unified geometry is used to populate the `geom_polygon` column. The area is assigned an auto-incremented `are_id`, no parent (`are_are_id = NULL`), an area code of `'NAC marine'`, a level `'Stock'`, is explicitly identified as marine (`are_ismarine = true`), and has no line geometry (`geom_line = NULL`).
+
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the marine stock level for WGNAS
+#| warning: FALSE
+#| message: FALSE
+
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH selected_level AS (
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia
+	WHERE "fia_level" = 'Division' AND "fia_area" = '27'
+	AND "fia_division" NOT IN ('27.3.b, c','27.3.d'))
+SELECT nextval('refnas.seq') AS are_id,
+	1 AS are_are_id,
+	'NEAC marine' AS are_code,
+	'Stock' AS are_lev_code,
+	--are_wkg_code,  by default
+	true AS are_ismarine,
+	geom AS _polygon,
+	NULL AS geom_line
+	FROM selected_level;
+	
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refnas.seq') AS are_id,
+	1 AS are_are_id,
+	'NEAC inland' AS are_code,
+	'Stock' AS are_lev_code,
+	false AS are_ismarine,
+	ST_Union(shape) AS geom_polygon,
+	NULL AS geom_line
+FROM tempo.catchments_nas
+WHERE REGEXP_REPLACE(tableoid::regclass::text, '\.catchments$', '') IN (
+	'h_barents', 'h_biscayiberian', 'h_celtic', 'h_iceland',
+	'h_norwegian', 'h_nseanorth', 'h_nseasouth', 'h_nseauk',
+	'h_svalbard'
+);
+```
+
+```{r}
+#| label: refnas.tr_area_are marine Stock level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the marine Stock level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refnas.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,2,4]);")
+
+DT::datatable(fstock_lvl, 
+                rownames = FALSE,
+                class = "stripe hover compact", 
+                options = list(dom = 't'))
+#knitr::kable(fstock_lvl, format = "html") %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+![Map of the full stock level.](images/fig-stock_marine_nas.png "A view of of the North Atlantic with two polygons surrounding the marine stock hierarchical level"){#fig-stcknas1}
+
+### Subarea
+
+This query inserts new entries into the `refnas.tr_area_are` table, each representing a **ICES marine subarea** within the broader fishing area `'27'`. It pulls source data from the `ref.tr_fishingarea_fia` table, filtering for rows where the area level (`fia_level`) is `'Subarea'` and the main area code (`fia_area`) is `'27'`. For each matching row, it extracts the subarea code (`fia_code`) to use as the new area code (`are_code`), and inserts the associated geometry (`geom`) into the `geom_polygon` column. The `are_id` is generated dynamically using the `refnas.seq` sequence, each inserted row is assigned the parent area ID `1` (`are_are_id = 1`), the level is marked as `'Subarea'` (`are_lev_code`), and all entries are flagged as marine (`are_ismarine = true`). The linear geometry field (`geom_line`) is not used and is therefore set to `NULL`.
+
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the ICES subarea level for WGNAS
+#| warning: FALSE
+#| message: FALSE
+
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT 
+  nextval('refnas.seq') AS are_id,
+  1 AS are_are_id,
+  fia_code AS are_code,
+  'Subarea' AS are_lev_code,
+  true AS are_ismarine,
+  geom AS geom_polygon,
+  NULL AS geom_line
+FROM ref.tr_fishingarea_fia
+WHERE fia_level = 'Subarea'
+  AND fia_area = '27';
+```
+
+```{r}
+#| label: refnas.tr_area_are marine ICES Subarea level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the marine ICES Subarea level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refnas.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,2]) OR are_lev_code = 'Subarea'
+  ORDER BY are_id;")
+
+DT::datatable(fstock_lvl,
+                rownames = FALSE, 
+                class = "stripe hover compact", 
+                options = list(dom = 't',
+                          pageLength = 100))
+
+#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+![Map of the full stock level.](images/fig-subarea_nas.png "A view of the European side of the North Atlantic with polygons surrounding the ICES subarea level"){#fig-subnas1}
+
+
+
+### Division
+
+This query inserts new records into the `refnas.tr_area_are` table, each corresponding to a **ICES marine division** within fishing area `'27'`. It retrieves division-level data (`fia_level = 'Division'`) from the `ref.tr_fishingarea_fia` table (aliased as `div`) and joins it with previously inserted **subarea** records from `refnas.tr_area_are` (aliased as `subarea`). The join condition reconstructs the subarea code by extracting the first and second components of the division code (`fia_code`), separated by periods, and concatenating them — effectively matching each division to its parent subarea based on shared code prefixes.
+
+For each resulting pair, a new `are_id` is generated using `nextval('refnas.seq')`, and the parent area (`are_are_id`) is set to the matching subarea's `are_id`. The division code (`div.fia_code`) becomes the new area code (`are_code`), the level is explicitly set to `'Division'` (`are_lev_code`), and all divisions are marked as marine (`are_ismarine = true`). The corresponding geometry (`div.geom`) is inserted into the `geom_polygon` column, while `geom_line` is left empty (`NULL`).
+
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the ICES Division level for WGNAS
+#| warning: FALSE
+#| message: FALSE
+
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT 
+  nextval('refnas.seq') AS are_id,
+  subarea.are_id AS are_are_id,
+  div.fia_code AS are_code,
+  'Division' AS are_lev_code,
+  true AS are_ismarine,
+  div.geom AS geom_polygon,
+  NULL AS geom_line
+FROM ref.tr_fishingarea_fia div
+JOIN refnas.tr_area_are subarea
+  ON subarea.are_code = split_part(div.fia_code, '.', 1) || '.' || split_part(div.fia_code, '.', 2)
+WHERE div.fia_level = 'Division'
+  AND div.fia_area = '27'
+  AND subarea.are_lev_code = 'Subarea';
+```
+
+```{r}
+#| label: refnas.tr_area_are marine ICES Division level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the marine ICES Division level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refnas.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,2]) OR are_lev_code = 'Subarea'
+  OR are_lev_code = 'Division'
+  ORDER BY are_id;")
+
+DT::datatable(fstock_lvl,
+                rownames = FALSE, 
+                class = "stripe hover compact", 
+                options = list(dom = 't',
+                          pageLength = 100))
+
+#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+![Map of the full stock level.](images/fig-division_nas.png "A view of the European side of the North Atlantic with polygons surrounding the ICES division level"){#fig-divnas1}
+
+
+### Assessment unit
+After some disscussions with WGNAS, it was decided to use as Assessment units at sea postsmolt areas from [Olmos et al. (2021)](https://doi.org/10.1111/gcb.14913). Those areas where recreated as close as possible using ICES Division.
+
+This query inserts a new spatial unit into the `refnas.tr_area_are` table, representing a **marine assessment unit** called **"postsmolt 1"**. It begins with a Common Table Expression (`WITH geomunion`) that selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table. The filter targets rows where the area level (`fia_level`) is `'Division'` and the division code (`fia_division`) matches one of the values in the array: `'21.4.X'`, `'21.4.W'`, or `'21.5.Y'`.
+
+The resulting unified geometry is inserted as a single polygon into the `geom_polygon` column. A new area ID (`are_id`) is automatically generated using `nextval('refnas.seq')`, the parent area is set to `2` (`are_are_id = 2`), the area code is labeled `'postsmolt 1'`, and the level is defined as `'Assessment_unit'` via `are_lev_code`. The area is explicitly marked as marine (`are_ismarine = true`), and no line geometry is provided (`geom_line = NULL`).
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the assessment unit 1 level for WGNAS
+#| warning: FALSE
+#| message: FALSE
+
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH geomunion AS(
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia tff 
+	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.4.X','21.4.W','21.5.Y']))
+SELECT nextval('refnas.seq') AS are_id,
+       2 AS are_are_id,
+       'postsmolt 1' AS are_code,
+       'Assessment_unit' AS are_lev_code,
+        true AS are_ismarine,
+        geom AS geom_polygon,
+		NULL AS geom_line
+        FROM geomunion;
+```
+
+
+
+```{r}
+#| label: refnas.tr_area_are marine assessment unit level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the marine assessment unit in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refnas.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,2,4]) OR are_lev_code = 'Assessment_unit'
+  AND are_ismarine = 'true'
+  ORDER BY are_id;")
+
+DT::datatable(fstock_lvl,
+                rownames = FALSE, 
+                class = "stripe hover compact", 
+                options = list(dom = 't',
+                          pageLength = 100))
+
+#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+
+
+![Map of the Assessment unit level.](images/fig-postsmolt.png "A view of of the North Atlantic with polygons surrounding the assessment unit level"){#fig-psnas10}
+
+:::{.questionbox}
+::::{.questionbox-header}
+::::{.questionbox-icon}
+::::
+Question to WGNAS
+::::
+::::{.questionbox-body}
+Are geometries for postsmolt satisfying ? For instance, giving that we are using ICES Divisions to create them, there is an overlap between postsmolt 4 and 5.
+::::
+:::
+
+### Fisheries
+We decided to create a Fisheries level following work done by [WGNAS](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p4/wgnas_salmoglob_description.html#area) with their models. To create them we decided to follow fisheries areas present in [Olmos et al. (2021)](https://doi.org/10.1111/gcb.14913). 
+
+This query updates an existing record in the `refnas.tr_area_are` table that represents the **"GLD fishery"**. It begins with a Common Table Expression (`WITH geomunion`) that selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table. It filters for entries where the area level (`fia_level`) is `'Division'` and the division code (`fia_division`) is one of the specified values: `'21.0.A'`, `'21.1.A'`, `'21.1.B'`, `'21.0.B'`, `'21.1.C'`, `'21.1.D'`, or `'21.1.E'`.
+The merged geometry (`geom`) is then used in an `UPDATE` to overwrite the `geom_polygon` field of the area whose code (`are_code`) is `'GLD fishery'`. Additionally, the parent area reference (`are_are_id`) is updated and set to `4`.
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the fisheries GLD level for WGNAS
+#| warning: FALSE
+#| message: FALSE
+
+WITH geomunion AS(
+	SELECT ST_Union(geom) AS geom
+	FROM ref.tr_fishingarea_fia tff 
+	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.0.A','21.1.A','21.1.B','21.0.B','21.1.C','21.1.D','21.1.E']))
+UPDATE refnas.tr_area_are
+SET geom_polygon = geom,
+	are_are_id = 4
+FROM geomunion
+WHERE are_code = 'GLD fishery';
+```
+
+
+```{r}
+#| label: refnas.tr_area_are marine fisheries level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the marine fisheries level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refnas.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,2,4]) OR are_lev_code = 'Fisheries';")
+
+DT::datatable(fstock_lvl,
+                rownames = FALSE, 
+                class = "stripe hover compact", 
+                options = list(dom = 't',
+                          pageLength = 100))
+
+#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+
+![Map of the fisheries level.](images/fig-fisheries_nas.png "A view of of the North Atlantic with three polygons surrounding the fisheries level"){#fig-fishnas10}
+
+
+:::{.questionbox}
+::::{.questionbox-header}
+::::{.questionbox-icon}
+::::
+Question to WGNAS
+::::
+::::{.questionbox-body}
+- Here we only created fisheries for 3 out of 5 fisheries present in the dataset (GLD, LB/SPM/swNF and FAR). We are missing some informations on where the two remaining ones would need to be (LB & neNF). 
+- Is the overall level of details for the marine hierarchical structure working for the WG needs ?  
+::::
+:::
+
+## Continental level
+### Stock
+This query adds an entry named **NEAC inland** to the same table. It retrieves data from `tempo.catchments_nas`, a temporary table containing inland hydrographic features (`shape`). It selects only the records whose source table (dynamically extracted via `tableoid`) belongs to a specific set of tables such as `'h_barents'`, `'h_biscayiberian'`, `'h_celtic'`, etc. The selected shapes are merged using `ST_Union(shape)` to create a single polygon representing the inland part of the NEAC area. As before, a new `are_id` is generated, `are_are_id` is set to `1`, `are_code` is `'NEAC inland'`, the level remains `'Stock'`, `are_ismarine` is set to `false`, the geometry is inserted into `geom_polygon`, and `geom_line` is again set to `NULL`.
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the inland stock level for WGNAS
+#| warning: FALSE
+#| message: FALSE
+
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refnas.seq') AS are_id,
+	1 AS are_are_id,
+	'NEAC inland' AS are_code,
+	'Stock' AS are_lev_code,
+	false AS are_ismarine,
+	ST_Union(shape) AS geom_polygon,
+	NULL AS geom_line
+FROM tempo.catchments_nas
+WHERE REGEXP_REPLACE(tableoid::regclass::text, '\.catchments$', '') IN (
+	'h_barents', 'h_biscayiberian', 'h_celtic', 'h_iceland',
+	'h_norwegian', 'h_nseanorth', 'h_nseasouth', 'h_nseauk',
+	'h_svalbard'
+);
+```
+
+```{r}
+#| label: refnas.tr_area_are inland Stock level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the inland Stock level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refnas.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,3]);")
+
+DT::datatable(fstock_lvl,
+                rownames = FALSE, 
+                class = "stripe hover compact", 
+                options = list(dom = 't',
+                          pageLength = 100))
+
+#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+![Map of the inland stock level.](images/fig-stock_inland_nas.png "A view of Europe with a polygon surrounding the inland stock hierarchical level"){#fig-inlandnas1}
+
+
+### Assessment unit
+Following data from [WGNAS dataset](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p4/wgnas_salmoglob_description.html#area) and geometries from [Olmos et al. 2020](https://doi.org/10.1111/gcb.14913) we created inland assessment units around Europe and North America. 
+
+This function `update_geom_from_wgnas` is designed to **update the geometry and parent area** of a specific assessment unit in the `refnas.tr_area_are` table based on data from the `janis.wgnas_su` table.
+
+It takes two input parameters:
+* `p_are_code` (`TEXT`): the code identifying the target area (`are_code`),
+* `p_are_are_id` (`INT`): the new parent area ID to assign (`are_are_id`).
+Inside the function, an `UPDATE` is performed on `refnas.tr_area_are` (aliased as `tgt`), where the `are_code` matches `p_are_code` and the level code (`are_lev_code`) is `'Assessment_unit'`. It joins with the `janis.wgnas_su` table (aliased as `src`), using the `su_ab` field to find the matching spatial unit. For the matching row, it updates the `geom_polygon` column with the geometry from `janis.wgnas_su.geom`, and sets the parent reference (`are_are_id`) to the value passed in `p_are_are_id`.
+
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the inland assessment unit level for WGNAS
+#| warning: FALSE
+#| message: FALSE
+
+CREATE OR REPLACE FUNCTION update_geom_from_wgnas(p_are_code TEXT, p_are_are_id INT)
+RETURNS void AS
+$$
+BEGIN
+  UPDATE refnas.tr_area_are tgt
+  SET 
+    geom_polygon = src.geom,
+    are_are_id = p_are_are_id
+  FROM janis.wgnas_su src
+  WHERE tgt.are_code = p_are_code
+    AND src.su_ab = p_are_code
+    AND tgt.are_lev_code = 'Assessment_unit';
+END;
+$$ LANGUAGE plpgsql;
+```
+
+
+```{r}
+#| label: refnas.tr_area_are inland assessment unit level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the inland assessment unit level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refnas.tr_area_are
+  WHERE are_id = 3 OR are_lev_code = 'Assessment_unit'
+  AND are_ismarine = FALSE
+  ORDER BY are_id;")
+
+DT::datatable(fstock_lvl,
+                rownames = FALSE, 
+                class = "stripe hover compact", 
+                options = list(dom = 't',
+                            pageLength = 100))
+
+#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+:::{.callout-note appearance="simple"}
+## cou_*** Assessment units
+In the dataset, assassment units (AU) that seem to refer to countries are present. We would like to merge them either inside the country layer, either with the AU that already includes areas covered by those cou_*** AU.
+:::
+
+![Map of the assessment unit level.](images/fig-au_inland_nas.png "A view with polygons surrounding the assessment units spread across Europe and North America"){#fig-auinnas1}
+
+
+### River
+The function `insert_river_areas_nas` inserts new river catchment areas into the `refnas.tr_area_are` table based on spatial intersections between major river segments (`ord_clas = 1`) from `tempo.riversegments_nas` and a given assessment unit (`p_ass_unit`) from `janis.wgnas_su`. It first identifies the relevant rivers, selects all segments belonging to them, and then determines which catchments (`main_bas`) intersect those segments. These catchments are merged into single geometries per basin, filtered to exclude those already present in the target table or explicitly listed in `p_excluded_id`, and inserted as new entries with a generated ID, a parent reference (`p_are_are_id`), the basin code as `are_code`, the level set to `'River'`, `are_ismarine` marked `false`, and the merged geometry stored in `geom_polygon`.
+A similar function is created for North America as `insert_river_areas_nac`.
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the River level for WGNAS
+#| warning: FALSE
+#| message: FALSE
+
+CREATE OR REPLACE FUNCTION insert_river_areas_nas(p_are_are_id INT, p_ass_unit TEXT, p_excluded_id bigint[]) 
+RETURNS VOID AS $$
+BEGIN
+  WITH unit_riv AS (
+    SELECT DISTINCT trc.main_riv
+    FROM tempo.riversegments_nas trc 
+    JOIN janis.wgnas_su jau
+      ON ST_Intersects(trc.geom, jau.geom)
+    WHERE trc.ord_clas = 1
+      AND jau.su_ab = p_ass_unit
+  ),
+  river_segments AS (
+    SELECT *
+    FROM tempo.riversegments_nas
+    WHERE main_riv IN (SELECT main_riv FROM unit_riv)
+  ),
+  catchments_with_riv AS (
+    SELECT DISTINCT tcb.main_bas, tcb.shape
+    FROM tempo.catchments_nas tcb
+    JOIN river_segments rs
+      ON ST_Intersects(tcb.shape, rs.geom)
+  ),
+  merged AS (
+    SELECT main_bas, ST_Union(shape) AS geom
+    FROM catchments_with_riv
+    GROUP BY main_bas
+  ),
+  filtered AS (
+    SELECT m.*
+    FROM merged m
+    LEFT JOIN refnas.tr_area_are a
+      ON m.main_bas::TEXT = a.are_code
+    WHERE a.are_code IS NULL
+  )
+  INSERT INTO refnas.tr_area_are (
+    are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line
+  )
+  SELECT
+    nextval('refnas.seq'),
+    p_are_are_id,
+    main_bas::TEXT,
+    'River',
+    false,
+    geom,
+    NULL
+  FROM filtered
+  WHERE geom IS NOT NULL
+  AND main_bas <> ALL(p_excluded_id);
+END;
+$$ LANGUAGE plpgsql;
+```
+
+
+```{r}
+#| label: refnas.tr_area_are river level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the river level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refnas.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,3,78]) OR are_are_id = 78
+  ORDER BY are_id;")
+
+DT::datatable(fstock_lvl,
+                rownames = FALSE, 
+                class = "stripe hover compact", 
+                options = list(dom = 't',
+                          pageLength = 50))
+
+#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+![Map of the River level.](images/fig-river_nas.png "A view with polygons surrounding the river level spread across Europe and North America"){#fig-rivnas1}
+
+
+### River section
+This query inserts new **river section** features into the `refnas.tr_area_are` table by identifying river segments that spatially intersect previously defined river-level areas. It begins with a Common Table Expression (`WITH`) named `river_level`, which selects the `are_id` and `geom_polygon` of all entries in `refnas.tr_area_are` where the level code (`are_lev_code`) is `'River'`. Then, in the `river_segments` CTE, it selects distinct river segments (`hyriv_id`) from `tempo.riversegments_nas` where the order class (`ord_clas`) is `1`—indicating main rivers—and which intersect any of the river-level geometries. For each intersecting segment, it prepares a new row: assigning a unique ID (`nextval('refnas.seq')`), linking it to the intersected river area via `are_are_id`, using the river segment ID as `are_code`, setting the level to `'river_section'`, marking it as non-marine (`false`), leaving `geom_polygon` empty (`NULL`), and storing the actual river geometry in `geom_line`. Finally, only one entry per `are_code` is retained using `DISTINCT ON`, ensuring no duplicates are inserted. This operation adds detailed linear representations of rivers, hierarchically linked to their corresponding catchment areas.
+
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create the river_section level for WGNAS
+#| warning: FALSE
+#| message: FALSE
+
+INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH river_level AS (
+  SELECT are_id, geom_polygon
+  FROM refnas.tr_area_are
+  WHERE are_lev_code = 'River'
+),
+river_segments AS (
+  SELECT DISTINCT ON (rs.hyriv_id)
+    nextval('refnas.seq') AS are_id,
+    rl.are_id AS are_are_id,
+    rs.hyriv_id::TEXT AS are_code,
+    'river_section' AS are_lev_code,
+    false AS is_marine,
+    NULL,
+    rs.geom
+  FROM tempo.riversegments_nas rs
+  JOIN river_level rl
+    ON ST_Intersects(rs.geom, rl.geom_polygon)
+    WHERE rs.ord_clas = 1
+)
+SELECT DISTINCT ON (are_code) * FROM river_segments;
+```
+
+![Map of the river section level.](images/fig-river_section_nas.png "A view with lines representing the river sections spread across Europe and North America"){#fig-rivsecnas1}
+
+```{r}
+#| label: refnas.tr_area_are river_section level
+#| echo: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Structure of the river_section level in the referential table
+
+
+fstock_lvl <- dbGetQuery(con_diaspara, 
+  "SELECT * FROM refnas.tr_area_are
+  WHERE are_id = ANY(ARRAY[1,3,78,3152]) OR are_are_id = 3152
+  ORDER BY are_id;")
+
+DT::datatable(fstock_lvl,
+                rownames = FALSE, 
+                class = "stripe hover compact", 
+                options = list(dom = 't',
+                          pageLength = 100))
+
+#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+
+### Country
+To add the country level, the same work has been done as for WGBAST (@sec-wgbast-country).
+
+![Map of the country level.](images/fig-country_level.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-countrylvl1}
 
 # EU-Hydro
 ## Data description
