@@ -1,15 +1,14 @@
 import os
-import duckdb
+import geopandas as gpd
+import sqlalchemy
 
 pg_user = os.getenv("userlocal")
 pg_password = os.getenv("passlocal")
 pg_host = os.getenv("hostdiaspara")
+pg_db = "diaspara"
 
-con = duckdb.connect("diaspara_duckdb.db")
-con.execute("INSTALL postgres_scanner;")
-con.execute("LOAD postgres_scanner;")
-
-pg_connection = f"host={pg_host} port=5432 user={pg_user} password={pg_password} dbname=diaspara"
+pg_url = f"postgresql://{pg_user}:{pg_password}@{pg_host}:5432/{pg_db}"
+engine = sqlalchemy.create_engine(pg_url)
 
 schemas = {
     "h_adriatic": ["catchments", "riversegments"],
@@ -40,23 +39,23 @@ schemas = {
 
 for schema, tables in schemas.items():
     for table in tables:
-        parquet_file = f"{schema}_{table}.parquet"
+        full_table = f'"{schema}"."{table}"'
 
-        schema_quoted = f'"{schema}"'
-        table_quoted = f'"{table}"' 
-        view_name = f'"{schema}_{table}_view"'
+        if schema in ["ref", "refnas", "refbast"]:
+            geom_col = "geom_polygon"
+        elif table == "catchments":
+            geom_col = "shape"
+        elif table == "riversegments":
+            geom_col = "geom"
+        else:
+            geom_col = "shape"
 
-        con.execute(f"""
-            CREATE OR REPLACE VIEW {view_name} AS 
-            SELECT * FROM postgres_scan('{pg_connection}', '{schema}', '{table}');
-        """)
+        try:
+            gdf = gpd.read_postgis(f"SELECT * FROM {full_table}", engine, geom_col=geom_col)
+            parquet_file = f"{schema}_{table}.parquet"
+            gdf.to_parquet(parquet_file, index=False)
+            print(f"Exported {full_table} to {parquet_file}")
+        except Exception as e:
+            print(f"Error with {full_table}: {e}")
 
-        con.execute(f"""
-            COPY (SELECT * FROM {view_name}) 
-            TO '{parquet_file}' (FORMAT 'parquet');
-        """)
-
-        print(f"✅ Table {schema}.{table} dumped to {parquet_file}")
-
-con.close()
-print("✅ All done !")
+print("Done.")
