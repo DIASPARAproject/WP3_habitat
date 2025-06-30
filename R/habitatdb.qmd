@@ -850,7 +850,7 @@ WHERE are_id = 1;
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refbast.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refbast.tr_area_are
   WHERE are_id = 1;")
 
 knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
@@ -902,7 +902,7 @@ SELECT nextval('refbast.seq') AS are_id,
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refbast.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refbast.tr_area_are
   WHERE are_id = ANY(ARRAY[1,2]);")
 
 knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
@@ -952,7 +952,7 @@ SELECT nextval('refbast.seq') AS are_id,
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refbast.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refbast.tr_area_are
   WHERE are_id = ANY(ARRAY[1,2]) OR are_are_id = 2
   ORDER BY are_id;")
 
@@ -1013,7 +1013,7 @@ $$ LANGUAGE plpgsql;
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refbast.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refbast.tr_area_are
   WHERE are_id = ANY(ARRAY[1,2]) OR are_lev_code = ANY(ARRAY['Division', 'Subdivision'])
   ORDER BY are_id;")
 
@@ -1068,7 +1068,7 @@ SELECT nextval('refbast.seq') AS are_id,
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refbast.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refbast.tr_area_are
   WHERE are_id = ANY(ARRAY[1,3]);")
 
 knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
@@ -1137,7 +1137,7 @@ SELECT insert_country_baltic('RUS');
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refbast.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refbast.tr_area_are
   WHERE are_id = ANY(ARRAY[1,3,4,5,6,7,8,9,10,11,12])
   ORDER BY are_id;")
 
@@ -1212,7 +1212,7 @@ SELECT nextval('refbast.seq') AS are_id,
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refbast.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refbast.tr_area_are
   WHERE are_id = ANY(ARRAY[1,3]) OR are_lev_code = 'Assessment_unit' 
   ORDER BY are_id;")
 
@@ -1308,7 +1308,7 @@ $$ LANGUAGE plpgsql;
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refbast.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refbast.tr_area_are
   WHERE are_id = ANY(ARRAY[1,3]) OR are_lev_code = 'Assessment_unit' 
   OR are_are_id = 13
   ORDER BY are_id;")
@@ -1527,7 +1527,7 @@ WHERE are_id = 1;
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refnas.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refnas.tr_area_are
   WHERE are_id = 1
   ORDER BY are_id;")
 
@@ -1593,7 +1593,7 @@ WHERE REGEXP_REPLACE(tableoid::regclass::text, '\.catchments$', '') IN (
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refnas.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refnas.tr_area_are
   WHERE are_id = ANY(ARRAY[1,2,4]);")
 
 DT::datatable(fstock_lvl, 
@@ -1641,7 +1641,7 @@ WHERE fia_level = 'Subarea'
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refnas.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refnas.tr_area_are
   WHERE are_id = ANY(ARRAY[1,2]) OR are_lev_code = 'Subarea'
   ORDER BY are_id;")
 
@@ -1699,7 +1699,7 @@ WHERE div.fia_level = 'Division'
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refnas.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refnas.tr_area_are
   WHERE are_id = ANY(ARRAY[1,2]) OR are_lev_code = 'Subarea'
   OR are_lev_code = 'Division'
   ORDER BY are_id;")
@@ -1757,7 +1757,7 @@ SELECT nextval('refnas.seq') AS are_id,
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refnas.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refnas.tr_area_are
   WHERE are_id = ANY(ARRAY[1,2,4]) OR are_lev_code = 'Assessment_unit'
   AND are_ismarine = 'true'
   ORDER BY are_id;")
@@ -1821,7 +1821,7 @@ WHERE are_code = 'GLD fishery';
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refnas.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refnas.tr_area_are
   WHERE are_id = ANY(ARRAY[1,2,4]) OR are_lev_code = 'Fisheries';")
 
 DT::datatable(fstock_lvl,
@@ -1886,7 +1886,7 @@ WHERE REGEXP_REPLACE(tableoid::regclass::text, '\.catchments$', '') IN (
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refnas.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refnas.tr_area_are
   WHERE are_id = ANY(ARRAY[1,3]);")
 
 DT::datatable(fstock_lvl,
@@ -1946,7 +1946,7 @@ $$ LANGUAGE plpgsql;
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refnas.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refnas.tr_area_are
   WHERE are_id = 3 OR are_lev_code = 'Assessment_unit'
   AND are_ismarine = FALSE
   ORDER BY are_id;")
@@ -2042,7 +2042,7 @@ $$ LANGUAGE plpgsql;
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refnas.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refnas.tr_area_are
   WHERE are_id = ANY(ARRAY[1,3,78]) OR are_are_id = 78
   ORDER BY are_id;")
 
@@ -2104,7 +2104,7 @@ SELECT DISTINCT ON (are_code) * FROM river_segments;
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
-  "SELECT * FROM refnas.tr_area_are
+  "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refnas.tr_area_are
   WHERE are_id = ANY(ARRAY[1,3,78,3152]) OR are_are_id = 3152
   ORDER BY are_id;")
 
