@@ -68,6 +68,7 @@ Duckdb/*.parquet
 Duckdb/*.db
 Duckdb/*.duckdb
 Duckdb/*.cli
+Duckdb/*.zip
 Scripts/Script.sql
 
 
