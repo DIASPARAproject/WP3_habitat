@@ -28,7 +28,7 @@ CREATE ROLE cedric WITH
   INHERIT
   LOGIN
   CONNECTION LIMIT -1;
-ALTER ROLE cedric WITH password 'cedric1234*'; --c
+ALTER ROLE cedric WITH password '****'; --c
 --- ALTER ROLE jules IN DATABASE "diaspara" SET search_path="$user", public;
 
 CREATE ROLE jani WITH 
