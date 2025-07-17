@@ -18,7 +18,7 @@ CREATE ROLE jules WITH
   INHERIT
   LOGIN
   CONNECTION LIMIT -1;
-
+ALTER ROLE jani WITH password '*****************';
 --- ALTER ROLE jules IN DATABASE "diaspara" SET search_path="$user", public;
 
 CREATE ROLE cedric WITH 
@@ -119,5 +119,10 @@ SELECT change_owner('h_nseanorth', 'diaspara_admin');
 SELECT change_owner('h_nseasouth', 'diaspara_admin');
 SELECT change_owner('h_nseauk', 'diaspara_admin');
 SELECT change_owner('h_biscayiberian', 'diaspara_admin');
+SELECT change_owner('h_southatlantic', 'diaspara_admin');
+SELECT change_owner('h_southmedcentral', 'diaspara_admin');
+SELECT change_owner('h_southmedeast', 'diaspara_admin');
+SELECT change_owner('h_southmedwest', 'diaspara_admin');
+SELECT change_owner('h_svalbard', 'diaspara_admin');
 SELECT change_owner('ref', 'diaspara_admin');
 SELECT change_owner('janis', 'diaspara_admin');
