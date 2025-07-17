@@ -19,7 +19,7 @@ ADD CONSTRAINT fk_are_are_id FOREIGN KEY (are_are_id)
 	ADD CONSTRAINT uk_are_code UNIQUE (are_code);
 ALTER TABLE refbast.tr_area_are
 	ADD CONSTRAINT fk_area_lev_code FOREIGN KEY (are_lev_code) REFERENCES
-	ref.tr_level_lev(lev_code) ON UPDATE CASCADE ON DELETE CASCADE;
+	ref.tr_habitatlevel_lev(lev_code) ON UPDATE CASCADE ON DELETE CASCADE;
  ALTER TABLE refbast.tr_area_are
 	ADD CONSTRAINT fk_area_wkg_code FOREIGN KEY (are_wkg_code) REFERENCES
 	ref.tr_icworkinggroup_wkg(wkg_code) ON UPDATE CASCADE ON DELETE CASCADE;
@@ -328,7 +328,7 @@ BEGIN
     main_bas::TEXT,
     'River',
     false,
-    geom,
+    ST_Multi(geom),
     NULL
   FROM merged
   WHERE geom IS NOT NULL;
@@ -381,47 +381,14 @@ SELECT
   main_bas::TEXT,
   'River',
   false,
-  geom,
+  ST_Multi(geom),
   NULL
 FROM merged
 WHERE geom IS NOT NULL
   AND main_bas <> 2120027530;
 	
- 
- 
- 
- -------------------------------- Matching names to rivers --------------------------------
 
-WITH river_names AS (
-  SELECT
-    trb.main_riv,
-    wgb.name,
-    ST_Union(trb.geom) AS geom_union,
-    ST_Length(ST_Union(trb.geom)::geography) AS river_length
-  FROM tempo.riversegments_baltic trb
-  JOIN janis.wgbast_combined wgb
-    ON ST_Intersects(trb.geom, ST_Buffer(wgb.geom, 0.01))
-  WHERE trb.ord_clas = 1
-    AND trb.hyriv_id = trb.main_riv
-  GROUP BY trb.main_riv, wgb.name
-),
-ranked_river_names AS (
-  SELECT *,
-         ROW_NUMBER() OVER (PARTITION BY main_riv ORDER BY river_length DESC) AS rn
-  FROM river_names
-),
-named_rivers AS (
-  SELECT main_riv, name, geom_union
-  FROM ranked_river_names
-  WHERE rn = 1
-)
-UPDATE refbast.tr_area_are a
-SET are_code = nr.name
-FROM named_rivers nr
-WHERE a.are_code = nr.main_riv::TEXT
-  AND a.are_code IS DISTINCT FROM nr.name;
 
-	
 -------------------------------- River section level --------------------------------
 INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
 WITH river_level AS (
@@ -446,11 +413,38 @@ river_segments AS (
 SELECT DISTINCT ON (are_code) * FROM river_segments;
 	
 
-
-
-
-
-
+-------------------------------- Matching names to rivers --------------------------------
+CREATE INDEX idx_tempo_janis_wgbast ON janis.wgbast_combined USING GIST(geom);
+WITH add_names AS (
+    SELECT DISTINCT ON
+    	(c.hyriv_id)
+        c.geom, 
+        c.main_riv, 
+        c.hyriv_id,
+        r."name" AS river_name
+    FROM tempo.riversegments_baltic c
+    JOIN janis.wgbast_combined r
+        ON ST_Intersects(r.geom, c.geom)
+    WHERE c.ord_clas = 1
+),
+basin_names AS (
+    SELECT 
+    	c.geom,
+        c.hyriv_id,
+        c.main_riv, 
+        a.river_name
+    FROM tempo.riversegments_baltic c
+    INNER JOIN add_names a ON c.main_riv = a.main_riv
+    WHERE c.ord_clas = 1
+),
+deduplicated_names AS (
+    SELECT DISTINCT ON (hyriv_id) geom,hyriv_id, river_name
+    FROM basin_names
+)
+UPDATE refbast.tr_area_are t
+SET are_rivername = d.river_name
+FROM deduplicated_names d
+WHERE t.are_code = d.hyriv_id::TEXT;--3718
 
 
 -- ICES Divisions
@@ -514,19 +508,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-SELECT insert_fishing_subdivision('d.31', 5685);
-SELECT insert_fishing_subdivision('d.30', 5685);
-SELECT insert_fishing_subdivision('d.32', 5685);
-SELECT insert_fishing_subdivision('d.27', 5685);
-SELECT insert_fishing_subdivision('d.28', 5685);
-SELECT insert_fishing_subdivision('d.29', 5685);
-SELECT insert_fishing_subdivision('d.24', 5685);
-SELECT insert_fishing_subdivision('d.25', 5685);
-SELECT insert_fishing_subdivision('d.26', 5685);
-SELECT insert_fishing_subdivision('c.22', 5684);
-SELECT insert_fishing_subdivision('b.23', 5684);
-
-SELECT * FROM refbast.tr_area_are;
+SELECT insert_fishing_subdivision('d.31', 7004);
+SELECT insert_fishing_subdivision('d.30', 7004);
+SELECT insert_fishing_subdivision('d.32', 7004);
+SELECT insert_fishing_subdivision('d.27', 7004);
+SELECT insert_fishing_subdivision('d.28', 7004);
+SELECT insert_fishing_subdivision('d.29', 7004);
+SELECT insert_fishing_subdivision('d.24', 7004);
+SELECT insert_fishing_subdivision('d.25', 7004);
+SELECT insert_fishing_subdivision('d.26', 7004);
+SELECT insert_fishing_subdivision('c.22', 7003);
+SELECT insert_fishing_subdivision('b.23', 7003);
 
 
 
@@ -555,7 +547,7 @@ ADD CONSTRAINT fk_are_are_id FOREIGN KEY (are_are_id)
 ADD CONSTRAINT uk_are_code UNIQUE (are_code);
 ALTER TABLE refnas.tr_area_are
 ADD CONSTRAINT fk_area_lev_code FOREIGN KEY (are_lev_code) REFERENCES
-  ref.tr_level_lev(lev_code) ON UPDATE CASCADE ON DELETE CASCADE;
+  ref.tr_habitatlevel_lev(lev_code) ON UPDATE CASCADE ON DELETE CASCADE;
  ALTER TABLE refnas.tr_area_are
 ADD CONSTRAINT fk_area_wkg_code FOREIGN KEY (are_wkg_code) REFERENCES
   ref.tr_icworkinggroup_wkg(wkg_code) ON UPDATE CASCADE ON DELETE CASCADE;
@@ -691,64 +683,6 @@ SELECT insert_country_nas('GBR');
 SELECT insert_country_nas('LUX');
 SELECT insert_country_nas('CZE');
 
--- CEDRIC STOPPED THERE ...
---SELECT are_id, are_code FROM refnas.tr_area_are;
-														
-
-
---------------------- finding a way to add names to baltic rivers --------------------------
---WITH add_names AS (
---    SELECT DISTINCT 
---        c.shape, 
---        c.main_bas, 
---        r."Name" AS river_name
---    FROM h_baltic30to31.catchments c
---    JOIN janis.reared_salmon_rivers_accessible_sections r
---        ON ST_Intersects(r.geom, c.shape)
---    WHERE c.order_ = 1
---    UNION ALL
---    SELECT DISTINCT 
---        c.shape, 
---        c.main_bas, 
---        w."Name" AS river_name
---    FROM h_baltic30to31.catchments c
---    JOIN janis.wild_salmon_rivers_accessible_sections w
---        ON ST_Intersects(w.geom, c.shape)
---    WHERE c.order_ = 1
---),
---basin_names AS(
---	SELECT c.shape, c.main_bas, a.river_name AS river_name
---    FROM h_baltic30to31.catchments c
---    INNER JOIN add_names a ON c.main_bas = a.main_bas
---    WHERE c.order_ = 1
---)
---SELECT DISTINCT ON (shape) * FROM basin_names;
---
---
---WITH add_names AS (
---    SELECT DISTINCT 
---        c.shape, 
---        c.main_bas, 
---        r.name AS river_name
---    FROM h_baltic30to31.catchments c
---    JOIN janis."WGBAST_points" r
---        ON ST_DWithin(r.geom, c.shape,0.1)
---    WHERE c.order_ = 1
---),
---basin_names AS(
---	SELECT c.shape, c.main_bas, a.river_name AS river_name
---    FROM h_baltic30to31.catchments c
---    INNER JOIN add_names a ON c.main_bas = a.main_bas
---    WHERE c.order_ = 1
---)
---SELECT DISTINCT ON (shape) * FROM basin_names;
---
---
---
---SELECT * FROM h_baltic30to31.catchments c 
---WHERE C.order_ = 1;
---SELECT * FROM h_baltic30to31.riversegments r 
---WHERE r.ord_clas = 1;
 
 
 -- cedric inserting values from salmoglob
@@ -774,7 +708,7 @@ SELECT nextval('refnas.seq') AS are_id,
 -- this is fixed once both on the localhost and server.
 -- I'm adding a level corresponding to 'Fishery'
 /*
-INSERT INTO ref.tr_level_lev VALUES( 
+INSERT INTO ref.tr_habitatlevel_lev VALUES( 
   'Fisheries',
   'Specific fisheries area used by some working groups (WGNAS), e.g. FAR fishery,
 GLD fishery, LB fishery, LB/SPM/swNF fishery, neNF fishery');
@@ -868,11 +802,11 @@ WITH geomunion AS(
 	FROM ref.tr_fishingarea_fia tff 
 	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.4.X','21.4.W','21.5.Y']))
 SELECT nextval('refnas.seq') AS are_id,
-       2 AS are_are_id,
+       4 AS are_are_id,
        'postsmolt 1' AS are_code,
        'Assessment_unit' AS are_lev_code,
         true AS are_ismarine,
-        geom AS geom_polygon,
+        ST_Multi(geom) AS geom_polygon,
 		NULL AS geom_line
         FROM geomunion;
 
@@ -884,11 +818,11 @@ WITH geomunion AS(
 	FROM ref.tr_fishingarea_fia tff 
 	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.4.T','21.4.S','21.4.R']))
 SELECT nextval('refnas.seq') AS are_id,
-       2 AS are_are_id,
+       4 AS are_are_id,
        'postsmolt 2' AS are_code,
        'Assessment_unit' AS are_lev_code,
         true AS are_ismarine,
-        geom AS geom_polygon,
+        ST_Multi(geom) AS geom_polygon,
 		NULL AS geom_line
         FROM geomunion;
 
@@ -901,11 +835,11 @@ WITH geomunion AS(
 	FROM ref.tr_fishingarea_fia tff 
 	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.4.V','21.3.O','21.3.P']))
 SELECT nextval('refnas.seq') AS are_id,
-       2 AS are_are_id,
+       4 AS are_are_id,
        'postsmolt 3' AS are_code,
        'Assessment_unit' AS are_lev_code,
         true AS are_ismarine,
-        geom AS geom_polygon,
+        ST_Multi(geom) AS geom_polygon,
 		NULL AS geom_line
         FROM geomunion;
 
@@ -916,11 +850,11 @@ WITH geomunion AS(
 	FROM ref.tr_fishingarea_fia tff 
 	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.2.J','21.3.K','21.3.L']))
 SELECT nextval('refnas.seq') AS are_id,
-       2 AS are_are_id,
+       4 AS are_are_id,
        'postsmolt 4' AS are_code,
        'Assessment_unit' AS are_lev_code,
         true AS are_ismarine,
-        geom AS geom_polygon,
+        ST_Multi(geom) AS geom_polygon,
 		NULL AS geom_line
         FROM geomunion;
 
@@ -932,11 +866,11 @@ WITH geomunion AS(
 	FROM ref.tr_fishingarea_fia tff 
 	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.2.J','21.2.G','21.2.H']))
 SELECT nextval('refnas.seq') AS are_id,
-       2 AS are_are_id,
+       4 AS are_are_id,
        'postsmolt 5' AS are_code,
        'Assessment_unit' AS are_lev_code,
         true AS are_ismarine,
-        geom AS geom_polygon,
+        ST_Multi(geom) AS geom_polygon,
 		NULL AS geom_line
         FROM geomunion;
 
@@ -947,7 +881,8 @@ WITH geomunion AS(
 	FROM ref.tr_fishingarea_fia tff 
 	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.0.A','21.1.A','21.1.B','21.0.B','21.1.C','21.1.D','21.1.E']))
 UPDATE refnas.tr_area_are
-SET geom_polygon = geom
+SET geom_polygon = geom,
+	are_are_id = 4
 FROM geomunion
 WHERE are_code = 'GLD fishery';
 
@@ -959,7 +894,8 @@ WITH geomunion AS(
 	WHERE fia_level = 'Division' AND fia_division = ANY(ARRAY['21.2.J','21.3.K','21.3.L','21.3.O','21.2.G','21.1.F','21.2.H',
 															'21.3.M','21.3.L','21.3.N']))
 UPDATE refnas.tr_area_are
-SET geom_polygon = geom
+SET geom_polygon = geom,
+	are_are_id = 4
 FROM geomunion
 WHERE are_code = 'LB/SPM/swNF fishery';
 
@@ -1009,39 +945,42 @@ $$ LANGUAGE plpgsql;
 
 
 SELECT update_geom_from_wgnas('NEC', NULL);
-SELECT update_geom_from_wgnas('FR', 44);
-SELECT update_geom_from_wgnas('FI', 44);
-SELECT update_geom_from_wgnas('RU_AK', 44);
-SELECT update_geom_from_wgnas('RU_KB', 44);
-SELECT update_geom_from_wgnas('RU_KW', 44);
-SELECT update_geom_from_wgnas('RU_RP', 44);
-SELECT update_geom_from_wgnas('EW', 44);
-SELECT update_geom_from_wgnas('IR', 44);
-SELECT update_geom_from_wgnas('SC_EA', 44);
-SELECT update_geom_from_wgnas('SC_WE', 44);
-SELECT update_geom_from_wgnas('IC_NE', 44);
-SELECT update_geom_from_wgnas('IC_SW', 44);
-SELECT update_geom_from_wgnas('NI_FB', 44);
-SELECT update_geom_from_wgnas('NI_FO', 44);
-SELECT update_geom_from_wgnas('SW', 44);
-SELECT update_geom_from_wgnas('NO_SE', 44);
-SELECT update_geom_from_wgnas('NO_NO', 44);
-SELECT update_geom_from_wgnas('NO_SW', 44);
-SELECT update_geom_from_wgnas('NO_MI', 44);
+SELECT update_geom_from_wgnas('FR', 3);
+SELECT update_geom_from_wgnas('FI', 3);
+SELECT update_geom_from_wgnas('RU_AK', 3);
+SELECT update_geom_from_wgnas('RU_KB', 3);
+SELECT update_geom_from_wgnas('RU_KW', 3);
+SELECT update_geom_from_wgnas('RU_RP', 3);
+SELECT update_geom_from_wgnas('EW', 3);
+SELECT update_geom_from_wgnas('IR', 3);
+SELECT update_geom_from_wgnas('SC_EA', 3);
+SELECT update_geom_from_wgnas('SC_WE', 3);
+SELECT update_geom_from_wgnas('IC_NE', 3);
+SELECT update_geom_from_wgnas('IC_SW', 3);
+SELECT update_geom_from_wgnas('NI_FB', 3);
+SELECT update_geom_from_wgnas('NI_FO', 3);
+SELECT update_geom_from_wgnas('SW', 3);
+SELECT update_geom_from_wgnas('NO_SE', 3);
+SELECT update_geom_from_wgnas('NO_NO', 3);
+SELECT update_geom_from_wgnas('NO_SW', 3);
+SELECT update_geom_from_wgnas('NO_MI', 3);
 
 SELECT update_geom_from_wgnas('NAC', NULL);
-SELECT update_geom_from_wgnas('US', 61);
-SELECT update_geom_from_wgnas('QC', 61);
-SELECT update_geom_from_wgnas('NF', 61);
-SELECT update_geom_from_wgnas('SF', 61);
-SELECT update_geom_from_wgnas('GF', 61);
-SELECT update_geom_from_wgnas('LB', 61);
+SELECT update_geom_from_wgnas('US', NULL);
+SELECT update_geom_from_wgnas('QC', NULL);
+SELECT update_geom_from_wgnas('NF', NULL);
+SELECT update_geom_from_wgnas('SF', NULL);
+SELECT update_geom_from_wgnas('GF', NULL);
+SELECT update_geom_from_wgnas('LB', NULL);
 
 
 ------------------------------- River -------------------------------
 
-DROP FUNCTION IF EXISTS insert_river_areas_nac(p_are_are_id INT, p_ass_unit TEXT, p_excluded_id bigint[]);
-CREATE OR REPLACE FUNCTION insert_river_areas_nac(p_are_are_id INT, p_ass_unit TEXT, p_excluded_id bigint[]) 
+DROP FUNCTION IF EXISTS insert_river_areas_nac(p_ass_unit TEXT, p_excluded_id bigint[]);
+CREATE OR REPLACE FUNCTION insert_river_areas_nac(
+  p_ass_unit TEXT,
+  p_excluded_id bigint[]
+) 
 RETURNS VOID AS $$
 BEGIN
   WITH unit_riv AS (
@@ -1068,9 +1007,16 @@ BEGIN
     FROM catchments_with_riv
     GROUP BY main_bas
   ),
+  base_area AS (
+    SELECT are_id AS are_are_id
+    FROM refnas.tr_area_are
+    WHERE are_code = p_ass_unit
+    LIMIT 1
+  ),
   filtered AS (
-    SELECT m.*
+    SELECT m.*, b.are_are_id
     FROM merged m
+    CROSS JOIN base_area b
     LEFT JOIN refnas.tr_area_are a
       ON m.main_bas::TEXT = a.are_code
     WHERE a.are_code IS NULL
@@ -1080,11 +1026,11 @@ BEGIN
   )
   SELECT
     nextval('refnas.seq'),
-    p_are_are_id,
+    are_are_id,
     main_bas::TEXT,
     'River',
     false,
-    geom,
+    ST_Multi(geom),
     NULL
   FROM filtered
   WHERE geom IS NOT NULL
@@ -1093,18 +1039,20 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-
-SELECT insert_river_areas_nac(73,'US',ARRAY[]::integer[]);
-SELECT insert_river_areas_nac(69,'SF',ARRAY[7120064150,7120036180,7120036200,7120036270,7120036420,7120036560,7120035860,7120036230]);
-SELECT insert_river_areas_nac(59,'NF',ARRAY[]::integer[]);
-SELECT insert_river_areas_nac(70,'GF',ARRAY[]::integer[]);
-SELECT insert_river_areas_nac(82,'LB',ARRAY[7120033390,7120033110,7120032940,7120032780,7120032730,7120032800,7120032690,7120032930]);
-SELECT insert_river_areas_nac(58,'QC',ARRAY[]::integer[]);
-
+SELECT insert_river_areas_nac('US',ARRAY[]::integer[]);
+SELECT insert_river_areas_nac('SF',ARRAY[7120064150,7120036180,7120036200,7120036270,7120036420,7120036560,7120035860,7120036230]);
+SELECT insert_river_areas_nac('NF',ARRAY[]::integer[]);
+SELECT insert_river_areas_nac('GF',ARRAY[]::integer[]);
+SELECT insert_river_areas_nac('LB',ARRAY[7120033390,7120033110,7120032940,7120032780,7120032730,7120032800,7120032690,7120032930]);
+SELECT insert_river_areas_nac('QC',ARRAY[]::integer[]);
 
 
-DROP FUNCTION IF EXISTS insert_river_areas_nas(p_are_are_id INT, p_ass_unit TEXT, p_excluded_id bigint[]);
-CREATE OR REPLACE FUNCTION insert_river_areas_nas(p_are_are_id INT, p_ass_unit TEXT, p_excluded_id bigint[]) 
+
+DROP FUNCTION IF EXISTS insert_river_areas_nas(p_ass_unit TEXT, p_excluded_id bigint[]);
+CREATE OR REPLACE FUNCTION insert_river_areas_nas(
+  p_ass_unit TEXT,
+  p_excluded_id bigint[]
+) 
 RETURNS VOID AS $$
 BEGIN
   WITH unit_riv AS (
@@ -1131,9 +1079,16 @@ BEGIN
     FROM catchments_with_riv
     GROUP BY main_bas
   ),
+  base_area AS (
+    SELECT are_id AS are_are_id
+    FROM refnas.tr_area_are
+    WHERE are_code = p_ass_unit
+    LIMIT 1
+  ),
   filtered AS (
-    SELECT m.*
+    SELECT m.*, b.are_are_id
     FROM merged m
+    CROSS JOIN base_area b
     LEFT JOIN refnas.tr_area_are a
       ON m.main_bas::TEXT = a.are_code
     WHERE a.are_code IS NULL
@@ -1143,11 +1098,11 @@ BEGIN
   )
   SELECT
     nextval('refnas.seq'),
-    p_are_are_id,
+    are_are_id,
     main_bas::TEXT,
     'River',
     false,
-    geom,
+    ST_Multi(geom),
     NULL
   FROM filtered
   WHERE geom IS NOT NULL
@@ -1156,25 +1111,26 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-SELECT insert_river_areas_nas(80,'FR',ARRAY[]::integer[]);
-SELECT insert_river_areas_nas(67,'FI',ARRAY[]::integer[]);
-SELECT insert_river_areas_nas(60,'RU_AK',ARRAY[2120043040,2120043080]::integer[]);
-SELECT insert_river_areas_nas(68,'RU_KB',ARRAY[2120039590,2120040190,2120040210,2120040230,2120040150,2120040160,2120040170,2120040180]::integer[]);
-SELECT insert_river_areas_nas(64,'RU_KW',ARRAY[]::integer[]);
-SELECT insert_river_areas_nas(66,'RU_RP',ARRAY[]::integer[]);
-SELECT insert_river_areas_nas(61,'EW',ARRAY[2120052940]::integer[]);
-SELECT insert_river_areas_nas(63,'NI_FB',ARRAY[2120055740]::integer[]);
-SELECT insert_river_areas_nas(75,'NI_FO',ARRAY[2120055750,2120055770,2120055300]::integer[]);
-SELECT insert_river_areas_nas(74,'IR',ARRAY[]::integer[]);
-SELECT insert_river_areas_nas(77,'SC_EA',ARRAY[]::integer[]);
-SELECT insert_river_areas_nas(62,'SC_WE',ARRAY[]::integer[]);
-SELECT insert_river_areas_nas(76,'IC_SW',ARRAY[2120057770,2120058240,2120058560]::integer[]);
-SELECT insert_river_areas_nas(56,'IC_NE',ARRAY[]::integer[]);
-SELECT insert_river_areas_nas(71,'SW',ARRAY[]::integer[]);
-SELECT insert_river_areas_nas(81,'NO_SE',ARRAY[2120035150,2120035190,2120035250,2120035630,2120036280,2120036340,2120034510,2120034520,2120034540]::integer[]);
-SELECT insert_river_areas_nas(65,'NO_NO',ARRAY[2120037610]::integer[]);
-SELECT insert_river_areas_nas(79,'NO_SW',ARRAY[2120035780]::integer[]);
-SELECT insert_river_areas_nas(78,'NO_MI',ARRAY[]::integer[]);
+
+SELECT insert_river_areas_nas('FR',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas('FI',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas('RU_AK',ARRAY[2120043040,2120043080]::integer[]);
+SELECT insert_river_areas_nas('RU_KB',ARRAY[2120039590,2120040190,2120040210,2120040230,2120040150,2120040160,2120040170,2120040180]::integer[]);
+SELECT insert_river_areas_nas('RU_KW',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas('RU_RP',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas('EW',ARRAY[2120052940]::integer[]);
+SELECT insert_river_areas_nas('NI_FB',ARRAY[2120055740]::integer[]);
+SELECT insert_river_areas_nas('NI_FO',ARRAY[2120055750,2120055770,2120055300]::integer[]);
+SELECT insert_river_areas_nas('IR',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas('SC_EA',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas('SC_WE',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas('IC_SW',ARRAY[2120057770,2120058240,2120058560]::integer[]);
+SELECT insert_river_areas_nas('IC_NE',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas('SW',ARRAY[]::integer[]);
+SELECT insert_river_areas_nas('NO_SE',ARRAY[2120035150,2120035190,2120035250,2120035630,2120036280,2120036340,2120034510,2120034520,2120034540]::integer[]);
+SELECT insert_river_areas_nas('NO_NO',ARRAY[2120037610]::integer[]);
+SELECT insert_river_areas_nas('NO_SW',ARRAY[2120035780]::integer[]);
+SELECT insert_river_areas_nas('NO_MI',ARRAY[]::integer[]);
 
 
 
@@ -1230,7 +1186,7 @@ SELECT DISTINCT ON (are_code) * FROM river_segments;--14936
 ---------------------------- matching names to rivers ---------------------------- 
 
 WITH outlets AS (
-  SELECT DISTINCT trb.main_riv, rdg.rivername
+  SELECT DISTINCT trb.main_riv, rdg.rivername AS river_name
   FROM tempo.riversegments_nas trb
   JOIN janis.rivers_db_graeme rdg
     ON ST_DWithin(trb.geom, rdg.geom, 0.01)
@@ -1238,7 +1194,7 @@ WITH outlets AS (
     AND trb.hyriv_id = trb.main_riv
 ),
 outlets2 AS (
-  SELECT DISTINCT trb.main_riv, rdg.rivername
+  SELECT DISTINCT trb.main_riv, rdg.rivername AS river_name
   FROM tempo.riversegments_nas trb
   JOIN janis.rivers_db_graeme rdg
     ON ST_DWithin(trb.geom, rdg.geom, 0.05)
@@ -1252,7 +1208,7 @@ all_outlets AS (
   SELECT * FROM outlets2
 ),
 main_stretch AS (
-  SELECT trb.*, ao.rivername
+  SELECT trb.*, ao.river_name
   FROM tempo.riversegments_nas trb
   JOIN all_outlets ao
     ON trb.main_riv = ao.main_riv
@@ -1270,10 +1226,10 @@ final_stretch AS (
   JOIN river_with_counts rc
     ON ms.main_riv = rc.main_riv
 )
-SELECT DISTINCT ON (hyriv_id) geom, rivername
-FROM final_stretch;
-
-
+UPDATE refnas.tr_area_are t
+SET are_rivername = f.river_name
+FROM final_stretch f
+WHERE t.are_code = f.hyriv_id::TEXT;
 
 
 ------------------------------- Subarea -------------------------------
@@ -1282,7 +1238,7 @@ FROM final_stretch;
 INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
 SELECT 
   nextval('refnas.seq') AS are_id,
-  1 AS are_are_id,
+  2 AS are_are_id,
   fia_code AS are_code,
   'Subarea' AS are_lev_code,
   true AS are_ismarine,
@@ -1314,4 +1270,185 @@ WHERE div.fia_level = 'Division'
   AND subarea.are_lev_code = 'Subarea'; --38
  
  
-       
+  
+  
+  ------------------------------------ WGEEL ------------------------------------
+  
+DROP TABLE IF EXISTS refeel.tr_area_are;
+CREATE TABLE refeel.tr_area_are () INHERITS (ref.tr_area_are);
+ALTER TABLE refeel.tr_area_are OWNER TO diaspara_admin;
+
+
+ALTER TABLE refeel.tr_area_are
+	ALTER COLUMN are_wkg_code SET DEFAULT 'WGEEL';
+ALTER TABLE refeel.tr_area_are ADD CONSTRAINT tr_area_area_pkey 
+	PRIMARY KEY (are_id);
+ALTER TABLE refeel.tr_area_are
+ADD CONSTRAINT fk_are_are_id FOREIGN KEY (are_are_id)
+	REFERENCES refeel.tr_area_are (are_id) ON DELETE CASCADE
+	ON UPDATE CASCADE;
+ ALTER TABLE refeel.tr_area_are
+	ADD CONSTRAINT uk_are_code UNIQUE (are_code);
+ALTER TABLE refeel.tr_area_are
+	ADD CONSTRAINT fk_area_lev_code FOREIGN KEY (are_lev_code) REFERENCES
+	ref.tr_habitatlevel_lev(lev_code) ON UPDATE CASCADE ON DELETE CASCADE;
+ ALTER TABLE refeel.tr_area_are
+	ADD CONSTRAINT fk_area_wkg_code FOREIGN KEY (are_wkg_code) REFERENCES
+	ref.tr_icworkinggroup_wkg(wkg_code) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+DROP SEQUENCE IF EXISTS refeel.seq;
+CREATE SEQUENCE refeel.seq;
+
+INSERT INTO refeel.tr_area_are (are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+VALUES (1, 'Temporary Parent', 'Stock', true, NULL, NULL);
+
+ALTER SEQUENCE refeel.seq RESTART WITH 2;
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+	1 AS are_are_id,
+	'Marine' AS are_code,
+	'Stock' AS are_lev_code,
+	--are_wkg_code,  by default
+	true AS are_ismarine,
+	ST_Union(geom) AS geom_polygon,
+	NULL AS geom_line
+	FROM ref.tr_fishingarea_fia 
+	WHERE"fia_level"='Major' AND "fia_code" IN ('27','37');
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+	1 AS are_are_id,
+	'Inland' AS are_code,
+	'Stock' AS are_lev_code,
+	false AS are_ismarine,
+	ST_Union(shape) AS geom_polygon,
+	NULL AS geom_line
+FROM tempo.catchments_eel
+WHERE regexp_replace(tableoid::regclass::text, '\.catchments$', '') IN ('h_adriatic',
+  'h_baltic30to31', 'h_baltic22to26', 'h_baltic27to29_32','h_barents',
+  'h_biscayiberian','h_blacksea','h_celtic','h_iceland','h_medcentral',
+  'h_medeast','h_medwest','h_norwegian','h_nseanorth','h_nseasouth',
+  'h_nseauk','h_southatlantic','h_southmedcentral','h_southmedeast',
+  'h_southmedwest','h_svalbard'
+);
+
+WITH unioned_polygons AS (
+  SELECT (ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(geom_polygon))).geom)),0.0001,FALSE)) AS geom
+  FROM refeel.tr_area_are
+),
+area_check AS (
+  SELECT geom, ST_Area(geom) AS area
+  FROM unioned_polygons
+),
+filtered_polygon AS (
+  SELECT geom
+  FROM area_check
+  WHERE area > 1
+)
+UPDATE refeel.tr_area_are
+SET 
+  are_are_id = NULL,
+  are_code = 'Europe',
+  are_lev_code = 'Stock',
+  are_ismarine = NULL,
+  geom_polygon = (SELECT ST_Multi(geom) FROM filtered_polygon),
+  geom_line = NULL
+WHERE are_id = 1;
+
+
+--------------------------- Creating referential to match rivers to basin ---------------------------  
+
+-------- WGBAST
+DROP TABLE IF EXISTS refbast.tr_rivernames_riv;
+CREATE TABLE refbast.tr_rivernames_riv(
+	CONSTRAINT uk_basin_river UNIQUE(riv_are_code,riv_rivername),
+	CONSTRAINT fk_riv_wkg_code FOREIGN KEY (riv_wkg_code) REFERENCES
+	ref.tr_icworkinggroup_wkg(wkg_code) ON UPDATE CASCADE ON DELETE CASCADE,
+	CONSTRAINT fk_riv_are_code FOREIGN KEY (riv_are_code) REFERENCES
+    refbast.tr_area_are(are_code) ON UPDATE CASCADE ON DELETE CASCADE)
+    INHERITS(ref.tr_rivernames_riv);
+   
+ALTER TABLE refbast.tr_rivernames_riv OWNER TO diaspara_admin;
+ALTER TABLE refbast.tr_rivernames_riv
+	ALTER COLUMN riv_wkg_code SET DEFAULT 'WGBAST';
+
+
+
+DROP SEQUENCE IF EXISTS refbast.seq;
+CREATE SEQUENCE refbast.seq;
+ALTER SEQUENCE refbast.seq OWNER TO diaspara_admin;
+
+
+WITH line_union AS (
+  SELECT "name" AS riv_rivername, ST_Union(geom) AS geom
+  FROM janis.wgbast_combined
+  GROUP BY "name"
+),
+select_basin AS (
+  SELECT are_code, geom_polygon
+  FROM refbast.tr_area_are
+  WHERE are_lev_code = 'River'
+),
+length_calc AS (
+  SELECT lu.riv_rivername, sb.are_code AS riv_are_code,
+         ST_Length(ST_Intersection(lu.geom, sb.geom_polygon)) AS intersection_length
+  FROM line_union lu
+  JOIN select_basin sb	
+    ON ST_Intersects(lu.geom, sb.geom_polygon)
+),
+length_select AS (
+  SELECT *,
+         ROW_NUMBER() OVER (PARTITION BY riv_rivername ORDER BY intersection_length DESC) AS rn
+  FROM length_calc
+)
+INSERT INTO refbast.tr_rivernames_riv (
+  riv_id,
+  riv_are_code,
+  riv_rivername
+)
+SELECT
+  nextval('refbast.seq') AS riv_id,
+  riv_are_code,
+  riv_rivername
+FROM length_select
+WHERE rn = 1;--119
+
+
+-------- WGNAS
+DROP TABLE IF EXISTS refnas.tr_rivernames_riv;
+CREATE TABLE refnas.tr_rivernames_riv(
+	CONSTRAINT uk_basin_river UNIQUE(riv_are_code,riv_rivername),
+	CONSTRAINT fk_riv_wkg_code FOREIGN KEY (riv_wkg_code) REFERENCES
+	ref.tr_icworkinggroup_wkg(wkg_code) ON UPDATE CASCADE ON DELETE CASCADE,
+	CONSTRAINT fk_riv_are_code FOREIGN KEY (riv_are_code) REFERENCES
+    refnas.tr_area_are(are_code) ON UPDATE CASCADE ON DELETE CASCADE)
+    INHERITS(ref.tr_rivernames_riv);
+   
+ALTER TABLE refnas.tr_rivernames_riv OWNER TO diaspara_admin;
+ALTER TABLE refnas.tr_rivernames_riv
+	ALTER COLUMN riv_wkg_code SET DEFAULT 'WGNAS';
+
+
+
+DROP SEQUENCE IF EXISTS refnas.seq;
+CREATE SEQUENCE refnas.seq;
+ALTER SEQUENCE refnas.seq OWNER TO diaspara_admin;
+
+
+INSERT INTO refnas.tr_rivernames_riv (
+	riv_id,
+	riv_are_code,
+	riv_rivername
+)
+SELECT DISTINCT ON (riv.rivername)
+	nextval('refnas.seq') AS riv_id,
+	narea.are_code AS riv_are_code,
+	riv.rivername AS riv_rivername
+FROM janis.rivers_db_graeme riv
+JOIN refnas.tr_area_are narea
+	ON ST_Intersects(riv.geom, narea.geom_polygon)
+WHERE narea.are_lev_code = 'River';--1946
+
+	
