@@ -1273,7 +1273,7 @@ WHERE div.fia_level = 'Division'
   
   
   ------------------------------------ WGEEL ------------------------------------
-  
+
 DROP TABLE IF EXISTS refeel.tr_area_are;
 CREATE TABLE refeel.tr_area_are () INHERITS (ref.tr_area_are);
 ALTER TABLE refeel.tr_area_are OWNER TO diaspara_admin;
@@ -1297,8 +1297,11 @@ ALTER TABLE refeel.tr_area_are
 	ref.tr_icworkinggroup_wkg(wkg_code) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
+
 DROP SEQUENCE IF EXISTS refeel.seq;
 CREATE SEQUENCE refeel.seq;
+
+-------------------------------- Stock level ------------------------------------
 
 INSERT INTO refeel.tr_area_are (are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
 VALUES (1, 'Temporary Parent', 'Stock', true, NULL, NULL);
@@ -1356,6 +1359,216 @@ SET
   geom_polygon = (SELECT ST_Multi(geom) FROM filtered_polygon),
   geom_line = NULL
 WHERE are_id = 1;
+
+
+
+------------------------------- Inland -------------------------------
+
+------------------------------- Country level -------------------------------
+
+    INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+    WITH country_selection AS (
+      SELECT rc.geom AS geom, rc.cou_code
+      FROM ref.tr_country_cou rc 
+	  JOIN refwgeel.tr_country_cou cw
+	  ON rc.cou_code = cw.cou_code
+	  GROUP BY rc.cou_code
+    )
+    SELECT nextval('refeel.seq') AS are_id,
+           3 AS are_are_id,
+           cou_code AS are_code,
+           'Country' AS are_lev_code,
+           NULL AS are_ismarine,
+           geom AS geom_polygon,
+		   NULL AS geom_line
+    FROM country_selection;
+
+
+------------------------------- EMU -------------------------------
+   
+--   INSERT INTO ref.tr_habitatlevel_lev VALUES( 
+--  'EMU',
+--  'Administrative unit for eel, the hierarchical next level is country.'
+--  )
+   
+ INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+    WITH emu_selection AS (
+      SELECT ST_Multi(re.geom) AS geom, re.emu_cou_code, re.emu_nameshort, ta.are_id
+      FROM refwgeel.tr_emu_emu re 
+	  JOIN refeel.tr_area_are ta
+	  ON ta.are_code = re.emu_cou_code
+	  WHERE emu_nameshort NOT ILIKE '%total'
+    )
+    SELECT nextval('refeel.seq') AS are_id,
+           are_id AS are_are_id,
+           emu_nameshort AS are_code,
+           'EMU' AS are_lev_code,
+           NULL AS are_ismarine,
+           geom AS geom_polygon,
+		   NULL AS geom_line
+    FROM emu_selection;
+   
+
+   
+-------------------------------- Division level --------------------------------
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+	3 AS are_are_id,
+	'Barents' AS are_code,
+	'Division' AS are_lev_code,
+	false AS are_ismarine,
+	ST_Union(shape) AS geom_polygon,
+	NULL AS geom_line
+FROM tempo.catchments_eel
+WHERE regexp_replace(tableoid::regclass::text, '\.catchments$', '') IN ('h_barents',
+  'h_iceland','h_norwegian','h_svalbard');
+
+ 
+ INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+	3 AS are_are_id,
+	'Baltic Sea' AS are_code,
+	'Division' AS are_lev_code,
+	false AS are_ismarine,
+	ST_Union(shape) AS geom_polygon,
+	NULL AS geom_line
+FROM tempo.catchments_eel
+WHERE regexp_replace(tableoid::regclass::text, '\.catchments$', '') IN (
+  'h_baltic30to31', 'h_baltic22to26', 'h_baltic27to29_32');
+ 
+
+ 
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+	3 AS are_are_id,
+	'Inland North Sea' AS are_code,
+	'Division' AS are_lev_code,
+	false AS are_ismarine,
+	ST_Union(shape) AS geom_polygon,
+	NULL AS geom_line
+FROM tempo.catchments_eel
+WHERE regexp_replace(tableoid::regclass::text, '\.catchments$', '') IN ('h_nseanorth','h_nseasouth',
+  'h_nseauk');
+ 
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+	3 AS are_are_id,
+	'Inland Atlantic' AS are_code,
+	'Division' AS are_lev_code,
+	false AS are_ismarine,
+	ST_Union(shape) AS geom_polygon,
+	NULL AS geom_line
+FROM tempo.catchments_eel
+WHERE regexp_replace(tableoid::regclass::text, '\.catchments$', '') IN (
+  'h_biscayiberian','h_celtic','h_southatlantic'
+ );
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+	3 AS are_are_id,
+	'Inland Meditarranean Sea' AS are_code,
+	'Division' AS are_lev_code,
+	false AS are_ismarine,
+	ST_Union(shape) AS geom_polygon,
+	NULL AS geom_line
+FROM tempo.catchments_eel
+WHERE regexp_replace(tableoid::regclass::text, '\.catchments$', '') IN (
+  'h_adriatic','h_medcentral','h_medeast','h_medwest','h_southmedcentral',
+  'h_southmedeast','h_southmedwest'
+ );
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+	3 AS are_are_id,
+	'Inland Black Sea' AS are_code,
+	'Division' AS are_lev_code,
+	false AS are_ismarine,
+	ST_Union(shape) AS geom_polygon,
+	NULL AS geom_line
+FROM tempo.catchments_eel
+WHERE regexp_replace(tableoid::regclass::text, '\.catchments$', '') IN (
+  'h_blacksea'
+ );
+
+-------------------------------- Subdivision level --------------------------------
+
+
+
+-------------------------------- Marine --------------------------------
+-------------------------------- Division level --------------------------------
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+	2 AS are_are_id,
+	'Marine Barents' AS are_code,
+	'Division' AS are_lev_code,
+	true AS are_ismarine,
+	ST_Union(geom) AS geom_polygon,
+	NULL AS geom_line
+FROM ref.tr_fishingarea_fia tff 
+WHERE fia_division IN ('27.14.a','27.5.a','27.2.b','27.2.a','27.1.b','27.1.a','27.14.b');
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+	2 AS are_are_id,
+	'Marine North Sea' AS are_code,
+	'Division' AS are_lev_code,
+	true AS are_ismarine,
+	ST_Union(geom) AS geom_polygon,
+	NULL AS geom_line
+FROM ref.tr_fishingarea_fia tff 
+WHERE fia_division IN ('27.3.b, c','27.4.c','27.4.b','27.4.a','27.7.e','27.7.d','27.3.a');
+
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+	2 AS are_are_id,
+	'Marine Baltic Sea' AS are_code,
+	'Division' AS are_lev_code,
+	true AS are_ismarine,
+	ST_Union(geom) AS geom_polygon,
+	NULL AS geom_line
+FROM ref.tr_fishingarea_fia tff 
+WHERE fia_division IN ('27.3.d');
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+	2 AS are_are_id,
+	'Marine Atlantic' AS are_code,
+	'Division' AS are_lev_code,
+	true AS are_ismarine,
+	ST_Union(geom) AS geom_polygon,
+	NULL AS geom_line
+FROM ref.tr_fishingarea_fia tff 
+WHERE fia_division IN ('27.7.j','27.10.a','27.9.b','27.10.b','27.9.a','27.8.c','27.12.c',
+						'27.12.a','27.6.a','27.7.b','34.1.2','34.1.1','27.7.k','27.6.b',
+						'27.7.c','27.5.b','27.8.e','27.8.d','27.12.b','27.7.h','27.8.b',
+						'27.7.g','27.7.f','27.8.a','27.8.a','27.7.a','34.1.3');
+
+
+					
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+	2 AS are_are_id,
+	'Marine Mediterranean Sea' AS are_code,
+	'Division' AS are_lev_code,
+	true AS are_ismarine,
+	ST_Union(geom) AS geom_polygon,
+	NULL AS geom_line
+FROM ref.tr_fishingarea_fia tff 
+WHERE fia_division IN ('37.1.3','37.2.2','37.3.1','37.1.1','37.3.2','37.1.2','37.2.1');
+
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+	2 AS are_are_id,
+	'Marine Black Sea' AS are_code,
+	'Division' AS are_lev_code,
+	true AS are_ismarine,
+	ST_Union(geom) AS geom_polygon,
+	NULL AS geom_line
+FROM ref.tr_fishingarea_fia tff 
+WHERE fia_division IN ('37.4.2');
+
 
 
 --------------------------- Creating referential to match rivers to basin ---------------------------  
