@@ -36,7 +36,10 @@ WHERE hybas_id =1020034170
 UNION ALL 
 SELECT shape FROM basinatlas.basinatlas_v10_lev03
 WHERE hybas_id = ANY(ARRAY[1030029810,1030040300,1030040310,1030031860,1030040220,1030040250,1030027430,1030034610])
-);--9
+UNION ALL 
+SELECT shape FROM basinatlas.basinatlas_v10_lev06
+WHERE hybas_id IN (2060000020,2060000030,2060000240,2060000250)
+);--13
 
 
 -- Selecting south med data from hydroatlas (small catchments)
@@ -48,7 +51,7 @@ WHERE EXISTS (
   FROM tempo.hydro_large_catchments hlce
   WHERE ST_Within(ba.shape,hlce.shape)
   )
-);--75554
+);--75869
 CREATE INDEX idx_tempo_hydro_small_catchments ON tempo.hydro_small_catchments USING GIST(shape);
 
 -- Selecting european data from hydroatlas (large catchments)
@@ -83,7 +86,7 @@ CREATE TABLE tempo.hydro_riversegments AS(
 		FROM tempo.hydro_small_catchments e
 		WHERE ST_Intersects(r.geom,e.shape)
 	)
-);--434740
+);--436570
 CREATE INDEX idx_tempo_hydro_riversegments ON tempo.hydro_riversegments USING GIST(geom);
 
 
@@ -113,7 +116,7 @@ DROP TABLE IF EXISTS tempo.riveratlas_mds_sm;
 CREATE TABLE tempo.riveratlas_mds_sm AS (
 	SELECT *
 	FROM tempo.hydro_riversegments
-	WHERE hydro_riversegments.hyriv_id = hydro_riversegments.main_riv); --7996
+	WHERE hydro_riversegments.hyriv_id = hydro_riversegments.main_riv); --8032
 
 
 -- Step 2 : Creating the most downstream point of previous segment
@@ -146,7 +149,7 @@ WITH downstream_points AS (
 UPDATE tempo.riveratlas_mds_sm AS t
 	SET downstream_point = dp.downstream_point
 	FROM downstream_points AS dp
-	WHERE t.hyriv_id = dp.hyriv_id; --7996
+	WHERE t.hyriv_id = dp.hyriv_id; --8032
 
 CREATE INDEX idx_tempo_riveratlas_mds__sm_dwnstrm ON tempo.riveratlas_mds_sm USING GIST(downstream_point);
 
@@ -435,117 +438,197 @@ CREATE TABLE tempo.ices_ecoregions_biscay_iberian AS (
 );--646
 
 
+--UPDATE tempo."GSAs_simplified_division" fi SET geom = t3.geom FROM tempo."37.1.1.1" t3 WHERE fi.f_gsa = '37.1.1.1';
+--UPDATE tempo."GSAs_simplified_division" fi SET geom = t3.geom FROM tempo."37.1.1.3" t3 WHERE fi.f_gsa = '37.1.1.3';
+--UPDATE ref.tr_fishingarea_fia fi SET geom = t3.geom FROM tempo."27.9.a" t3 WHERE fi.fia_code = '27.9.a';
+
+
 DROP TABLE IF EXISTS tempo.ices_ecoregions_med_west;
 CREATE TABLE tempo.ices_ecoregions_med_west AS (
 	SELECT dp.*
 	FROM tempo.riveratlas_mds AS dp
-	JOIN ices_ecoregions."ices_ecoregions_20171207_erase_esri" AS er
+	JOIN tempo."GSAs_simplified_division" AS er
 	ON ST_DWithin(
 	    dp.downstream_point,
 	    ST_Transform(er.geom,4326),
 	    0.01
 	)
-	WHERE er.objectid = 4
-);--904
+	WHERE er.f_gsa IN ('37.1.1.1','37.1.1.6','37.1.2.7','37.1.3.9','37.1.3.10','37.1.3.8','37.1.3.112','37.1.1.5')
+);--890
+
+--DROP TABLE IF EXISTS tempo.ices_ecoregions_med_spain;
+--CREATE TABLE tempo.ices_ecoregions_med_spain AS (
+--	SELECT dp.*
+--	FROM tempo.riveratlas_mds AS dp
+--	JOIN tempo."GSAs_simplified_division" AS er
+--	ON ST_DWithin(
+--	    dp.downstream_point,
+--	    ST_Transform(er.geom,4326),
+--	    0.01
+--	)
+--	WHERE er.f_gsa IN ('37.1.1.1','37.1.1.6')
+--);
+--
+--
+--
+--DROP TABLE IF EXISTS tempo.ices_ecoregions_med_fr;
+--CREATE TABLE tempo.ices_ecoregions_med_fr AS (
+--	SELECT dp.*
+--	FROM tempo.riveratlas_mds AS dp
+--	JOIN tempo."GSAs_simplified_division" AS er
+--	ON ST_DWithin(
+--	    dp.downstream_point,
+--	    ST_Transform(er.geom,4326),
+--	    0.01
+--	)
+--	WHERE er.f_gsa IN ('37.1.2.7')
+--);
+--
+--
+--DROP TABLE IF EXISTS tempo.ices_ecoregions_med_ita;
+--CREATE TABLE tempo.ices_ecoregions_med_ita AS (
+--	SELECT dp.*
+--	FROM tempo.riveratlas_mds AS dp
+--	JOIN tempo."GSAs_simplified_division" AS er
+--	ON ST_DWithin(
+--	    dp.downstream_point,
+--	    ST_Transform(er.geom,4326),
+--	    0.01
+--	)
+--	WHERE er.f_gsa IN ('37.1.3.9','37.1.3.10')
+--);
+--
+--
+--DROP TABLE IF EXISTS tempo.ices_ecoregions_med_isle;
+--CREATE TABLE tempo.ices_ecoregions_med_isle AS (
+--	SELECT dp.*
+--	FROM tempo.riveratlas_mds AS dp
+--	JOIN tempo."GSAs_simplified_division" AS er
+--	ON ST_DWithin(
+--	    dp.downstream_point,
+--	    ST_Transform(er.geom,4326),
+--	    0.01
+--	)
+--	WHERE er.f_gsa IN ('37.1.3.8','37.1.3.112','37.1.1.5')
+--);
+
+
 
 
 DROP TABLE IF EXISTS tempo.ices_ecoregions_med_central;
 CREATE TABLE tempo.ices_ecoregions_med_central AS (
 	SELECT dp.*
 	FROM tempo.riveratlas_mds AS dp
-	JOIN ices_ecoregions."ices_ecoregions_20171207_erase_esri" AS er
+	JOIN tempo."GSAs_simplified_division" AS er
 	ON ST_DWithin(
 	    dp.downstream_point,
 	    ST_Transform(er.geom,4326),
-	    0.04
+	    0.01
 	)
-	WHERE er.objectid = 5
-);--467
+	WHERE er.f_gsa IN ('37.2.2.15','37.2.2.16','37.2.2.19','37.2.2.20')
+	AND dp.hyriv_id NOT IN (20622643,20620772,20688798,20689371)
+);--443
 
 
 DROP TABLE IF EXISTS tempo.ices_ecoregions_med_east;
 CREATE TABLE tempo.ices_ecoregions_med_east AS (
 	SELECT dp.*
 	FROM tempo.riveratlas_mds AS dp
-	JOIN ices_ecoregions."ices_ecoregions_20171207_erase_esri" AS er
+	JOIN tempo."GSAs_simplified_division" AS er
 	ON ST_DWithin(
 	    dp.downstream_point,
 	    ST_Transform(er.geom,4326),
 	    0.01
 	)
-	WHERE er.objectid = 8
-);--1187
+	WHERE er.f_gsa IN ('37.3.1.22','37.3.1.23','37.3.2.24','37.3.2.25','37.3.2.27')
+	AND dp
+);--1152
 
 
 DROP TABLE IF EXISTS tempo.ices_ecoregions_adriatic;
 CREATE TABLE tempo.ices_ecoregions_adriatic AS (
 	SELECT dp.*
 	FROM tempo.riveratlas_mds AS dp
-	JOIN ices_ecoregions."ices_ecoregions_20171207_erase_esri" AS er
+	JOIN tempo."GSAs_simplified_division" AS er
 	ON ST_DWithin(
 	    dp.downstream_point,
 	    ST_Transform(er.geom,4326),
 	    0.01
 	)
-	WHERE er.objectid = 7
-);--507
+	WHERE er.f_gsa IN ('37.2.1.17')
+	AND dp.hyriv_id NOT IN (20611257,20612666,20619064,20618903,20620772,20618904,20619233,20619641,20619234,20618820,20620219)
+);--386
 
 
 DROP TABLE IF EXISTS tempo.ices_ecoregions_black_sea;
 CREATE TABLE tempo.ices_ecoregions_black_sea AS (
 	SELECT dp.*
 	FROM tempo.riveratlas_mds AS dp
-	JOIN ices_ecoregions."ices_ecoregions_20171207_erase_esri" AS er
+	JOIN tempo."GSAs_simplified_division" AS er
 	ON ST_DWithin(
 	    dp.downstream_point,
 	    ST_Transform(er.geom,4326),
 	    0.01
 	)
-	WHERE er.objectid = 6
-);--982
+	WHERE er.f_gsa IN ('37.4.1.28','37.4.2.29','37.4.3.30')
+);--728
 
 
 -- South Med
+--DROP TABLE IF EXISTS tempo.ices_ecoregions_south_medwest;
+--CREATE TABLE tempo.ices_ecoregions_south_medwest AS (
+--	SELECT dp.*
+--	FROM tempo.riveratlas_mds_sm AS dp
+--	JOIN ices_ecoregions."ices_ecoregions_20171207_erase_esri" AS er
+--	ON ST_DWithin(
+--	    dp.downstream_point,
+--	    ST_Transform(er.geom,4326),
+--	    0.01
+--	)
+--	WHERE er.objectid = 4
+--);--268
+
 DROP TABLE IF EXISTS tempo.ices_ecoregions_south_medwest;
 CREATE TABLE tempo.ices_ecoregions_south_medwest AS (
 	SELECT dp.*
 	FROM tempo.riveratlas_mds_sm AS dp
-	JOIN ices_ecoregions."ices_ecoregions_20171207_erase_esri" AS er
+	JOIN tempo."GSAs_simplified_division" AS er
 	ON ST_DWithin(
 	    dp.downstream_point,
 	    ST_Transform(er.geom,4326),
 	    0.01
 	)
-	WHERE er.objectid = 4
-);--268
+	WHERE er.f_gsa IN ('37.1.1.3','37.1.1.4')
+);--225
 
-
-DROP TABLE IF EXISTS tempo.ices_ecoregions_south_medeast;
-CREATE TABLE tempo.ices_ecoregions_south_medeast AS (
-	SELECT dp.*
-	FROM tempo.riveratlas_mds_sm AS dp
-	JOIN ices_ecoregions."ices_ecoregions_20171207_erase_esri" AS er
-	ON ST_DWithin(
-	    dp.downstream_point,
-	    ST_Transform(er.geom,4326),
-	    0.01
-	)
-	WHERE er.objectid = 8
-);--173
 
 
 DROP TABLE IF EXISTS tempo.ices_ecoregions_south_medcentral;
 CREATE TABLE tempo.ices_ecoregions_south_medcentral AS (
 	SELECT dp.*
 	FROM tempo.riveratlas_mds_sm AS dp
-	JOIN ices_ecoregions."ices_ecoregions_20171207_erase_esri" AS er
+	JOIN tempo."GSAs_simplified_division" AS er
+	ON ST_DWithin(
+	    dp.downstream_point,
+	    ST_Transform(er.geom,4326),
+	    0.01
+	)
+	WHERE er.f_gsa IN ('37.2.2.13','37.2.2.14','37.2.2.211','37.2.2.212','37.2.2.213')
+);--353
+
+
+DROP TABLE IF EXISTS tempo.ices_ecoregions_south_medeast;
+CREATE TABLE tempo.ices_ecoregions_south_medeast AS (
+	SELECT dp.*
+	FROM tempo.riveratlas_mds_sm AS dp
+	JOIN tempo."GSAs_simplified_division" AS er
 	ON ST_DWithin(
     	dp.downstream_point,
     	ST_Transform(er.geom,4326),
     	0.01
 	)
-	WHERE er.objectid = 5
-);--329
+	WHERE er.f_gsa IN ('37.3.2.26')
+);--150
 
 
 DROP TABLE IF EXISTS tempo.ices_ecoregions_south_atlantic;
@@ -1044,7 +1127,7 @@ FROM missing_points AS mp;--0
 WITH filtered_points AS (
     SELECT dp.*
     FROM tempo.riveratlas_mds AS dp
-    JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+    JOIN tempo."GSAs_simplified_division" AS er
     ON ST_DWithin(
         dp.downstream_point,
         ST_Transform(er.geom, 4326),
@@ -1056,8 +1139,9 @@ WITH filtered_points AS (
         ST_Transform(cs.geom, 4326),
         0.1
     )
-    WHERE er.objectid IN (4)
+    WHERE er.f_subarea IN ('37.1')
       AND cs.name IN ('Spain', 'France','Italy')
+      AND dp.hyriv_id NOT IN (20658482,20658054,20657591)
 ),
 excluded_points AS (
     SELECT downstream_point
@@ -1076,13 +1160,13 @@ missing_points AS (
 )
 INSERT INTO tempo.ices_ecoregions_med_west
 SELECT mp.*
-FROM missing_points AS mp;--5
+FROM missing_points AS mp;--21
 
 
 WITH filtered_points AS (
     SELECT dp.*
     FROM tempo.riveratlas_mds AS dp
-    JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+    JOIN tempo."GSAs_simplified_division" AS er
     ON ST_DWithin(
         dp.downstream_point,
         ST_Transform(er.geom, 4326),
@@ -1094,8 +1178,10 @@ WITH filtered_points AS (
         ST_Transform(cs.geom, 4326),
         0.1
     )
-    WHERE er.objectid IN (5)
+    WHERE er.f_subarea IN ('37.2')
+      AND er.f_division NOT IN ('37.2.1')
       AND cs.name IN ('Greece','Italy','Albania','Malta')
+      AND dp.hyriv_id NOT IN (20621866,20622643,20614993,20611270,20609968,20689371)
 ),
 excluded_points AS (
     SELECT downstream_point
@@ -1116,13 +1202,13 @@ missing_points AS (
 )
 INSERT INTO tempo.ices_ecoregions_med_central
 SELECT mp.*
-FROM missing_points AS mp;--12
+FROM missing_points AS mp;--37
 
 
 WITH filtered_points AS (
     SELECT dp.*
     FROM tempo.riveratlas_mds AS dp
-    JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+    JOIN tempo."GSAs_simplified_division" AS er
     ON ST_DWithin(
         dp.downstream_point,
         ST_Transform(er.geom, 4326),
@@ -1134,8 +1220,9 @@ WITH filtered_points AS (
         ST_Transform(cs.geom, 4326),
         0.1
     )
-    WHERE er.objectid IN (8)
+    WHERE er.f_subarea IN ('37.3')
       AND cs.name IN ('Greece','N. Cyprus','Cyprus','Turkey','Syria','Lebanon','Israel','Palestine')
+      AND dp.hyriv_id NOT IN (20614993)
 ),
 excluded_points AS (
     SELECT downstream_point
@@ -1154,13 +1241,13 @@ missing_points AS (
 )
 INSERT INTO tempo.ices_ecoregions_med_east
 SELECT mp.*
-FROM missing_points AS mp;--15
+FROM missing_points AS mp;--30
 
 
 WITH filtered_points AS (
     SELECT dp.*
     FROM tempo.riveratlas_mds AS dp
-    JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+    JOIN tempo."GSAs_simplified_division" AS er
     ON ST_DWithin(
         dp.downstream_point,
         ST_Transform(er.geom, 4326),
@@ -1172,10 +1259,11 @@ WITH filtered_points AS (
         ST_Transform(cs.geom, 4326),
         0.1
     )
-    WHERE er.objectid IN (7)
+    WHERE er.f_division IN ('37.2.1')
       AND cs.name IN ('Greece','Italy','Slovenia','Croatia','Albania','Montenegro','Bosnia and Herz.')
-      AND dp.hyriv_id != 20615722
-),
+      AND dp.hyriv_id NOT IN (20615722,20612666,20611257,20620772,20620219,20622643,20621866,20619064,
+      						  20618903,20619233,20619641,20619234,20618820,20620219,20618904)
+), 
 excluded_points AS (
     SELECT downstream_point
     FROM tempo.ices_ecoregions_med_central
@@ -1191,13 +1279,13 @@ missing_points AS (
 )
 INSERT INTO tempo.ices_ecoregions_adriatic
 SELECT mp.*
-FROM missing_points AS mp;--172
+FROM missing_points AS mp;--268
 
 
 WITH filtered_points AS (
     SELECT dp.*
     FROM tempo.riveratlas_mds AS dp
-    JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+    JOIN tempo."GSAs_simplified_division" AS er
     ON ST_DWithin(
         dp.downstream_point,
         ST_Transform(er.geom, 4326),
@@ -1209,8 +1297,8 @@ WITH filtered_points AS (
         ST_Transform(cs.geom, 4326),
         0.1
     )
-    WHERE er.objectid IN (6)
-      AND cs.name IN ('Greece','Bulgaria','Romania','Turkey','Ukraine','Russia','Georgia','Palestine')
+    WHERE er.f_subarea IN ('37.4')
+      AND cs.name IN ('Greece','Bulgaria','Romania','Turkey','Ukraine','Russia','Georgia')
 ),
 excluded_points AS (
     SELECT downstream_point
@@ -1227,14 +1315,14 @@ missing_points AS (
 )
 INSERT INTO tempo.ices_ecoregions_black_sea
 SELECT mp.*
-FROM missing_points AS mp;--2
+FROM missing_points AS mp;--266
 
 
 
 WITH filtered_points AS (
     SELECT dp.*
     FROM tempo.riveratlas_mds_sm AS dp
-    JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+    JOIN tempo."GSAs_simplified_division" AS er
     ON ST_DWithin(
         dp.downstream_point,
         ST_Transform(er.geom, 4326),
@@ -1246,7 +1334,8 @@ WITH filtered_points AS (
         ST_Transform(cs.geom, 4326),
         0.1
     )
-    WHERE er.objectid IN (4)
+    WHERE er.f_subarea IN ('37.1')
+   	  AND er.f_division NOT IN ('37.1.3')
       AND cs.name IN ('Morocco','Algeria','Tunisia')
 ),
 excluded_points AS (
@@ -1266,13 +1355,13 @@ missing_points AS (
 )
 INSERT INTO tempo.ices_ecoregions_south_medwest
 SELECT mp.*
-FROM missing_points AS mp;--2
+FROM missing_points AS mp;--5
 
 
 WITH filtered_points AS (
     SELECT dp.*
     FROM tempo.riveratlas_mds_sm AS dp
-    JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+    JOIN tempo."GSAs_simplified_division" AS er
     ON ST_DWithin(
         dp.downstream_point,
         ST_Transform(er.geom, 4326),
@@ -1284,8 +1373,9 @@ WITH filtered_points AS (
         ST_Transform(cs.geom, 4326),
         0.1
     )
-    WHERE er.objectid IN (5)
-      AND cs.name IN ('Tunisia','Lybia')
+    WHERE er.f_subarea IN ('37.2')
+      AND cs.name IN ('Tunisia','Lybia','Egypt','Palestine')
+      OR er.f_division IN ('37.1.3')
 ),
 excluded_points AS (
     SELECT downstream_point
@@ -1304,13 +1394,13 @@ missing_points AS (
 )
 INSERT INTO tempo.ices_ecoregions_south_medcentral
 SELECT mp.*
-FROM missing_points AS mp;--3
+FROM missing_points AS mp;--47
 
 
 WITH filtered_points AS (
     SELECT dp.*
     FROM tempo.riveratlas_mds_sm AS dp
-    JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+    JOIN tempo."GSAs_simplified_division" AS er
     ON ST_DWithin(
         dp.downstream_point,
         ST_Transform(er.geom, 4326),
@@ -1322,7 +1412,7 @@ WITH filtered_points AS (
         ST_Transform(cs.geom, 4326),
         0.15
     )
-    WHERE er.objectid IN (8)
+    WHERE er.f_subarea IN ('37.3')
       AND cs.name IN ('Egypt')
 ),
 excluded_points AS (
@@ -1587,7 +1677,7 @@ CREATE TABLE h_medwest.riversegments AS (
     FROM tempo.hydro_riversegments_europe AS hre
     JOIN tempo.ices_ecoregions_med_west AS ie
     ON hre.main_riv = ie.main_riv
-);--25256
+);--25230
 
 ALTER TABLE h_medwest.riversegments
 ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
@@ -1603,7 +1693,7 @@ CREATE TABLE h_medcentral.riversegments AS (
     FROM tempo.hydro_riversegments_europe AS hre
     JOIN tempo.ices_ecoregions_med_central AS ie
     ON hre.main_riv = ie.main_riv
-);--3779
+);--3715
 
 ALTER TABLE h_medcentral.riversegments
 ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
@@ -1619,7 +1709,8 @@ CREATE TABLE h_medeast.riversegments AS (
     FROM tempo.hydro_riversegments_europe AS hre
     JOIN tempo.ices_ecoregions_med_east AS ie
     ON hre.main_riv = ie.main_riv
-);--20479
+    WHERE ie.main_riv NOT IN (20609968, 20611270, 20769237, 20768814, 20768815, 20767177, 20766726, 20614993)
+);--18652
 
 ALTER TABLE h_medeast.riversegments
 ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
@@ -1635,7 +1726,7 @@ CREATE TABLE h_adriatic.riversegments AS (
     FROM tempo.hydro_riversegments_europe AS hre
     JOIN tempo.ices_ecoregions_adriatic AS ie
     ON hre.main_riv = ie.main_riv
-);--16631
+);--16660
 
 ALTER TABLE h_adriatic.riversegments
 ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
@@ -1651,7 +1742,7 @@ CREATE TABLE h_blacksea.riversegments AS (
     FROM tempo.hydro_riversegments_europe AS hre
     JOIN tempo.ices_ecoregions_black_sea AS ie
     ON hre.main_riv = ie.main_riv
-);--127453
+);--127386
 
 ALTER TABLE h_blacksea.riversegments
 ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
@@ -1667,7 +1758,7 @@ CREATE TABLE h_southmedwest.riversegments AS (
     FROM tempo.hydro_riversegments AS hre
     JOIN tempo.ices_ecoregions_south_medwest AS ie
     ON hre.main_riv = ie.main_riv
-);--10716
+);--9154
 
 ALTER TABLE h_southmedwest.riversegments
 ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
@@ -1683,7 +1774,7 @@ CREATE TABLE h_southmedcentral.riversegments AS (
     FROM tempo.hydro_riversegments AS hre
     JOIN tempo.ices_ecoregions_south_medcentral AS ie
     ON hre.main_riv = ie.main_riv
-);--5403
+);--7097
 
 ALTER TABLE h_southmedcentral.riversegments
 ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
@@ -1699,7 +1790,7 @@ CREATE TABLE h_southmedeast.riversegments AS (
     FROM tempo.hydro_riversegments AS hre
     JOIN tempo.ices_ecoregions_south_medeast AS ie
     ON hre.main_riv = ie.main_riv
-);--136034
+);--137575
 
 ALTER TABLE h_southmedeast.riversegments
 ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
@@ -1982,7 +2073,7 @@ CREATE TABLE h_medwest.catchments AS (
     ON hce.shape && excluded.shape
     AND ST_Equals(hce.shape, excluded.shape)
     WHERE excluded.shape IS NULL
-);--3100
+);--3094
 
 ALTER TABLE h_medwest.catchments
 ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
@@ -2003,7 +2094,7 @@ CREATE TABLE h_medcentral.catchments AS (
     ON hce.shape && excluded.shape
     AND ST_Equals(hce.shape, excluded.shape)
     WHERE excluded.shape IS NULL
-);--531
+);--525
 
 ALTER TABLE h_medcentral.catchments
 ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
@@ -2024,7 +2115,7 @@ CREATE TABLE h_medeast.catchments AS (
     ON hce.shape && excluded.shape
     AND ST_Equals(hce.shape, excluded.shape)
     WHERE excluded.shape IS NULL
-);--3100
+);--2794
 
 ALTER TABLE h_medeast.catchments
 ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
@@ -2051,7 +2142,7 @@ CREATE TABLE h_adriatic.catchments AS (
     ON hce.shape && excluded.shape
     AND ST_Equals(hce.shape, excluded.shape)
     WHERE excluded.shape IS NULL
-);--1738
+);--1732
 
 ALTER TABLE h_adriatic.catchments
 ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
@@ -2080,7 +2171,7 @@ CREATE TABLE h_blacksea.catchments AS (
     ON hce.shape && excluded.shape
     AND ST_Equals(hce.shape, excluded.shape)
     WHERE excluded.shape IS NULL
-);--18462
+);--1844
 
 ALTER TABLE h_blacksea.catchments
 ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
@@ -2101,7 +2192,7 @@ CREATE TABLE h_southmedeast.catchments AS (
     ON hce.shape && excluded.shape
     AND ST_Equals(hce.shape, excluded.shape)
     WHERE excluded.shape IS NULL
-);--22792
+);--23042
 
 ALTER TABLE h_southmedeast.catchments
 ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
@@ -2122,7 +2213,7 @@ CREATE TABLE h_southmedcentral.catchments AS (
     ON hce.shape && excluded.shape
     AND ST_Equals(hce.shape, excluded.shape)
     WHERE excluded.shape IS NULL
-);--881
+);--1151
 
 ALTER TABLE h_southmedcentral.catchments
 ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
@@ -2143,7 +2234,7 @@ CREATE TABLE h_southmedwest.catchments AS (
     ON hce.shape && excluded.shape
     AND ST_Equals(hce.shape, excluded.shape)
     WHERE excluded.shape IS NULL
-);--1661
+);--1425
 
 ALTER TABLE h_southmedwest.catchments
 ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
@@ -2865,7 +2956,7 @@ filtered_basin AS (
 )
 INSERT INTO h_medwest.catchments
 SELECT *
-FROM filtered_basin;--152
+FROM filtered_basin;--151
 
 
 INSERT INTO h_medwest.riversegments
@@ -2879,13 +2970,13 @@ WHERE NOT EXISTS (
     FROM h_medwest.riversegments ex
     WHERE r.geom && ex.geom
     AND ST_Equals(r.geom, ex.geom)
-);--273
+);--269
 
 
 DROP TABLE IF EXISTS tempo.oneendo_medc;
 CREATE TABLE tempo.oneendo_medc AS (
 	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.4,FALSE) geom
-	FROM h_medcentral.catchments AS ha);--65
+	FROM h_medcentral.catchments AS ha);--56
 CREATE INDEX idx_tempo_oneendo_medc ON tempo.oneendo_medc USING GIST(geom);
 
 WITH endo_basins AS (	
@@ -2911,7 +3002,7 @@ excluded_basins AS (
     SELECT shape
     FROM basinatlas.basinatlas_v10_lev12
     WHERE main_bas = ANY(ARRAY[2120011730, 2120014300, 2120087740, 2120099800, 2120045580, 2120045160, 2120010660,
-    							2120010620, 2120010580, 2120010540, 2120045200])
+    							2120010620, 2120010580, 2120010540, 2120045200, 2120011640, 2120011620])
 ),
 filtered_basin AS (
     SELECT eb.*
@@ -2923,7 +3014,7 @@ filtered_basin AS (
 )
 INSERT INTO h_medcentral.catchments
 SELECT *
-FROM filtered_basin;--87
+FROM filtered_basin;--86
 
 
 INSERT INTO h_medcentral.riversegments
@@ -2937,13 +3028,13 @@ WHERE NOT EXISTS (
     FROM h_medcentral.riversegments ex
     WHERE r.geom && ex.geom
     AND ST_Equals(r.geom, ex.geom)
-);--244
+);--198
 
 
 DROP TABLE IF EXISTS tempo.oneendo_mede;
 CREATE TABLE tempo.oneendo_mede AS (
 	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.5,FALSE) geom
-	FROM h_medeast.catchments AS ha);--226
+	FROM h_medeast.catchments AS ha);--225
 CREATE INDEX idx_tempo_oneendo_mede ON tempo.oneendo_mede USING GIST(geom);
 
 
@@ -2958,7 +3049,8 @@ WITH excluded_basins AS (
     UNION ALL
     SELECT geom
     FROM tempo.hydro_riversegments_europe
-    WHERE main_riv = ANY(ARRAY[20641990, 20641991, 20641880, 20635552])
+    WHERE main_riv = ANY(ARRAY[20641990, 20641991, 20641880, 20635552, 20611270, 20609968, 20769237, 20768814, 20768815,
+    						   20767177, 20766726])
 ),
 riversegments_in_zone AS (
     SELECT rs.*
@@ -2986,7 +3078,7 @@ final_segments AS (
 )
 INSERT INTO h_medeast.riversegments
 SELECT DISTINCT ON (fs.hyriv_id) fs.*
-FROM final_segments fs;--3920 15min
+FROM final_segments fs;--3920 19min
 
 
 
@@ -3001,7 +3093,7 @@ WHERE NOT EXISTS (
     FROM h_medeast.catchments ex
     WHERE c.shape && ex.shape
     AND ST_Equals(c.shape, ex.shape)
-);--702
+);--700
 
 
 
@@ -3061,7 +3153,7 @@ final_segments AS (
 )
 INSERT INTO h_blacksea.riversegments
 SELECT DISTINCT ON (fs.hyriv_id) fs.*
-FROM final_segments fs;--2001
+FROM final_segments fs;--2039
 
 
 INSERT INTO h_blacksea.catchments
@@ -3075,13 +3167,13 @@ WHERE NOT EXISTS (
     FROM h_blacksea.catchments ex
     WHERE c.shape && ex.shape
     AND ST_Equals(c.shape, ex.shape)
-);--395
+);--408
 
 
 DROP TABLE IF EXISTS tempo.oneendo_adriatic;
 CREATE TABLE tempo.oneendo_adriatic AS (
 	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.2,FALSE) geom
-	FROM h_adriatic.catchments AS ha);--152
+	FROM h_adriatic.catchments AS ha);--150
 CREATE INDEX idx_tempo_oneendo_adriatic ON tempo.oneendo_adriatic USING GIST(geom);
 
 
@@ -3130,7 +3222,7 @@ final_segments AS (
 )
 INSERT INTO h_adriatic.riversegments
 SELECT DISTINCT ON (fs.hyriv_id) fs.*
-FROM final_segments fs; --1505
+FROM final_segments fs; --1536
 
 INSERT INTO h_adriatic.catchments
 SELECT DISTINCT ON (c.hybas_id) c.*
@@ -3143,7 +3235,7 @@ WHERE NOT EXISTS (
     FROM h_adriatic.catchments ex
     WHERE c.shape && ex.shape
     AND ST_Equals(c.shape, ex.shape)
-);--313
+);--327
 
 
 
@@ -3369,9 +3461,9 @@ FROM filtered_basin;--1
 WITH last_basin AS (
 	SELECT DISTINCT ON (c.hybas_id) c.*
 	FROM tempo.hydro_small_catchments_europe AS c
-	JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+	JOIN tempo."GSAs_simplified_division" AS er
 	ON ST_Intersects(c.shape, er.geom)
-	WHERE er.objectid = 4
+	WHERE er.f_subarea IN ('37.1')
 ),
 excluded_basins AS (
     SELECT shape 
@@ -3393,15 +3485,16 @@ filtered_basin AS (
 )
 INSERT INTO h_medwest.catchments
 SELECT *
-FROM filtered_basin;--15
+FROM filtered_basin;--14
 
 
 WITH last_basin AS (
 	SELECT DISTINCT ON (c.hybas_id) c.*
 	FROM tempo.hydro_small_catchments_europe AS c
-	JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+	JOIN tempo."GSAs_simplified_division" AS er
 	ON ST_Intersects(c.shape, er.geom)
-	WHERE er.objectid = 5
+	WHERE er.f_subarea IN ('37.2')
+	AND er.f_division NOT IN ('37.2.1')
 ),
 excluded_basins AS (
     SELECT shape 
@@ -3430,15 +3523,16 @@ filtered_basin AS (
 )
 INSERT INTO h_medcentral.catchments
 SELECT *
-FROM filtered_basin;--2
+FROM filtered_basin;--3
 
 
 WITH last_basin AS (
 	SELECT DISTINCT ON (c.hybas_id) c.*
 	FROM tempo.hydro_small_catchments_europe AS c
-	JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+	JOIN tempo."GSAs_simplified_division" AS er
 	ON ST_Intersects(c.shape, er.geom)
-	WHERE er.objectid = 8
+	WHERE er.f_subarea IN ('37.3')
+	AND er.f_division NOT IN ('37.3.2')
 ),
 excluded_basins AS (
     SELECT shape 
@@ -3460,15 +3554,15 @@ filtered_basin AS (
 )
 INSERT INTO h_medeast.catchments
 SELECT *
-FROM filtered_basin;--116
+FROM filtered_basin;--67
 
 
 WITH last_basin AS (
 	SELECT DISTINCT ON (c.hybas_id) c.*
 	FROM tempo.hydro_small_catchments_europe AS c
-	JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+	JOIN tempo."GSAs_simplified_division" AS er
 	ON ST_Intersects(c.shape, er.geom)
-	WHERE er.objectid = 6
+	WHERE er.f_subarea IN ('37.4')
 ),
 excluded_basins AS (
     SELECT shape 
@@ -3499,15 +3593,15 @@ filtered_basin AS (
 )
 INSERT INTO h_blacksea.catchments
 SELECT *
-FROM filtered_basin;--126
+FROM filtered_basin;--92
 
 
 WITH last_basin AS (
 	SELECT DISTINCT ON (c.hybas_id) c.*
 	FROM tempo.hydro_small_catchments_europe AS c
-	JOIN ices_ecoregions.ices_ecoregions_20171207_erase_esri AS er
+	JOIN tempo."GSAs_simplified_division" AS er
 	ON ST_Intersects(c.shape, er.geom)
-	WHERE er.objectid = 7
+	WHERE er.f_division IN ('37.2.1')
 ),
 excluded_basins AS (
     SELECT shape 
@@ -3538,7 +3632,7 @@ filtered_basin AS (
 )
 INSERT INTO h_adriatic.catchments
 SELECT *
-FROM filtered_basin;--67
+FROM filtered_basin;--63
 
 
 WITH last_basin AS (
