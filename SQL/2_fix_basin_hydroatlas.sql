@@ -3749,6 +3749,7 @@ ALTER TABLE h_nseauk.riversegments INHERIT tempo.riversegments_eel;
 ALTER TABLE h_svalbard.riversegments INHERIT tempo.riversegments_eel;
 CREATE INDEX idx_tempo_eel_riv ON tempo.riversegments_eel USING GIST(geom);
 
+
 DROP TABLE IF EXISTS tempo.catchments_eel;
 CREATE TABLE tempo.catchments_eel (LIKE h_baltic30to31.catchments);
 ALTER TABLE h_adriatic.catchments INHERIT tempo.catchments_eel;
@@ -3773,4 +3774,6 @@ ALTER TABLE h_southmedeast.catchments INHERIT tempo.catchments_eel;
 ALTER TABLE h_southmedwest.catchments INHERIT tempo.catchments_eel;
 ALTER TABLE h_svalbard.catchments INHERIT tempo.catchments_eel;
 CREATE INDEX idx_tempo_eel_catchments ON tempo.catchments_eel USING GIST(shape);
+
+
 
