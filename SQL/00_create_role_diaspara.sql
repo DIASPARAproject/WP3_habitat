@@ -54,6 +54,12 @@ GRANT diaspara_admin TO jani ;
 --- role management
 GRANT CONNECT ON DATABASE "diaspara" TO diaspara_read;
 ALTER DATABASE "diaspara" OWNER TO diaspara_admin;
+ALTER ROLE  diaspara_read  WITH LOGIN;
+
+GRANT USAGE ON SCHEMA refbast TO diaspara_read;
+GRANT USAGE ON SCHEMA refnas TO diaspara_read;
+GRANT USAGE ON SCHEMA refeel TO diaspara_read;
+GRANT USAGE ON SCHEMA ref TO diaspara_read;
 
 --- extension management
 CREATE EXTENSION "uuid-ossp" SCHEMA "public";
