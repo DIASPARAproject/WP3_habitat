@@ -1,0 +1,487 @@
+---
+title: "Diaspara WP3, WGEEL 2025"
+author: "Jules Oliviéro, Cédric Briand, Jani Helminen"
+fontsize: 20pt
+filters:
+  - quarto-kroki
+  - speakernotes
+title-slide-attributes:
+  data-background-image: images/diaspara_background.png
+  data-background-size: stretch
+  data-background-opacity: "0.5"
+logo: images/diaspara_participants_logo_withEUlogo.png
+footer: ""
+format: 
+  revealjs :
+    self-contained: true
+    center: false
+    speakernotes:
+      displayNotes: true
+      customStyle: |
+        roundcorner=5pt,
+        subtitlebelowline=true,
+        subtitleaboveline=true,
+        subtitlebackgroundcolor=yellow!70!white,
+        backgroundcolor=blue!20!white,
+        frametitle={Theorem},
+        frametitlerule=true,
+        frametitlebackgroundcolor=yellow!70!white,
+  pdf:
+    speakernotes:
+      displayNotes: true
+      customStyle: |
+        roundcorner=5pt,
+        subtitlebelowline=true,
+        subtitleaboveline=true,
+        subtitlebackgroundcolor=yellow!70!white,
+        backgroundcolor=blue!20!white,
+        frametitle={Theorem},
+        frametitlerule=true,
+        frametitlebackgroundcolor=yellow!70!white,
+theme: solarized
+background-transition: fade
+editor: visual
+---
+
+## Habitat DB
+
+HydroSHEDS data forming the basis of the habitat database
+
+-   HydroBASIN
+-   HydroRIVERS
+-   HydroLAKES (to be included)
+
+::: notes
+To be able to create this habitat database, we decided to use data from HydroSHEDS. HydroSHEDS is a global database providing high-resolution hydrographic data. We will be using three of its components : HydroBASIN for catchments and HydroRIVERS for the river network. HydroLAKES will be added later on.
+:::
+
+## Habitat DB
+
+![Final map of catchments from HydroSHEDS split into ICES areas and ecoregions.](images/fig-final.png "A view of Europe and Northern Africa catchments"){#fig-final}
+
+::: notes
+The first work that needed to be done was to split those catchments and river segments into smaller groups. We did this for efficiency reasons. To create those we decided to make them fit with ICES Areas and Ecoregions. Basically, all reach that are flowing into a same ICES Area have been grouped together. More details on that work is available on DIASPARA website.
+:::
+
+## What data is available ?
+
+![Description of natural discharge variable](images/fig-h_nat_dis.png){#fig-natdis}
+
+::: notes
+Alongside the geometries, environmental data comes with HydroSHEDS. For instance, the natural discharge is available. Its estimation is based on long term average with annual average, min and max.
+:::
+
+## What data is available ?
+
+![Description of river area variable](images/fig-h_riv_are.png){#fig-rivare}
+
+::: notes
+The river area is also a data within HydroSHEDS. Either for the selected river segment or for the total watershed upstream of the reach pour point.
+:::
+
+## What data is available ?
+
+![Description of elevation variable](images/fig-h_elev.png){#fig-elev}
+
+::: notes
+You can also find elevation values
+:::
+
+## What data is available ?
+
+![Description of terrain slope variable](images/fig-h_ter_slp.png){#fig-terslp}
+
+::: notes
+Terrain slope
+:::
+
+## What data is available ?
+
+![Description of stream gradient variable](images/fig-h_st_gra.png){#fig-st_gra}
+
+::: notes
+Or the average stream gradient along the reach segments.
+:::
+
+## What data is available ?
+
+-   Temperature
+-   Precipitation
+-   River class order and Strahler number
+
+::: notes
+Informations like temp, precipitaion, river class order or Strahler number are also available within the dataset.
+:::
+
+## Structuring the database with referentials
+
+```{dot}
+#| label: fig-ref-hierarchy
+#| fig-align: center
+
+graph {
+  rankdir="BT";
+
+  ref [label="ref", shape=box, style=filled, fillcolor=lightblue1];
+
+  refbast [label="refbast", shape=box];
+  refnas [label="refnas", shape=box];
+  refeel  [label="refeel", shape=box];
+
+  refbast -- ref;
+  refnas  -- ref;
+  refeel  -- ref;
+
+  {rank = same; refbast; refnas; refeel;}
+}
+
+```
+
+::: notes
+Once we gathered the data we needed we now had to create a structure within it, so it would be easier to use. To do so we decided to use referential tables with inheritance. Basically, we have a main ref table that dictates the structure of the referentials. This structure is inherited by our working group referential tables, which are here named refbast, refnas and refeel.
+:::
+
+## Structure of the referential tables
+
+-   are_id
+-   are_are_id
+-   are_code
+-   are_lev_code
+-   are_wkg_code
+-   are_ismarine
+-   geom (polygon & line)
+
+![Structure of the ref table.](images/fig-ref_structure.png "A view of the ref table"){#fig-refstr}
+
+::: notes
+The referential table is structured like this. First you have a are_id for each line, then a are_are_id that makes said line reference to its higher hierarchical level (more on this a bit later), then the are_code that is like the name of the data, the are_lev_code which corresponds to the hierarchical level, are_wkg_code for the working group, are_ismarine which is a boolean value to know weither the data is marine or continental and finally geometries.
+:::
+
+## WGEEL
+
+### Hierarchical structure of the database
+
+```{dot}
+//| label: fig-area_hierarchy_wgeel
+//| fig-cap: Hierarchical structure of WGEEL habitat database
+
+
+digraph {
+    compound=true;
+    newrank=true;
+    rankdir="LR";
+
+    subgraph clusterZ {
+      label = Stock
+      style=full
+      color=red
+      fontcolor=red
+      center=true
+
+      subgraph clusterA {
+        label = "Inland Stock"
+        style=full
+        color=lightgray
+        fontcolor=lightgray
+        center=true
+
+          subgraph clusterB {
+          label = Assessment_unit
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+
+            subgraph clusterX {
+            label = Regional
+            style=full
+            color=lightgray
+            fontcolor=lightgray
+            center=true
+
+              subgraph clusterY {
+              label = Complex
+              style = full
+              color = lightgray
+              fontcolor = lightgray
+              center = true
+
+              subgraph clusterV {
+              label = Lagoons
+              style = full
+              color = lightgray
+              fontcolor = lightgray
+              center = true
+                inland [
+                  label=data,
+                  shape=box, 
+                  style =invis
+                 ] 
+                }
+              }
+            }
+
+            subgraph clusterC {
+            label = River
+            style=full
+            color=lightgray
+            fontcolor=lightgray
+            center=true
+                  
+              subgraph clusterD {
+              label = River_section
+              style=full
+              color=lightgray
+              fontcolor=lightgray
+                section [
+                label=data,
+                shape=box, 
+                style =invis
+                ]  
+          }
+        }
+      }
+ 
+        subgraph clusterE{
+        label=Country
+        style=dashed
+        color=lightgray
+        fontcolor=lightgray
+          subgraph clusterW{
+          label=EMU
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          Fishing [
+          style=invis
+          shape=square
+          ]
+        }
+      }
+    }
+      subgraph clusterF {
+      label = "Marine Stock"
+      style=full
+      color=lightgray
+      fontcolor=lightgray
+      center=true
+
+        subgraph clusterG {
+          label = Regional
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+
+          subgraph clusterG {
+          label = Division
+          style=full
+          color=lightgray
+          fontcolor=lightgray
+          center=true
+
+            subgraph clusterH {
+            label = Subdivision
+            style=full
+            color=lightgray
+            fontcolor=lightgray
+            center=true
+              here [
+              label=data1,
+              shape=box, 
+              style =invis
+              ]  
+              }
+            }
+          }   
+        }
+      }
+      section -> Fishing -> here [style=invis];
+}
+
+```
+
+::: notes
+First I going to show you the hierarchical structure we chose for WGBAST, then I'll move on to WGNAS and finally Cedric will go on about WGEEL. So, as stated before, each data will be referencing a level a hierarchy and also to its higher level if it exists. For WGBAST we will be following this graph
+:::
+
+## Stock
+
+::::: columns
+::: column
+![Stock level](images/fig-area_hierarchy_wgeel1.svg "A graph representing the hierarchical structure. The Stock level is highlited in red"){#fig-hierwgeel1}
+:::
+
+::: column
+![](images/fig-stock_wgeel.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-fullstocklvl}
+:::
+:::::
+
+::: notes
+Fisrt, The full stock level is the highest level. Thus it doesn't references to any other level. As you can see it is composed of all areas covered by the wg, being at inland or at sea.
+:::
+
+## Assessment unit
+
+::::: columns
+::: column
+![Assessment unit level](images/fig-area_hierarchy_wgeel3.svg "A graph representing the hierarchical structure. The Assessment Unit level is highlited in green"){#fig-hierwgeel3}
+:::
+
+::: column
+![Map of WGEEL assessment units level.](images/fig-au_wgeel.png "A view of the Baltic Sea with polygons surrounding all catchments that belongs to all 6 WGBAST assessment units"){#fig-assunitlvl}
+:::
+:::::
+
+::: notes
+Assessment units were given to us by WGBAST. Thanks to that we were able to integrate them into the structure. Here 6 assessment units are included.
+:::
+
+## Regional
+
+::::: columns
+::: column
+![River level](images/fig-area_hierarchy_wgeel4.svg "A graph representing the hierarchical structure. The River level is highlited in light green"){#fig-hierwgeel4}
+:::
+
+::: column
+![Map of WGEEL Regional level.](images/fig-region_wgeel.png "A view of the Bothian bay with polygons surrounding each reach within the first assessment unit"){#fig-riverlvl}
+:::
+:::::
+
+::: notes
+Within each of those assessment units, the main river stretch have been gathered into polygons. What you see here are reaches for the Assessment Unit numer 1. All of them thus are referencing to said AU.
+:::
+
+## Complex
+
+::::: columns
+::: column
+![River section level](images/fig-area_hierarchy_wgeel5.svg "A graph representing the hierarchical structure. The River Section level is highlited in light green"){#fig-hierwgeel5}
+:::
+:::::
+
+::: notes
+
+:::
+
+## Lagoons
+
+::::: columns
+::: column
+![Country level](images/fig-area_hierarchy_wgeel6.svg "A graph representing the hierarchical structure. The Country level is highlited in firebrick red"){#fig-hierwgeel6}
+:::
+:::::
+
+::: notes
+
+:::
+
+## River
+
+::::: columns
+::: column
+![Marine stock level](images/fig-area_hierarchy_wgeel7.svg "A graph representing the hierarchical structure. The Marine Stock level is highlited in deep blue"){#fig-hierwgeel7}
+:::
+
+::: column
+![](images/fig-region_in_wgeel.png "A view of of the Baltic with a polygon surrounding the Baltic Sea, Bothian Sea and Finland Gulf"){#fig-marinestocklvl}
+:::
+:::::
+
+::: notes
+
+:::
+
+## River_segments
+
+::::: columns
+::: column
+![ICES Division level](images/fig-area_hierarchy_wgeel8.svg "A graph representing the hierarchical structure. The ICES division level is highlited in blue"){#fig-hierwgeel8}
+:::
+:::::
+
+::: notes
+Then we have the ICES Division level, that takes most of the Baltic as one Unit and the part around Denmark as another Unit.
+:::
+
+## Country
+
+::::: columns
+::: column
+![ICES subdivision level](images/fig-area_hierarchy_wgeel9.svg "A graph representing the hierarchical structure. The ICES Subdivision level is highlited in blue"){#fig-hierwgeel9}
+:::
+:::::
+
+::: notes
+
+:::
+
+## EMU
+
+::::: columns
+::: column
+![ICES subdivision level](images/fig-area_hierarchy_wgeel10.svg "A graph representing the hierarchical structure. The ICES Subdivision level is highlited in blue"){#fig-hierwgeel9}
+:::
+
+::: column
+![Map of the river level for WGEEL.](images/fig-EMU_wgeel.png "A view of of the Baltic with a polygon surrounding the Baltic Sea, Bothian Sea and Finland Gulf"){#fig-marinestocklvl}
+:::
+
+:::::
+
+## Marine Stock
+
+::::: columns
+::: column
+![ICES subdivision level](images/fig-area_hierarchy_wgeel11.svg "A graph representing the hierarchical structure. The ICES Subdivision level is highlited in blue"){#fig-hierwgeel9}
+:::
+
+
+::: column
+![](images/fig-stock_wgeel.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-fullstocklvl}
+:::
+:::::
+
+## Regional
+
+::::: columns
+::: column
+![ICES subdivision level](images/fig-area_hierarchy_wgeel12.svg "A graph representing the hierarchical structure. The ICES Subdivision level is highlited in blue"){#fig-hierwgeel9}
+:::
+
+::: column
+![](images/fig-regional_wgeel.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-fullstocklvl}
+:::
+:::::
+
+
+
+## Division
+
+::::: columns
+::: column
+![ICES division level](images/fig-area_hierarchy_wgeel13.svg "A graph representing the hierarchical structure. The ICES Subdivision level is highlited in blue"){#fig-hierwgeel9}
+:::
+
+::: column
+![](images/fig-division_wgeel.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-fullstocklvl}
+:::
+
+:::::
+
+## Subdivison
+
+::::: columns
+::: column
+![ICES subdivision level](images/fig-area_hierarchy_wgeel14.svg "A graph representing the hierarchical structure. The ICES Subdivision level is highlited in blue"){#fig-hierwgeel9}
+:::
+
+::: column
+![](images/fig-subdivision_wgeel.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-fullstocklvl}
+:::
+:::::
+
+## Thank you
+
+Please, feel free to give us some feeback
