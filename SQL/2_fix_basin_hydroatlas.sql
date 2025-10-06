@@ -540,9 +540,8 @@ CREATE TABLE tempo.ices_ecoregions_med_east AS (
 	    ST_Transform(er.geom,4326),
 	    0.01
 	)
-	WHERE er.f_gsa IN ('37.3.1.22','37.3.1.23','37.3.2.24','37.3.2.25','37.3.2.27')
-	AND dp
-);--1152
+	WHERE er.f_gsa IN ('37.3.1.22','37.3.1.23','37.3.2.24','37.3.2.25','37.3.2.27','37.4.1.28')
+);--1273
 
 
 DROP TABLE IF EXISTS tempo.ices_ecoregions_adriatic;
@@ -570,8 +569,8 @@ CREATE TABLE tempo.ices_ecoregions_black_sea AS (
 	    ST_Transform(er.geom,4326),
 	    0.01
 	)
-	WHERE er.f_gsa IN ('37.4.1.28','37.4.2.29','37.4.3.30')
-);--728
+	WHERE er.f_division IN ('37.4.2','37.4.3')
+);--607
 
 
 -- South Med
@@ -1241,7 +1240,7 @@ missing_points AS (
 )
 INSERT INTO tempo.ices_ecoregions_med_east
 SELECT mp.*
-FROM missing_points AS mp;--30
+FROM missing_points AS mp;--31
 
 
 WITH filtered_points AS (
@@ -1297,7 +1296,7 @@ WITH filtered_points AS (
         ST_Transform(cs.geom, 4326),
         0.1
     )
-    WHERE er.f_subarea IN ('37.4')
+    WHERE er.f_division IN ('37.4.2','37.4.3')
       AND cs.name IN ('Greece','Bulgaria','Romania','Turkey','Ukraine','Russia','Georgia')
 ),
 excluded_points AS (
@@ -1315,7 +1314,7 @@ missing_points AS (
 )
 INSERT INTO tempo.ices_ecoregions_black_sea
 SELECT mp.*
-FROM missing_points AS mp;--266
+FROM missing_points AS mp;--258
 
 
 
@@ -1710,7 +1709,7 @@ CREATE TABLE h_medeast.riversegments AS (
     JOIN tempo.ices_ecoregions_med_east AS ie
     ON hre.main_riv = ie.main_riv
     WHERE ie.main_riv NOT IN (20609968, 20611270, 20769237, 20768814, 20768815, 20767177, 20766726, 20614993)
-);--18652
+);--20655
 
 ALTER TABLE h_medeast.riversegments
 ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
@@ -1742,7 +1741,7 @@ CREATE TABLE h_blacksea.riversegments AS (
     FROM tempo.hydro_riversegments_europe AS hre
     JOIN tempo.ices_ecoregions_black_sea AS ie
     ON hre.main_riv = ie.main_riv
-);--127386
+);--125235
 
 ALTER TABLE h_blacksea.riversegments
 ADD CONSTRAINT pk_hyriv_id PRIMARY KEY (hyriv_id);
@@ -2115,7 +2114,7 @@ CREATE TABLE h_medeast.catchments AS (
     ON hce.shape && excluded.shape
     AND ST_Equals(hce.shape, excluded.shape)
     WHERE excluded.shape IS NULL
-);--2794
+);--3069
 
 ALTER TABLE h_medeast.catchments
 ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
@@ -2171,7 +2170,7 @@ CREATE TABLE h_blacksea.catchments AS (
     ON hce.shape && excluded.shape
     AND ST_Equals(hce.shape, excluded.shape)
     WHERE excluded.shape IS NULL
-);--1844
+);--18163
 
 ALTER TABLE h_blacksea.catchments
 ADD CONSTRAINT pk_hybas_id PRIMARY KEY (hybas_id);
@@ -3034,7 +3033,7 @@ WHERE NOT EXISTS (
 DROP TABLE IF EXISTS tempo.oneendo_mede;
 CREATE TABLE tempo.oneendo_mede AS (
 	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.5,FALSE) geom
-	FROM h_medeast.catchments AS ha);--225
+	FROM h_medeast.catchments AS ha);--243
 CREATE INDEX idx_tempo_oneendo_mede ON tempo.oneendo_mede USING GIST(geom);
 
 
@@ -3049,7 +3048,7 @@ WITH excluded_basins AS (
     UNION ALL
     SELECT geom
     FROM tempo.hydro_riversegments_europe
-    WHERE main_riv = ANY(ARRAY[20641990, 20641991, 20641880, 20635552, 20611270, 20609968, 20769237, 20768814, 20768815,
+    WHERE main_riv = ANY(ARRAY[20641990, 20641991, 20641880, 20635552, 20769237, 20768814, 20768815,
     						   20767177, 20766726])
 ),
 riversegments_in_zone AS (
@@ -3078,7 +3077,7 @@ final_segments AS (
 )
 INSERT INTO h_medeast.riversegments
 SELECT DISTINCT ON (fs.hyriv_id) fs.*
-FROM final_segments fs;--3920 19min
+FROM final_segments fs;--3903 30min
 
 
 
@@ -3093,14 +3092,14 @@ WHERE NOT EXISTS (
     FROM h_medeast.catchments ex
     WHERE c.shape && ex.shape
     AND ST_Equals(c.shape, ex.shape)
-);--700
+);--696
 
 
 
 DROP TABLE IF EXISTS tempo.oneendo_bsea;
 CREATE TABLE tempo.oneendo_bsea AS (
 	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.1,FALSE) geom
-	FROM h_blacksea.catchments AS ha);--38
+	FROM h_blacksea.catchments AS ha);--25
 CREATE INDEX idx_tempo_oneendo_bsea ON tempo.oneendo_bsea USING GIST(geom);
 
 
@@ -3153,7 +3152,7 @@ final_segments AS (
 )
 INSERT INTO h_blacksea.riversegments
 SELECT DISTINCT ON (fs.hyriv_id) fs.*
-FROM final_segments fs;--2039
+FROM final_segments fs;--2018
 
 
 INSERT INTO h_blacksea.catchments
@@ -3167,7 +3166,7 @@ WHERE NOT EXISTS (
     FROM h_blacksea.catchments ex
     WHERE c.shape && ex.shape
     AND ST_Equals(c.shape, ex.shape)
-);--408
+);--400
 
 
 DROP TABLE IF EXISTS tempo.oneendo_adriatic;
@@ -3532,7 +3531,7 @@ WITH last_basin AS (
 	JOIN tempo."GSAs_simplified_division" AS er
 	ON ST_Intersects(c.shape, er.geom)
 	WHERE er.f_subarea IN ('37.3')
-	AND er.f_division NOT IN ('37.3.2')
+	AND er.f_division NOT IN ('37.3.2','37.4.1')
 ),
 excluded_basins AS (
     SELECT shape 
@@ -3562,7 +3561,7 @@ WITH last_basin AS (
 	FROM tempo.hydro_small_catchments_europe AS c
 	JOIN tempo."GSAs_simplified_division" AS er
 	ON ST_Intersects(c.shape, er.geom)
-	WHERE er.f_subarea IN ('37.4')
+	WHERE er.f_division IN ('37.4.2','37.4.3')
 ),
 excluded_basins AS (
     SELECT shape 
@@ -3593,7 +3592,7 @@ filtered_basin AS (
 )
 INSERT INTO h_blacksea.catchments
 SELECT *
-FROM filtered_basin;--92
+FROM filtered_basin;--82
 
 
 WITH last_basin AS (
@@ -3735,17 +3734,26 @@ CREATE INDEX idx_tempo_nac_riversegments ON tempo.riversegments_nac USING GIST(g
 
 DROP TABLE IF EXISTS tempo.riversegments_eel;
 CREATE TABLE tempo.riversegments_eel (LIKE h_baltic30to31.riversegments);
+ALTER TABLE h_adriatic.riversegments INHERIT tempo.riversegments_eel;
 ALTER TABLE h_baltic30to31.riversegments INHERIT tempo.riversegments_eel;
 ALTER TABLE h_baltic22to26.riversegments INHERIT tempo.riversegments_eel;
 ALTER TABLE h_baltic27to29_32.riversegments INHERIT tempo.riversegments_eel;
 ALTER TABLE h_barents.riversegments INHERIT tempo.riversegments_eel;
 ALTER TABLE h_biscayiberian.riversegments INHERIT tempo.riversegments_eel;
+ALTER TABLE h_blacksea.riversegments INHERIT tempo.riversegments_eel;
 ALTER TABLE h_celtic.riversegments INHERIT tempo.riversegments_eel;
 ALTER TABLE h_iceland.riversegments INHERIT tempo.riversegments_eel;
+ALTER TABLE h_medcentral.riversegments INHERIT tempo.riversegments_eel;
+ALTER TABLE h_medeast.riversegments INHERIT tempo.riversegments_eel;
+ALTER TABLE h_medwest.riversegments INHERIT tempo.riversegments_eel;
 ALTER TABLE h_norwegian.riversegments INHERIT tempo.riversegments_eel;
 ALTER TABLE h_nseanorth.riversegments INHERIT tempo.riversegments_eel;
 ALTER TABLE h_nseasouth.riversegments INHERIT tempo.riversegments_eel;
 ALTER TABLE h_nseauk.riversegments INHERIT tempo.riversegments_eel;
+ALTER TABLE h_southatlantic.riversegments INHERIT tempo.riversegments_eel;
+ALTER TABLE h_southmedcentral.riversegments INHERIT tempo.riversegments_eel;
+ALTER TABLE h_southmedeast.riversegments INHERIT tempo.riversegments_eel;
+ALTER TABLE h_southmedwest.riversegments INHERIT tempo.riversegments_eel;
 ALTER TABLE h_svalbard.riversegments INHERIT tempo.riversegments_eel;
 CREATE INDEX idx_tempo_eel_riv ON tempo.riversegments_eel USING GIST(geom);
 
