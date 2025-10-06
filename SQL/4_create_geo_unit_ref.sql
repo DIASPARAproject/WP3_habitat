@@ -1533,7 +1533,7 @@ INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_
 	  ON ST_Intersects(ta.geom_polygon,fi.geom)
 	  WHERE fi.fia_level = 'Subdivision'
 	  AND ta.are_lev_code = 'Assessment_unit'
-	  AND fia_subdivision IN ('37.3.1.22','37.3.1.23','37.3.2.24','37.3.2.25','37.3.2.26','37.3.2.27')
+	  AND fia_subdivision IN ('37.3.1.22','37.3.1.23','37.3.2.24','37.3.2.25','37.3.2.26','37.3.2.27','37.4.1.28')
 	  AND are_id = 9
 	  GROUP BY ta.are_id
     )
@@ -1578,7 +1578,7 @@ INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_
 	  ON ST_Intersects(ta.geom_polygon,fi.geom)
 	  WHERE fi.fia_level = 'Subdivision'
 	  AND ta.are_lev_code = 'Assessment_unit'
-	  AND fia_subdivision IN ('37.4.1.28','37.4.2.29','37.4.3.30')
+	  AND fia_subdivision IN ('37.4.2.29','37.4.3.30')
 	  AND are_id = 10
 	  GROUP BY ta.are_id
     )
@@ -2004,328 +2004,406 @@ WHERE regexp_replace(tableoid::regclass::text, '\.catchments$', '') IN (
 --SELECT *
 --FROM merged_shapes;
 
+
+
+
+--CREATE OR REPLACE FUNCTION generate_polygons_for_regions()
+--RETURNS void AS
+--$$
+--DECLARE
+--    reg RECORD;
+--    tbl_name TEXT;
+--BEGIN
+--    CREATE TABLE IF NOT EXISTS tempo.resul (
+--        are_code TEXT,
+--        geom GEOMETRY(MultiPolygon, 4326)
+--    );
+--
+--    DROP TABLE IF EXISTS excluded_points_global;
+--
+--    CREATE TEMP TABLE excluded_points_global (
+--        downstream_point GEOMETRY(Point, 4326)
+--    ) ON COMMIT PRESERVE ROWS;
+--
+--    FOR reg IN
+--        SELECT DISTINCT are_code
+--        FROM refeel.tr_area_are
+--        WHERE are_lev_code = 'Regional'
+--    LOOP
+--        tbl_name := format('tempo.refeel_region_%s', lower(replace(reg.are_code, ' ', '_')));
+--
+--        EXECUTE format('DROP TABLE IF EXISTS %I;', tbl_name);
+--
+--        EXECUTE format(
+--            'CREATE TABLE %I AS
+--             WITH all_sources AS (
+--                 SELECT * FROM tempo.riveratlas_mds
+--                 UNION
+--                 SELECT * FROM tempo.riveratlas_mds_sm
+--             ),
+--             filtered_points AS (
+--                 SELECT dp.*
+--                 FROM all_sources dp
+--                 JOIN refeel.tr_area_are taa
+--                   ON ST_DWithin(dp.downstream_point, taa.geom_polygon, 0.04)
+--                 WHERE taa.are_lev_code = ''Regional''
+--                   AND taa.are_code = %L
+--             ),
+--             extended_points AS (
+--                 SELECT dp.*
+--                 FROM all_sources dp
+--                 JOIN refeel.tr_area_are taa
+--                   ON ST_DWithin(dp.downstream_point, ST_Transform(taa.geom_polygon, 4326), 0.1)
+--                 WHERE taa.are_lev_code = ''Regional''
+--                   AND taa.are_code = %L
+--             ),
+--             all_points AS (
+--                 SELECT * FROM filtered_points
+--                 UNION
+--                 SELECT * FROM extended_points
+--             ),
+--             points_to_use AS (
+--                 SELECT ap.*
+--                 FROM all_points ap
+--                 LEFT JOIN excluded_points_global epg
+--                   ON ST_Equals(ap.downstream_point, epg.downstream_point)
+--                 WHERE epg.downstream_point IS NULL
+--             )
+--             SELECT * FROM points_to_use;',
+--            tbl_name, reg.are_code, reg.are_code
+--        );
+--
+--        EXECUTE format($f$
+--            WITH all_rivers AS (
+--                SELECT * FROM tempo.hydro_riversegments_europe
+--                UNION
+--                SELECT * FROM tempo.hydro_riversegments
+--            ),
+--            select_rivers AS (
+--                SELECT DISTINCT ON (hre.geom) hre.*
+--                FROM all_rivers hre
+--                JOIN %I rf ON hre.main_riv = rf.main_riv
+--            ),
+--            select_catch AS (
+--                SELECT ST_Buffer(ST_Union(ST_MakeValid(ce.shape)), 0) AS geom
+--                FROM tempo.catchments_eel ce 
+--                JOIN select_rivers sr ON ST_Intersects(sr.geom, ce.shape)
+--            )
+--            INSERT INTO tempo.resul (are_code, geom)
+--            SELECT %L, geom FROM select_catch;
+--        $f$, tbl_name, reg.are_code);
+--
+--        EXECUTE format($f$
+--            INSERT INTO excluded_points_global (downstream_point)
+--            SELECT downstream_point FROM %I;
+--        $f$, tbl_name);
+--
+--        RAISE NOTICE 'Done : %', reg.are_code;
+--    END LOOP;
+--END;
+--$$ LANGUAGE plpgsql;
+--
+--
+--
+--
+--SELECT generate_polygons_for_regions();
+--SELECT * FROM tempo.resul;
+--DROP TABLE tempo.resul;
+
 -- Barents Sea
-DROP TABLE IF EXISTS tempo.refeel_region_barents;
-CREATE TABLE tempo.refeel_region_barents AS (
-	SELECT dp.*
-	FROM tempo.riveratlas_mds AS dp
-	JOIN refeel.tr_area_are taa
-	ON ST_DWithin(
-	    dp.downstream_point,
-	    taa.geom_polygon,
-	    0.04
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_catch AS (
+		SELECT shape AS geom
+		FROM h_iceland.catchments
+		UNION ALL
+		SELECT shape AS geom
+		FROM h_norwegian.catchments
+		UNION ALL
+		SELECT shape AS geom
+		FROM h_barents.catchments
+		UNION ALL
+		SELECT shape AS geom
+		FROM h_svalbard.catchments
 	)
-	WHERE taa.are_lev_code = 'Regional'
-	AND taa.are_code = 'Barents Sea'
-);--5208
+	SELECT nextval('refeel.seq') AS are_id,
+	       285 AS are_are_id,
+	       'Barents inland' AS are_code,
+	       'Regional'     AS are_lev_code,
+	       false          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_catch;
+
+-- Baltic North
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	SELECT nextval('refeel.seq') AS are_id,
+	       286 AS are_are_id,
+	       'Golf of Bothnia inland' AS are_code,
+	       'Regional'     AS are_lev_code,
+	       false          AS are_ismarine,
+	       ST_Union(shape) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM h_baltic30to31.catchments;
+
+-- Baltic Central
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	SELECT nextval('refeel.seq') AS are_id,
+		       286 AS are_are_id,
+		       'Baltic North inland' AS are_code,
+		       'Regional'     AS are_lev_code,
+		       false          AS are_ismarine,
+		       ST_Union(shape) AS geom_polygon,
+		       NULL          AS geom_line
+	FROM h_baltic27to29_32.catchments;
+
+-- Baltic South
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	SELECT nextval('refeel.seq') AS are_id,
+			       286 AS are_are_id,
+			       'Baltic South inland' AS are_code,
+			       'Regional'     AS are_lev_code,
+			       false          AS are_ismarine,
+			       ST_Union(shape) AS geom_polygon,
+			       NULL          AS geom_line
+	FROM h_baltic22to26.catchments;
 
 
-WITH filtered_points AS (
-    SELECT dp.*
-    FROM tempo.riveratlas_mds AS dp
-    JOIN refeel.tr_area_are taa
-    ON ST_DWithin(
-        dp.downstream_point,
-        ST_Transform(taa.geom_polygon, 4326),
-        0.1
-    )
-    WHERE taa.are_lev_code = 'Regional'
-	AND taa.are_code = 'Barents Sea'
-),
-excluded_points AS (
-    SELECT downstream_point
-    FROM tempo.refeel_region_barents
-),
-missing_points AS (
-    SELECT fp.*
-    FROM filtered_points AS fp
-    LEFT JOIN excluded_points AS ep
-    ON ST_Equals(fp.downstream_point, ep.downstream_point)
-    WHERE ep.downstream_point IS NULL
-)
-INSERT INTO tempo.refeel_region_barents
-SELECT mp.*
-FROM missing_points AS mp;--55
-
-WITH select_rivers AS (
-	SELECT DISTINCT ON (hre.geom) hre.*
-	    FROM tempo.hydro_riversegments_europe AS hre
-	    JOIN tempo.refeel_region_barents AS rf
-	    ON hre.main_riv = rf.main_riv
-),
-select_catch AS (
-	SELECT DISTINCT ST_Union(shape)
-	FROM tempo.catchments_eel ce 
-	JOIN select_rivers sr
-	ON ST_Intersects(sr.geom, ce.shape)
-)
-SELECT * FROM select_catch;
-
--- North Sea
-DROP TABLE IF EXISTS tempo.refeel_region_nsea;
-CREATE TABLE tempo.refeel_region_nsea AS (
-	SELECT dp.*
-	FROM tempo.riveratlas_mds AS dp
-	JOIN refeel.tr_area_are taa
-	ON ST_DWithin(
-	    dp.downstream_point,
-	    taa.geom_polygon,
-	    0.04
+-- Western Med
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_catch AS (
+		SELECT shape AS geom
+		FROM h_medwest.catchments
+		UNION ALL
+		SELECT shape AS geom
+		FROM h_southmedwest.catchments
 	)
-	WHERE taa.are_lev_code = 'Regional'
-	AND taa.are_code = 'North Sea'
-);--5208
+	SELECT nextval('refeel.seq') AS are_id,
+			       289 AS are_are_id,
+			       'Western Mediterranean inland' AS are_code,
+			       'Regional'     AS are_lev_code,
+			       false          AS are_ismarine,
+			       ST_Union(geom) AS geom_polygon,
+			       NULL          AS geom_line
+	FROM select_catch;
 
-
-WITH filtered_points AS (
-    SELECT dp.*
-    FROM tempo.riveratlas_mds AS dp
-    JOIN refeel.tr_area_are taa
-    ON ST_DWithin(
-        dp.downstream_point,
-        ST_Transform(taa.geom_polygon, 4326),
-        0.1
-    )
-    WHERE taa.are_lev_code = 'Regional'
-	AND taa.are_code = 'North Sea'
-),
-excluded_points AS (
-    SELECT downstream_point
-    FROM tempo.refeel_region_nsea
-),
-missing_points AS (
-    SELECT fp.*
-    FROM filtered_points AS fp
-    LEFT JOIN excluded_points AS ep
-    ON ST_Equals(fp.downstream_point, ep.downstream_point)
-    WHERE ep.downstream_point IS NULL
-)
-INSERT INTO tempo.refeel_region_nsea
-SELECT mp.*
-FROM missing_points AS mp;--30
-
-WITH select_rivers AS (
-	SELECT DISTINCT ON (hre.geom) hre.*
-	    FROM tempo.hydro_riversegments_europe AS hre
-	    JOIN tempo.refeel_region_nsea AS rf
-	    ON hre.main_riv = rf.main_riv
-),
-select_catch AS (
-	SELECT DISTINCT ST_Union(shape)
-	FROM tempo.catchments_eel ce 
-	JOIN select_rivers sr
-	ON ST_Intersects(sr.geom, ce.shape)
-)
-SELECT * FROM select_catch;
-
-
--- British Isles
-DROP TABLE IF EXISTS tempo.refeel_region_bisle;
-CREATE TABLE tempo.refeel_region_bisle AS (
-	SELECT dp.*
-	FROM tempo.riveratlas_mds AS dp
-	JOIN refeel.tr_area_are taa
-	ON ST_DWithin(
-	    dp.downstream_point,
-	    taa.geom_polygon,
-	    0.04
+-- Central Med
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_catch AS (
+		SELECT shape AS geom
+		FROM h_medcentral.catchments
+		UNION ALL
+		SELECT shape AS geom
+		FROM h_southmedcentral.catchments
 	)
-	WHERE taa.are_lev_code = 'Regional'
-	AND taa.are_code = 'British Isles'
-);--1968
+	SELECT nextval('refeel.seq') AS are_id,
+				       289 AS are_are_id,
+				       'Central Mediterranean inland' AS are_code,
+				       'Regional'     AS are_lev_code,
+				       false          AS are_ismarine,
+				       ST_Union(geom) AS geom_polygon,
+				       NULL          AS geom_line
+	FROM select_catch;
 
-
-WITH filtered_points AS (
-    SELECT dp.*
-    FROM tempo.riveratlas_mds AS dp
-    JOIN refeel.tr_area_are taa
-    ON ST_DWithin(
-        dp.downstream_point,
-        ST_Transform(taa.geom_polygon, 4326),
-        0.1
-    )
-    WHERE taa.are_lev_code = 'Regional'
-	AND taa.are_code = 'British Isles'
-),
-excluded_points AS (
-    SELECT downstream_point
-    FROM tempo.refeel_region_bisle
-),
-missing_points AS (
-    SELECT fp.*
-    FROM filtered_points AS fp
-    LEFT JOIN excluded_points AS ep
-    ON ST_Equals(fp.downstream_point, ep.downstream_point)
-    WHERE ep.downstream_point IS NULL
-)
-INSERT INTO tempo.refeel_region_bisle
-SELECT mp.*
-FROM missing_points AS mp;--30
-
-WITH select_rivers AS (
-	SELECT DISTINCT ON (hre.geom) hre.*
-	    FROM tempo.hydro_riversegments_europe AS hre
-	    JOIN tempo.refeel_region_bisle AS rf
-	    ON hre.main_riv = rf.main_riv
-),
-select_catch AS (
-	SELECT DISTINCT ST_Union(shape)
-	FROM tempo.catchments_eel ce 
-	JOIN select_rivers sr
-	ON ST_Intersects(sr.geom, ce.shape)
-)
-SELECT * FROM select_catch;
-
-
--- English Channel
-DROP TABLE IF EXISTS tempo.refeel_region_echan;
-CREATE TABLE tempo.refeel_region_echan AS (
-	SELECT dp.*
-	FROM tempo.riveratlas_mds AS dp
-	JOIN refeel.tr_area_are taa
-	ON ST_DWithin(
-	    dp.downstream_point,
-	    taa.geom_polygon,
-	    0.04
+-- East Med
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_catch AS (
+		SELECT shape AS geom
+		FROM h_medeast.catchments
+		UNION ALL
+		SELECT shape AS geom
+		FROM h_southmedeast.catchments
 	)
-	WHERE taa.are_lev_code = 'Regional'
-	AND taa.are_code = 'English Channel'
-);--388
+	SELECT nextval('refeel.seq') AS are_id,
+				       289 AS are_are_id,
+				       'Eastern Mediterranean inland' AS are_code,
+				       'Regional'     AS are_lev_code,
+				       false          AS are_ismarine,
+				       ST_Union(geom) AS geom_polygon,
+				       NULL          AS geom_line
+	FROM select_catch;
 
 
-WITH filtered_points AS (
-    SELECT dp.*
-    FROM tempo.riveratlas_mds AS dp
-    JOIN refeel.tr_area_are taa
-    ON ST_DWithin(
-        dp.downstream_point,
-        ST_Transform(taa.geom_polygon, 4326),
-        0.1
-    )
-    WHERE taa.are_lev_code = 'Regional'
-	AND taa.are_code = 'English Channel'
-),
-excluded_points AS (
-    SELECT downstream_point
-    FROM tempo.refeel_region_echan
-),
-missing_points AS (
-    SELECT fp.*
-    FROM filtered_points AS fp
-    LEFT JOIN excluded_points AS ep
-    ON ST_Equals(fp.downstream_point, ep.downstream_point)
-    WHERE ep.downstream_point IS NULL
-)
-INSERT INTO tempo.refeel_region_echan
-SELECT mp.*
-FROM missing_points AS mp;--11
+-- Adriatic
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	SELECT nextval('refeel.seq') AS are_id,
+				       289 AS are_are_id,
+				       'Adriatic inland' AS are_code,
+				       'Regional'     AS are_lev_code,
+				       false          AS are_ismarine,
+				       ST_Union(shape) AS geom_polygon,
+				       NULL          AS geom_line
+	FROM h_adriatic.catchments;
 
-WITH select_rivers AS (
-	SELECT DISTINCT ON (hre.geom) hre.*
-	    FROM tempo.hydro_riversegments_europe AS hre
-	    JOIN tempo.refeel_region_echan AS rf
-	    ON hre.main_riv = rf.main_riv
-),
-select_catch AS (
-	SELECT DISTINCT ST_Union(shape)
-	FROM tempo.catchments_eel ce 
-	JOIN select_rivers sr
-	ON ST_Intersects(sr.geom, ce.shape)
-)
-SELECT * FROM select_catch;
+-- Black Sea
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	SELECT nextval('refeel.seq') AS are_id,
+				       290 AS are_are_id,
+				       'Black Sea inland' AS are_code,
+				       'Regional'     AS are_lev_code,
+				       false          AS are_ismarine,
+				       ST_Union(shape) AS geom_polygon,
+				       NULL          AS geom_line
+	FROM h_blacksea.catchments;
 
 
--- Bay of Biscay
-DROP TABLE IF EXISTS tempo.refeel_region_bbisc;
-CREATE TABLE tempo.refeel_region_bbisc AS (
-	SELECT dp.*
-	FROM tempo.riveratlas_mds AS dp
-	JOIN refeel.tr_area_are taa
-	ON ST_DWithin(
-	    dp.downstream_point,
-	    taa.geom_polygon,
-	    0.04
-	)
-	WHERE taa.are_lev_code = 'Regional'
-	AND taa.are_code = 'Bay of Biscay'
+
+
+-- Step 1 : 
+
+DROP TABLE IF EXISTS tempo.regions_nsea;
+CREATE TABLE tempo.regions_nsea AS(
+	WITH region_points AS (
+	        SELECT DISTINCT dp.*
+	        FROM tempo.riveratlas_mds AS dp
+	        JOIN refeel.tr_area_are taa 
+	        ON ST_DWithin(
+	            dp.downstream_point,
+	            taa.geom_polygon,
+	            0.04
+	        )
+	        WHERE taa.are_lev_code = 'Regional'
+	        AND taa.are_code = 'North Sea'
+	        AND are_ismarine = true
+	    )
+	    SELECT * FROM region_points
+	    WHERE downstream_point NOT IN (
+	        SELECT existing.downstream_point
+	        FROM tempo.ices_areas_26_22, tempo.ices_ecoregions_barent AS existing)
+);--2166
+        
+DROP TABLE IF EXISTS tempo.regions_bisles;
+CREATE TABLE tempo.regions_bisles AS(
+	WITH region_points AS (
+	        SELECT DISTINCT dp.*
+	        FROM tempo.riveratlas_mds AS dp
+	        JOIN refeel.tr_area_are taa 
+	        ON ST_DWithin(
+	            dp.downstream_point,
+	            taa.geom_polygon,
+	            0.04
+	        )
+	        WHERE taa.are_lev_code = 'Regional'
+	        AND taa.are_code = 'British Isles'
+	        AND are_ismarine = true
+	    )
+	    SELECT * FROM region_points
+	    WHERE downstream_point NOT IN (
+	        SELECT existing.downstream_point
+	        FROM tempo.regions_nsea AS existing)
+);--1967
+
+DROP TABLE IF EXISTS tempo.regions_echannel;
+CREATE TABLE tempo.regions_echannel AS(
+	WITH region_points AS (
+	        SELECT DISTINCT dp.*
+	        FROM tempo.riveratlas_mds AS dp
+	        JOIN refeel.tr_area_are taa 
+	        ON ST_DWithin(
+	            dp.downstream_point,
+	            taa.geom_polygon,
+	            0.04
+	        )
+	        WHERE taa.are_lev_code = 'Regional'
+	        AND taa.are_code = 'English Channel'
+	        AND are_ismarine = true
+	    )
+	    SELECT * FROM region_points
+	    WHERE downstream_point NOT IN (
+	        SELECT existing.downstream_point
+	        FROM tempo.regions_nsea, tempo.regions_bisles AS existing)
+);--386
+
+
+DROP TABLE IF EXISTS tempo.regions_bbiscay;
+CREATE TABLE tempo.regions_bbiscay AS(
+	WITH region_points AS (
+	        SELECT DISTINCT dp.*
+	        FROM tempo.riveratlas_mds AS dp
+	        JOIN refeel.tr_area_are taa 
+	        ON ST_DWithin(
+	            dp.downstream_point,
+	            taa.geom_polygon,
+	            0.04
+	        )
+	        WHERE taa.are_lev_code = 'Regional'
+	        AND taa.are_code = 'Bay of Biscay'
+	        AND are_ismarine = true
+	    )
+	    SELECT * FROM region_points
+	    WHERE downstream_point NOT IN (
+	        SELECT existing.downstream_point
+	        FROM tempo.regions_echannel, tempo.regions_bisles AS existing)
 );--375
 
 
+ CREATE INDEX idx_tr_area_are_geomp
+  ON refeel.tr_area_are
+  USING GIST (geom_polygon);
+ 
+
+
+DROP TABLE IF EXISTS tempo.regions_sat;
+CREATE TABLE tempo.regions_sat AS
+WITH all_points AS (
+    SELECT * FROM tempo.riveratlas_mds
+    UNION ALL
+    SELECT * FROM tempo.riveratlas_mds_sm
+),
+filtered_areas AS (
+    SELECT geom_polygon
+    FROM refeel.tr_area_are
+    WHERE are_lev_code = 'Regional'
+      AND are_code = 'Southern Atlantic'
+      AND are_ismarine = true
+),
+existing AS (
+    SELECT downstream_point FROM tempo.regions_bbiscay
+    UNION
+    SELECT downstream_point FROM tempo.ices_ecoregions_south_medwest
+    UNION
+    SELECT downstream_point FROM tempo.ices_ecoregions_med_west
+)
+SELECT DISTINCT ap.*
+FROM all_points ap
+JOIN filtered_areas fa
+  ON fa.geom_polygon && ST_Expand(ap.downstream_point, 0.04)
+ AND ST_DWithin(ap.downstream_point, fa.geom_polygon, 0.04)  
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM existing e
+    WHERE ap.downstream_point && e.downstream_point 
+      AND ST_Equals(ap.downstream_point, e.downstream_point)
+);--658
+
+
+-- Step 2 : redo buffer
+
 WITH filtered_points AS (
-    SELECT dp.*
-    FROM tempo.riveratlas_mds AS dp
-    JOIN refeel.tr_area_are taa
-    ON ST_DWithin(
-        dp.downstream_point,
-        ST_Transform(taa.geom_polygon, 4326),
-        0.1
-    )
-    WHERE taa.are_lev_code = 'Regional'
-	AND taa.are_code = 'Bay of Biscay'
-),
-excluded_points AS (
-    SELECT downstream_point
-    FROM tempo.refeel_region_bbisc
-),
-missing_points AS (
-    SELECT fp.*
-    FROM filtered_points AS fp
-    LEFT JOIN excluded_points AS ep
-    ON ST_Equals(fp.downstream_point, ep.downstream_point)
-    WHERE ep.downstream_point IS NULL
-)
-INSERT INTO tempo.refeel_region_bbisc
-SELECT mp.*
-FROM missing_points AS mp;--3
-
-WITH select_rivers AS (
-	SELECT DISTINCT ON (hre.geom) hre.*
-	    FROM tempo.hydro_riversegments_europe AS hre
-	    JOIN tempo.refeel_region_bbisc AS rf
-	    ON hre.main_riv = rf.main_riv
-),
-select_catch AS (
-	SELECT DISTINCT ST_Union(shape)
-	FROM tempo.catchments_eel ce 
-	JOIN select_rivers sr
-	ON ST_Intersects(sr.geom, ce.shape)
-)
-SELECT * FROM select_catch;
-
-
-
--- British Isles
-DROP TABLE IF EXISTS tempo.refeel_region_satl;
-CREATE TABLE tempo.refeel_region_satl AS (
-	SELECT dp.*
+    SELECT DISTINCT dp.*
 	FROM tempo.riveratlas_mds AS dp
 	JOIN refeel.tr_area_are taa
-	ON ST_DWithin(
-	    dp.downstream_point,
-	    taa.geom_polygon,
-	    0.04
-	)
-	WHERE taa.are_lev_code = 'Regional'
-	AND taa.are_code = 'Southern Atlantic'
-);--272
-
-
-WITH filtered_points AS (
-    SELECT dp.*
-    FROM tempo.riveratlas_mds AS dp
-    JOIN refeel.tr_area_are taa
     ON ST_DWithin(
         dp.downstream_point,
-        ST_Transform(taa.geom_polygon, 4326),
+        taa.geom_polygon,
         0.1
     )
     WHERE taa.are_lev_code = 'Regional'
-	AND taa.are_code = 'Southern Atlantic'
+	        AND taa.are_code = 'North Sea'
+	        AND are_ismarine = true
 ),
 excluded_points AS (
     SELECT downstream_point
-    FROM tempo.refeel_region_satl
-),
+    FROM tempo.ices_areas_26_22
+    UNION ALL
+    SELECT downstream_point
+    FROM tempo.ices_ecoregions_barent
+    UNION ALL
+    SELECT downstream_point FROM tempo.regions_bisles
+    UNION ALL
+    SELECT downstream_point FROM tempo.regions_nsea
+    UNION ALL
+    SELECT downstream_point FROM tempo.regions_echannel
+   ),
 missing_points AS (
     SELECT fp.*
     FROM filtered_points AS fp
@@ -2333,291 +2411,36 @@ missing_points AS (
     ON ST_Equals(fp.downstream_point, ep.downstream_point)
     WHERE ep.downstream_point IS NULL
 )
-INSERT INTO tempo.refeel_region_satl
+INSERT INTO tempo.regions_nsea
 SELECT mp.*
-FROM missing_points AS mp;--1
-
-WITH select_rivers AS (
-	SELECT DISTINCT ON (hre.geom) hre.*
-	    FROM tempo.hydro_riversegments_europe AS hre
-	    JOIN tempo.refeel_region_satl AS rf
-	    ON hre.main_riv = rf.main_riv
-),
-select_catch AS (
-	SELECT DISTINCT ST_Union(shape)
-	FROM tempo.catchments_eel ce 
-	JOIN select_rivers sr
-	ON ST_Intersects(sr.geom, ce.shape)
-)
-SELECT * FROM select_catch;
-
-
-CREATE OR REPLACE FUNCTION generate_polygons_for_regions()
-RETURNS void AS
-$$
-DECLARE
-    reg RECORD;
-    tbl_name TEXT;
-BEGIN
-    -- Table des résultats finaux
-    CREATE TABLE IF NOT EXISTS tempo.resul (
-        are_code TEXT,
-        geom GEOMETRY(MultiPolygon, 4326)
-    );
-
-    -- Nettoyage de la table temporaire globale
-    DROP TABLE IF EXISTS excluded_points_global;
-
-    CREATE TEMP TABLE excluded_points_global (
-        downstream_point GEOMETRY(Point, 4326)
-    ) ON COMMIT PRESERVE ROWS;
-
-    -- Boucle sur chaque région
-    FOR reg IN
-        SELECT DISTINCT are_code
-        FROM refeel.tr_area_are
-        WHERE are_lev_code = 'Regional'
-    LOOP
-        tbl_name := format('tempo.refeel_region_%s', lower(replace(reg.are_code, ' ', '_')));
-
-        -- Supprimer ancienne table temporaire
-        EXECUTE format('DROP TABLE IF EXISTS %I;', tbl_name);
-
-        -- Création de la table de points filtrés
-        EXECUTE format(
-            'CREATE TABLE %I AS
-             WITH all_sources AS (
-                 SELECT * FROM tempo.riveratlas_mds
-                 UNION
-                 SELECT * FROM tempo.riveratlas_mds_sm
-             ),
-             filtered_points AS (
-                 SELECT dp.*
-                 FROM all_sources dp
-                 JOIN refeel.tr_area_are taa
-                   ON ST_DWithin(dp.downstream_point, taa.geom_polygon, 0.04)
-                 WHERE taa.are_lev_code = ''Regional''
-                   AND taa.are_code = %L
-             ),
-             extended_points AS (
-                 SELECT dp.*
-                 FROM all_sources dp
-                 JOIN refeel.tr_area_are taa
-                   ON ST_DWithin(dp.downstream_point, ST_Transform(taa.geom_polygon, 4326), 0.1)
-                 WHERE taa.are_lev_code = ''Regional''
-                   AND taa.are_code = %L
-             ),
-             all_points AS (
-                 SELECT * FROM filtered_points
-                 UNION
-                 SELECT * FROM extended_points
-             ),
-             points_to_use AS (
-                 SELECT ap.*
-                 FROM all_points ap
-                 LEFT JOIN excluded_points_global epg
-                   ON ST_Equals(ap.downstream_point, epg.downstream_point)
-                 WHERE epg.downstream_point IS NULL
-             )
-             SELECT * FROM points_to_use;',
-            tbl_name, reg.are_code, reg.are_code
-        );
-
-        -- Génération du polygone régional
-        EXECUTE format($f$
-            WITH all_rivers AS (
-                SELECT * FROM tempo.hydro_riversegments_europe
-                UNION
-                SELECT * FROM tempo.hydro_riversegments
-            ),
-            select_rivers AS (
-                SELECT DISTINCT ON (hre.geom) hre.*
-                FROM all_rivers hre
-                JOIN %I rf ON hre.main_riv = rf.main_riv
-            ),
-            select_catch AS (
-                SELECT ST_Buffer(ST_Union(ST_MakeValid(ce.shape)), 0) AS geom
-                FROM tempo.catchments_eel ce 
-                JOIN select_rivers sr ON ST_Intersects(sr.geom, ce.shape)
-            )
-            INSERT INTO tempo.resul (are_code, geom)
-            SELECT %L, geom FROM select_catch;
-        $f$, tbl_name, reg.are_code);
-
-        -- Ajout des points dans la liste des exclus
-        EXECUTE format($f$
-            INSERT INTO excluded_points_global (downstream_point)
-            SELECT downstream_point FROM %I;
-        $f$, tbl_name);
-
-        RAISE NOTICE 'Région traitée : %', reg.are_code;
-    END LOOP;
-END;
-$$ LANGUAGE plpgsql;
-
-
-
-
-SELECT generate_polygons_for_regions();
-SELECT * FROM tempo.resul;
-DROP TABLE tempo.resul;
-
-
-
--- Subdivision
-CREATE OR REPLACE FUNCTION generate_polygons_for_subdiv()
-RETURNS void AS
-$$
-DECLARE
-    reg RECORD;
-    tbl_name TEXT;
-BEGIN
-    -- Table des résultats finaux
-    CREATE TABLE IF NOT EXISTS tempo.resul (
-        are_code TEXT,
-        geom GEOMETRY(MultiPolygon, 4326)
-    );
-
-    -- Nettoyage de la table temporaire globale
-    DROP TABLE IF EXISTS excluded_points_global;
-
-    CREATE TEMP TABLE excluded_points_global (
-        downstream_point GEOMETRY(Point, 4326)
-    ) ON COMMIT PRESERVE ROWS;
-
-    -- Boucle sur chaque région
-    FOR reg IN
-        SELECT DISTINCT are_code
-        FROM refeel.tr_area_are
-        WHERE are_lev_code = 'Subdivision'
-    LOOP
-        tbl_name := format('tempo.refeel_region_%s', lower(replace(reg.are_code, ' ', '_')));
-
-        -- Supprimer ancienne table temporaire
-        EXECUTE format('DROP TABLE IF EXISTS %I;', tbl_name);
-
-        -- Création de la table de points filtrés
-        EXECUTE format(
-            'CREATE TABLE %I AS
-             WITH all_sources AS (
-                 SELECT * FROM tempo.riveratlas_mds
-                 UNION
-                 SELECT * FROM tempo.riveratlas_mds_sm
-             ),
-             filtered_points AS (
-                 SELECT dp.*
-                 FROM all_sources dp
-                 JOIN refeel.tr_area_are taa
-                   ON ST_DWithin(dp.downstream_point, taa.geom_polygon, 0.04)
-                 WHERE taa.are_lev_code = ''Subdivision''
-                   AND taa.are_code = %L
-             ),
-             extended_points AS (
-                 SELECT dp.*
-                 FROM all_sources dp
-                 JOIN refeel.tr_area_are taa
-                   ON ST_DWithin(dp.downstream_point, ST_Transform(taa.geom_polygon, 4326), 0.1)
-                 WHERE taa.are_lev_code = ''Subdivision''
-                   AND taa.are_code = %L
-             ),
-             all_points AS (
-                 SELECT * FROM filtered_points
-                 UNION
-                 SELECT * FROM extended_points
-             ),
-             points_to_use AS (
-                 SELECT ap.*
-                 FROM all_points ap
-                 LEFT JOIN excluded_points_global epg
-                   ON ST_Equals(ap.downstream_point, epg.downstream_point)
-                 WHERE epg.downstream_point IS NULL
-             )
-             SELECT * FROM points_to_use;',
-            tbl_name, reg.are_code, reg.are_code
-        );
-
-        -- Génération du polygone régional
-        EXECUTE format($f$
-            WITH all_rivers AS (
-                SELECT * FROM tempo.hydro_riversegments_europe
-                UNION
-                SELECT * FROM tempo.hydro_riversegments
-            ),
-            select_rivers AS (
-                SELECT DISTINCT ON (hre.geom) hre.*
-                FROM all_rivers hre
-                JOIN %I rf ON hre.main_riv = rf.main_riv
-            ),
-            select_catch AS (
-                SELECT ST_Buffer(ST_Union(ST_MakeValid(ce.shape)), 0) AS geom
-                FROM tempo.catchments_eel ce 
-                JOIN select_rivers sr ON ST_Intersects(sr.geom, ce.shape)
-            )
-            INSERT INTO tempo.resul (are_code, geom)
-            SELECT %L, geom FROM select_catch;
-        $f$, tbl_name, reg.are_code);
-
-        -- Ajout des points dans la liste des exclus
-        EXECUTE format($f$
-            INSERT INTO excluded_points_global (downstream_point)
-            SELECT downstream_point FROM %I;
-        $f$, tbl_name);
-
-        RAISE NOTICE 'Subdivision traitée : %', reg.are_code;
-    END LOOP;
-END;
-$$ LANGUAGE plpgsql;
-
-
-
-SELECT generate_polygons_for_subdiv();
-SELECT * FROM tempo.resul;
-DROP TABLE tempo.resul;
-
-
--- azea
-DROP TABLE IF EXISTS tempo.ices_ecoregions_black_sea;
-CREATE TABLE tempo.ices_ecoregions_black_sea AS (
-	SELECT dp.*
-	FROM tempo.riveratlas_mds AS dp
-	JOIN tempo."GSAs_simplified_division" AS er
-	ON ST_DWithin(
-	    dp.downstream_point,
-	    ST_Transform(er.geom,4326),
-	    0.01
-	)
-	WHERE er.f_gsa IN ('37.4.1.28','37.4.2.29','37.4.3.30')
-);
-
+FROM missing_points AS mp;--24
 
 
 WITH filtered_points AS (
-    SELECT dp.*
-    FROM tempo.riveratlas_mds AS dp
-    JOIN tempo."GSAs_simplified_division" AS er
+    SELECT DISTINCT dp.*
+	FROM tempo.riveratlas_mds AS dp
+	JOIN refeel.tr_area_are taa
     ON ST_DWithin(
         dp.downstream_point,
-        ST_Transform(er.geom, 4326),
+        taa.geom_polygon,
         0.1
     )
-    JOIN tempo.ne_10m_admin_0_countries AS cs
-    ON ST_DWithin(
-        dp.downstream_point,
-        ST_Transform(cs.geom, 4326),
-        0.1
-    )
-    WHERE er.f_subarea IN ('37.1')
-      AND cs.name IN ('Spain', 'France','Italy')
-      AND dp.hyriv_id NOT IN (20658482,20658054,20657591)
+    WHERE taa.are_lev_code = 'Regional'
+	        AND taa.are_code = 'British Isles'
+	        AND are_ismarine = true
 ),
 excluded_points AS (
     SELECT downstream_point
-    FROM tempo.ices_ecoregions_biscay_iberian
+    FROM tempo.ices_ecoregions_barent
     UNION ALL
-    SELECT downstream_point FROM tempo.ices_ecoregions_med_central
+    SELECT downstream_point FROM tempo.regions_bisles
     UNION ALL
-    SELECT downstream_point FROM tempo.ices_ecoregions_med_west
-),
+    SELECT downstream_point FROM tempo.regions_nsea
+    UNION ALL
+    SELECT downstream_point FROM tempo.regions_echannel
+    UNION ALL
+    SELECT downstream_point FROM tempo.regions_bbiscay
+   ),
 missing_points AS (
     SELECT fp.*
     FROM filtered_points AS fp
@@ -2625,15 +2448,747 @@ missing_points AS (
     ON ST_Equals(fp.downstream_point, ep.downstream_point)
     WHERE ep.downstream_point IS NULL
 )
-INSERT INTO tempo.ices_ecoregions_med_west
+INSERT INTO tempo.regions_bisles
 SELECT mp.*
-FROM missing_points AS mp;
+FROM missing_points AS mp;--28
+
+
+WITH filtered_points AS (
+    SELECT DISTINCT dp.*
+	FROM tempo.riveratlas_mds AS dp
+	JOIN refeel.tr_area_are taa
+    ON ST_DWithin(
+        dp.downstream_point,
+        taa.geom_polygon,
+        0.1
+    )
+    WHERE taa.are_lev_code = 'Regional'
+	        AND taa.are_code = 'English Channel'
+	        AND are_ismarine = true
+),
+excluded_points AS (
+    SELECT downstream_point FROM tempo.regions_bisles
+    UNION ALL
+    SELECT downstream_point FROM tempo.regions_nsea
+    UNION ALL
+    SELECT downstream_point FROM tempo.regions_echannel
+    UNION ALL
+    SELECT downstream_point FROM tempo.regions_bbiscay
+   ),
+missing_points AS (
+    SELECT fp.*
+    FROM filtered_points AS fp
+    LEFT JOIN excluded_points AS ep
+    ON ST_Equals(fp.downstream_point, ep.downstream_point)
+    WHERE ep.downstream_point IS NULL
+)
+INSERT INTO tempo.regions_echannel
+SELECT mp.*
+FROM missing_points AS mp;--0
+
+
+WITH filtered_points AS (
+    SELECT DISTINCT dp.*
+	FROM tempo.riveratlas_mds AS dp
+	JOIN refeel.tr_area_are taa
+    ON ST_DWithin(
+        dp.downstream_point,
+        taa.geom_polygon,
+        0.1
+    )
+    WHERE taa.are_lev_code = 'Regional'
+	        AND taa.are_code = 'Bay of Biscay'
+	        AND are_ismarine = true
+),
+excluded_points AS (
+    SELECT downstream_point FROM tempo.regions_bisles
+    UNION ALL
+    SELECT downstream_point FROM tempo.regions_bbiscay
+    UNION ALL
+    SELECT downstream_point FROM tempo.regions_echannel
+    UNION ALL 
+    SELECT downstream_point FROM tempo.regions_sat
+   ),
+missing_points AS (
+    SELECT fp.*
+    FROM filtered_points AS fp
+    LEFT JOIN excluded_points AS ep
+    ON ST_Equals(fp.downstream_point, ep.downstream_point)
+    WHERE ep.downstream_point IS NULL
+)
+INSERT INTO tempo.regions_bbiscay
+SELECT mp.*
+FROM missing_points AS mp;--0
+
+
+WITH filtered_points AS (
+    SELECT DISTINCT dp.*
+	FROM tempo.riveratlas_mds AS dp
+	JOIN refeel.tr_area_are taa
+    ON ST_DWithin(
+        dp.downstream_point,
+        taa.geom_polygon,
+        0.1
+    )
+    WHERE taa.are_lev_code = 'Regional'
+	        AND taa.are_code = 'Southern Atlantic'
+	        AND are_ismarine = true
+),
+excluded_points AS (
+    SELECT downstream_point
+    FROM tempo.ices_ecoregions_med_west
+    UNION ALL
+    SELECT downstream_point
+    FROM tempo.ices_ecoregions_south_med_west
+    UNION ALL
+    SELECT downstream_point FROM tempo.regions_sat
+    UNION ALL
+    SELECT downstream_point FROM tempo.regions_bbiscay
+   ),
+missing_points AS (
+    SELECT fp.*
+    FROM filtered_points AS fp
+    LEFT JOIN excluded_points AS ep
+    ON ST_Equals(fp.downstream_point, ep.downstream_point)
+    WHERE ep.downstream_point IS NULL
+)
+INSERT INTO tempo.regions_sat
+SELECT mp.*
+FROM missing_points AS mp;--0
+
+-- Step 3 : Copy all riversegments & catchments with the corresponding main_riv
+
+DROP TABLE IF EXISTS tempo.catch_nsea;
+CREATE TABLE tempo.catch_nsea AS (
+WITH excluded_catch AS (
+	SELECT shape FROM h_baltic22to26.catchments
+	UNION ALL
+	SELECT shape FROM h_barents.catchments
+	)
+    SELECT DISTINCT ON (hce.shape) hce.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.regions_nsea rn
+    ON hre.main_riv = rn.main_riv
+   JOIN tempo.hydro_small_catchments_europe AS hce
+   ON ST_Intersects(hce.shape,hre.geom)
+   WHERE shape NOT IN (
+	        SELECT shape FROM excluded_catch)
+);--6157
+
+
+DROP TABLE IF EXISTS tempo.catch_echannel;
+CREATE TABLE tempo.catch_echannel AS (
+	WITH excluded_catch AS (
+	SELECT shape FROM tempo.catch_nsea
+	)
+    SELECT DISTINCT ON (hce.shape) hce.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.regions_echannel rn
+    ON hre.main_riv = rn.main_riv
+   JOIN tempo.hydro_small_catchments_europe AS hce
+   ON ST_Intersects(hce.shape,hre.geom)
+   WHERE shape NOT IN (
+	        SELECT shape FROM excluded_catch)
+);--1018
+
+
+DROP TABLE IF EXISTS tempo.catch_bisles;
+CREATE TABLE tempo.catch_bisles AS (
+	WITH excluded_catch AS (
+		SELECT shape FROM tempo.catch_nsea
+		UNION ALL
+		SELECT shape FROM tempo.catch_echannel
+	)
+    SELECT DISTINCT ON (hce.shape) hce.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.regions_bisles rn
+    ON hre.main_riv = rn.main_riv
+   JOIN tempo.hydro_small_catchments_europe AS hce
+   ON ST_Intersects(hce.shape,hre.geom)
+   WHERE shape NOT IN (
+	        SELECT shape FROM excluded_catch)
+);--1232
+
+
+DROP TABLE IF EXISTS tempo.catch_bbiscay;
+CREATE TABLE tempo.catch_bbiscay AS (
+	WITH excluded_catch AS (
+		SELECT shape FROM tempo.catch_bisles
+		UNION ALL
+		SELECT shape FROM tempo.catch_echannel
+	)
+    SELECT DISTINCT ON (hce.shape) hce.*
+    FROM tempo.hydro_riversegments_europe AS hre
+    JOIN tempo.regions_bbiscay rn
+    ON hre.main_riv = rn.main_riv
+   JOIN tempo.hydro_small_catchments_europe AS hce
+   ON ST_Intersects(hce.shape,hre.geom)
+   WHERE shape NOT IN (
+	        SELECT shape FROM excluded_catch)
+);--2193
+
+DROP TABLE IF EXISTS tempo.catch_sat;
+CREATE TABLE tempo.catch_sat AS (
+	WITH all_riv AS (
+	SELECT *
+	FROM tempo.hydro_riversegments_europe
+	UNION ALL
+	SELECT *
+	FROM tempo.hydro_riversegments
+	),
+	all_catch AS (
+	SELECT *
+	FROM tempo.hydro_small_catchments
+	UNION ALL
+	SELECT *
+	FROM tempo.hydro_small_catchments_europe
+	),
+	excluded_catch AS (
+	SELECT shape FROM tempo.catch_bbiscay
+	UNION ALL
+	SELECT shape FROM h_medwest.catchments
+	UNION ALL
+	SELECT shape FROM h_southmedwest.catchments
+	)
+    SELECT DISTINCT ON (hce.shape) hce.*
+    FROM all_riv AS hre
+    JOIN tempo.regions_sat rn
+    ON hre.main_riv = rn.main_riv
+   JOIN all_catch AS hce
+   ON ST_Intersects(hce.shape,hre.geom)
+);--5571
+
+
+-- Step 4 : Retrieving missing endoheric bassins
+
+DROP TABLE IF EXISTS tempo.oneendo_nsea;
+CREATE TABLE tempo.oneendo_nsea AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.04,FALSE) geom
+	FROM tempo.catch_nsea AS ha);--475
+CREATE INDEX idx_tempo_oneendo_nsea ON tempo.oneendo_nsea USING GIST(geom);
+	
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_nsea
+    ON ba.shape && oneendo_nsea.geom
+    AND ST_Intersects(ba.shape, oneendo_nsea.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_baltic22to26.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_baltic27to29_32.catchments
+    UNION ALL
+    SELECT shape 
+    FROM tempo.catch_echannel
+    UNION ALL
+    SELECT shape 
+    FROM h_norwegian.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_blacksea.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_adriatic.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_medwest.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_baltic30to31.catchments
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_bisles
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_nsea
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO tempo.catch_nsea
+SELECT *
+FROM filtered_basin;--127
+
+
+DROP TABLE IF EXISTS tempo.oneendo_echannel;
+CREATE TABLE tempo.oneendo_echannel AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.04,FALSE) geom
+	FROM tempo.catch_echannel AS ha);--495
+CREATE INDEX idx_tempo_oneendo_echannel ON tempo.oneendo_echannel USING GIST(geom);
+	
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_echannel
+    ON ba.shape && oneendo_echannel.geom
+    AND ST_Intersects(ba.shape, oneendo_echannel.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM tempo.catch_echannel
+    UNION ALL
+    SELECT shape 
+    FROM tempo.catch_bbiscay
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_bisles
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_nsea
+    UNION ALL
+    SELECT shape
+    FROM h_medwest.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO tempo.catch_echannel
+SELECT *
+FROM filtered_basin;--19
+
+
+DROP TABLE IF EXISTS tempo.oneendo_bbiscay;
+CREATE TABLE tempo.oneendo_bbiscay AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.04,FALSE) geom
+	FROM tempo.catch_bbiscay AS ha);--41
+CREATE INDEX idx_tempo_oneendo_bbiscay ON tempo.oneendo_bbiscay USING GIST(geom);
+	
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_bbiscay
+    ON ba.shape && oneendo_bbiscay.geom
+    AND ST_Intersects(ba.shape, oneendo_bbiscay.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM tempo.catch_echannel
+    UNION ALL
+    SELECT shape 
+    FROM tempo.catch_bbiscay
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_sat
+    UNION ALL
+    SELECT shape
+    FROM h_medwest.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO tempo.catch_bbiscay
+SELECT *
+FROM filtered_basin;--33
+
+
+DROP TABLE IF EXISTS tempo.oneendo_sat;
+CREATE TABLE tempo.oneendo_sat AS (
+	SELECT  ST_ConcaveHull(ST_MakePolygon(ST_ExteriorRing((ST_Dump(ST_Union(ha.shape))).geom)),0.04,FALSE) geom
+	FROM tempo.catch_sat AS ha);--41
+CREATE INDEX idx_tempo_oneendo_sat ON tempo.oneendo_sat USING GIST(geom);
+	
+WITH endo_basins AS (	
+    SELECT ba.*
+    FROM basinatlas.basinatlas_v10_lev12 AS ba
+    JOIN tempo.oneendo_sat
+    ON ba.shape && oneendo_sat.geom
+    AND ST_Intersects(ba.shape, oneendo_sat.geom)
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM tempo.catch_bbiscay
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_sat
+    UNION ALL
+    SELECT shape
+    FROM h_medwest.catchments
+    UNION ALL
+    SELECT shape
+    FROM h_southmedwest.catchments
+),
+filtered_basin AS (
+    SELECT eb.*
+    FROM endo_basins eb
+    LEFT JOIN excluded_basins exb
+    ON eb.shape && exb.shape
+    AND ST_Equals(eb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO tempo.catch_sat
+SELECT *
+FROM filtered_basin;--81
+
+
+--Step 5 : Retrieving last islands and basins along the coast
+
+WITH last_basin AS (
+	SELECT c.*
+	FROM tempo.hydro_small_catchments_europe AS c
+	JOIN refeel.tr_area_are taa
+	ON ST_Intersects(c.shape, taa.geom_polygon)
+	WHERE taa.are_code = 'North Sea'
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM h_baltic22to26.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_baltic27to29_32.catchments
+    UNION ALL
+    SELECT shape 
+    FROM tempo.catch_echannel
+    UNION ALL
+    SELECT shape 
+    FROM h_norwegian.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_blacksea.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_adriatic.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_medwest.catchments
+    UNION ALL
+    SELECT shape 
+    FROM h_baltic30to31.catchments
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_bisles
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_nsea
+),
+filtered_basin AS (
+    SELECT lb.*
+    FROM last_basin lb
+    LEFT JOIN excluded_basins exb
+    ON lb.shape && exb.shape
+    AND ST_Equals(lb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO tempo.catch_nsea
+SELECT *
+FROM filtered_basin;--21
+
+
+WITH last_basin AS (
+	SELECT c.*
+	FROM tempo.hydro_small_catchments_europe AS c
+	JOIN refeel.tr_area_are taa
+	ON ST_Intersects(c.shape, taa.geom_polygon)
+	WHERE taa.are_code = 'British Isles'
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM tempo.catch_echannel
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_bisles
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_nsea
+    UNION ALL
+    SELECT shape
+    FROM tempo.hydro_small_catchments_europe
+    WHERE hybas_id = 2120021410
+),
+filtered_basin AS (
+    SELECT lb.*
+    FROM last_basin lb
+    LEFT JOIN excluded_basins exb
+    ON lb.shape && exb.shape
+    AND ST_Equals(lb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO tempo.catch_bisles
+SELECT *
+FROM filtered_basin;--58
+
+WITH last_basin AS (
+	SELECT c.*
+	FROM tempo.hydro_small_catchments_europe AS c
+	JOIN refeel.tr_area_are taa
+	ON ST_Intersects(c.shape, taa.geom_polygon)
+	WHERE taa.are_code = 'English Channel'
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM tempo.catch_echannel
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_bisles
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_nsea
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_bbiscay
+    UNION ALL
+    SELECT shape
+    FROM h_medwest.catchments
+),
+filtered_basin AS (
+    SELECT lb.*
+    FROM last_basin lb
+    LEFT JOIN excluded_basins exb
+    ON lb.shape && exb.shape
+    AND ST_Equals(lb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO tempo.catch_echannel
+SELECT *
+FROM filtered_basin;--5
+
+
+WITH last_basin AS (
+	SELECT c.*
+	FROM tempo.hydro_small_catchments_europe AS c
+	JOIN refeel.tr_area_are taa
+	ON ST_Intersects(c.shape, taa.geom_polygon)
+	WHERE taa.are_code = 'Bay of Biscay'
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM tempo.catch_echannel
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_bbiscay
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_sat
+    UNION ALL
+    SELECT shape
+    FROM h_medwest.catchments
+),
+filtered_basin AS (
+    SELECT lb.*
+    FROM last_basin lb
+    LEFT JOIN excluded_basins exb
+    ON lb.shape && exb.shape
+    AND ST_Equals(lb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO tempo.catch_bbiscay
+SELECT *
+FROM filtered_basin;--1
+
+WITH all_catch AS (
+	SELECT *
+	FROM tempo.hydro_small_catchments
+	UNION ALL
+	SELECT *
+	FROM tempo.hydro_small_catchments_europe
+	),
+last_basin AS (
+	SELECT c.*
+	FROM all_catch AS c
+	JOIN refeel.tr_area_are taa
+	ON ST_Intersects(c.shape, taa.geom_polygon)
+	WHERE taa.are_code = 'South Atlantic'
+),
+excluded_basins AS (
+    SELECT shape 
+    FROM tempo.catch_sat
+    UNION ALL
+    SELECT shape
+    FROM h_medwest.catchments
+    UNION ALL
+    SELECT shape
+    FROM tempo.catch_bbiscay
+    UNION ALL
+    SELECT shape
+    FROM h_southmedwest.catchments
+),
+filtered_basin AS (
+    SELECT lb.*
+    FROM last_basin lb
+    LEFT JOIN excluded_basins exb
+    ON lb.shape && exb.shape
+    AND ST_Equals(lb.shape, exb.shape)
+    WHERE exb.shape IS NULL
+)
+INSERT INTO tempo.catch_sat
+SELECT *
+FROM filtered_basin;
+
+
+-- Insertion into tr_area_are
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+       287 AS are_are_id,
+       'North Sea inland'   AS are_code,
+       'Regional'     AS are_lev_code,
+       false          AS are_ismarine,
+       ST_Union(shape) AS geom_polygon,
+       NULL          AS geom_line
+FROM tempo.catch_nsea;
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+       287 AS are_are_id,
+       'English Channel inland'   AS are_code,
+       'Regional'     AS are_lev_code,
+       false          AS are_ismarine,
+       ST_Union(shape) AS geom_polygon,
+       NULL          AS geom_line
+FROM tempo.catch_echannel;
+
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+       288 AS are_are_id,
+       'British Isles inland'   AS are_code,
+       'Regional'     AS are_lev_code,
+       false          AS are_ismarine,
+       ST_Union(shape) AS geom_polygon,
+       NULL          AS geom_line
+FROM tempo.catch_bisles;
+
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+       288 AS are_are_id,
+       'Bay of Biscay inland'   AS are_code,
+       'Regional'     AS are_lev_code,
+       false          AS are_ismarine,
+       ST_Union(shape) AS geom_polygon,
+       NULL          AS geom_line
+FROM tempo.catch_bbiscay;
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+SELECT nextval('refeel.seq') AS are_id,
+       288 AS are_are_id,
+       'South Atlantic inland'   AS are_code,
+       'Regional'     AS are_lev_code,
+       false          AS are_ismarine,
+       ST_Union(shape) AS geom_polygon,
+       NULL          AS geom_line
+FROM tempo.catch_sat;
+
 
 ----------------- Complex -----------------
-SELECT geom
-FROM tempo.tr_zoneifremer_zif tzz 
-WHERE 
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH complex_selection AS (
+  SELECT ST_Union(zif_geom) AS geom, zif_libelle
+  FROM tempo.tr_zoneifremer_zif tzz 
+  WHERE tzz.zif_loc_level = '144'
+  GROUP BY zif_libelle
+),
+complex_with_parent AS (
+  SELECT DISTINCT ON (cs.zif_libelle)
+         cs.geom,
+         cs.zif_libelle,
+         ta.are_id AS are_id
+  FROM complex_selection cs
+  JOIN refeel.tr_area_are ta
+    ON ST_Intersects(cs.geom, ta.geom_polygon)
+  WHERE ta.are_code <> '37.1.3.112'
+  AND ta.are_lev_code = 'Subdivision'
+)
+SELECT nextval('refeel.seq') AS are_id,
+       are_id AS are_are_id,
+       zif_libelle   AS are_code,
+       'Complex'     AS are_lev_code,
+       NULL          AS are_ismarine,
+       geom          AS geom_polygon,
+       NULL          AS geom_line
+FROM complex_with_parent;
 
+
+
+
+----------------- Lagoons -----------------
+--INSERT INTO ref.tr_habitatlevel_lev VALUES( 
+--  'Lagoons',
+--  'Shallow body of water seperated from a larger body of water by a narrow landform'
+--  );
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH lagunes_selection AS (
+	SELECT lag_polygone AS geom, lag_nom
+	FROM tempo.tr_lagunes tl 
+),
+lag_with_comp AS (
+  SELECT DISTINCT ON (ls.lag_nom)
+         ls.geom,
+         ls.lag_nom,
+         ta.are_id AS are_id
+  FROM lagunes_selection ls
+  JOIN refeel.tr_area_are ta
+    ON ST_Intersects(ls.geom, ta.geom_polygon)
+  WHERE ta.are_lev_code = 'Complex'
+)
+SELECT nextval('refeel.seq') AS are_id,
+       are_id AS are_are_id,
+       lag_nom   AS are_code,
+       'Lagoons'     AS are_lev_code,
+       NULL          AS are_ismarine,
+       geom          AS geom_polygon,
+       NULL          AS geom_line
+FROM lag_with_comp;
+
+----------------- River -----------------
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH unit_riv AS (
+    SELECT DISTINCT re.main_riv, taa.are_id
+    FROM tempo.riversegments_eel re
+    JOIN refeel.tr_area_are taa
+      ON ST_Intersects(re.geom, taa.geom_polygon)
+    WHERE re.ord_clas = 1
+      AND taa.are_lev_code = 'Assessment_unit'
+      AND taa.are_ismarine = false
+),
+all_segments AS (
+    SELECT re.main_riv, ur.are_id, re.geom
+    FROM tempo.riversegments_eel re
+    JOIN unit_riv ur ON ur.main_riv = re.main_riv
+),
+catchments_with_riv AS (
+    SELECT DISTINCT tce.hybas_id, tce.main_bas, re.main_riv, re.are_id, tce.shape
+    FROM tempo.catchments_eel tce
+    JOIN all_segments re ON ST_Intersects(tce.shape, re.geom)
+),
+deduplicated AS (
+    SELECT DISTINCT ON (hybas_id) main_riv, main_bas, hybas_id, are_id, shape
+    FROM catchments_with_riv
+),
+merged AS (
+    SELECT main_bas, MIN(are_id) AS are_id, ST_Union(shape) AS geom
+    FROM deduplicated
+    GROUP BY main_bas
+)
+SELECT 
+    nextval('refeel.seq'),
+	are_id,
+    main_bas::TEXT,
+    'River',
+    false,
+    ST_Multi(geom),
+    NULL
+FROM merged
+WHERE geom IS NOT NULL;
 
 --------------------------- Creating referential to match rivers to basin ---------------------------  
 
