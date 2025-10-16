@@ -60,7 +60,7 @@ GRANT USAGE ON SCHEMA refbast TO diaspara_read;
 GRANT USAGE ON SCHEMA refnas TO diaspara_read;
 GRANT USAGE ON SCHEMA refeel TO diaspara_read;
 GRANT USAGE ON SCHEMA ref TO diaspara_read;
-
+GRANT SELECT ON ALL TABLES IN SCHEMA refbast TO diaspara_read;
 --- extension management
 CREATE EXTENSION "uuid-ossp" SCHEMA "public";
 CREATE EXTENSION postgis SCHEMA "public";
