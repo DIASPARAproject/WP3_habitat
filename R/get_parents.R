@@ -16,7 +16,7 @@ area <- dbGetQuery(con, "SELECT
 				are_code,
 				are_lev_code,
 				are_ismarine,
-				are_rivername FROM refbast.tr_area_are;")
+				are_name FROM refbast.tr_area_are;")
 
 
 save(area, file = "C:/workspace/DIASPARA_WP3_habitat/data/area.Rdata")

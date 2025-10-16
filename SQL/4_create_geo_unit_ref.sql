@@ -442,7 +442,7 @@ deduplicated_names AS (
     FROM basin_names
 )
 UPDATE refbast.tr_area_are t
-SET are_rivername = d.river_name
+SET are_name = d.river_name
 FROM deduplicated_names d
 WHERE t.are_code = d.hyriv_id::TEXT;--3718
 
@@ -1227,7 +1227,7 @@ final_stretch AS (
     ON ms.main_riv = rc.main_riv
 )
 UPDATE refnas.tr_area_are t
-SET are_rivername = f.river_name
+SET are_name = f.river_name
 FROM final_stretch f
 WHERE t.are_code = f.hyriv_id::TEXT;
 
