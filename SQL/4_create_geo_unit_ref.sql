@@ -442,7 +442,7 @@ deduplicated_names AS (
     FROM basin_names
 )
 UPDATE refbast.tr_area_are t
-SET are_rivername = d.river_name
+SET are_name = d.river_name
 FROM deduplicated_names d
 WHERE t.are_code = d.hyriv_id::TEXT;--3718
 
@@ -479,6 +479,41 @@ SELECT nextval('refbast.seq') AS are_id,
 		NULL AS geom_line
 		FROM select_division;
 
+--  Subdivision grouping 300 and 200 in the historical database
+
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, are_name, geom_polygon, geom_line)
+WITH select_division AS (
+  SELECT geom FROM ref.tr_fishingarea_fia tff
+  WHERE  tff.fia_level = 'Subdivision' AND tff.fia_subdivision IN ('27.3.d.30','27.3.d.31')
+)
+SELECT 7023,
+    2 AS are_are_id,
+    '27.3.d30-31' AS are_code,
+    'Subdivision Grouping' AS are_lev_code,
+    --are_wkg_code,
+    true AS is_marine,
+    'Gulf of Bothnia (300)',
+    st_union(geom) AS geom_polygon,
+    NULL AS geom_line
+    FROM select_division;
+
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, are_name, geom_polygon, geom_line)
+WITH select_division AS (
+  SELECT geom FROM ref.tr_fishingarea_fia tff
+  WHERE  tff.fia_level = 'Subdivision' AND tff.fia_subdivision IN ('27.3.d.22','27.3.d.23','27.3.d.24','27.3.d.25','27.3.d.26','27.3.d.27','27.3.d.28','27.3.d.29')
+)
+SELECT 7024,
+    2 AS are_are_id,
+    '27.3.d22-29' AS are_code,
+    'Subdivision Grouping' AS are_lev_code,
+    --are_wkg_code,
+    true AS is_marine,
+    'Main Baltic (200)',
+    st_union(geom) AS geom_polygon,
+    NULL AS geom_line
+    FROM select_division;
+
+
 -- ICES subdivision
 	
 DROP FUNCTION IF EXISTS insert_fishing_subdivision(subdiv TEXT, p_are_are_id INT);
@@ -508,21 +543,101 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-SELECT insert_fishing_subdivision('d.31', 7004);
-SELECT insert_fishing_subdivision('d.30', 7004);
-SELECT insert_fishing_subdivision('d.32', 7004);
-SELECT insert_fishing_subdivision('d.27', 7004);
-SELECT insert_fishing_subdivision('d.28', 7004);
-SELECT insert_fishing_subdivision('d.29', 7004);
-SELECT insert_fishing_subdivision('d.24', 7004);
-SELECT insert_fishing_subdivision('d.25', 7004);
-SELECT insert_fishing_subdivision('d.26', 7004);
-SELECT insert_fishing_subdivision('c.22', 7003);
-SELECT insert_fishing_subdivision('b.23', 7003);
+-- attention might not be exactly this (check - in the current DB it's 7024 or 7023)
+-- So the number might not be OK (I added the subdivision grouping later.)
+SELECT insert_fishing_subdivision('d.31', 7023);
+SELECT insert_fishing_subdivision('d.30', 7023);
+SELECT insert_fishing_subdivision('d.32', 7011);
+SELECT insert_fishing_subdivision('d.27', 7024);
+SELECT insert_fishing_subdivision('d.28', 7024);
+SELECT insert_fishing_subdivision('d.29', 7024);
+SELECT insert_fishing_subdivision('d.24', 7024);
+SELECT insert_fishing_subdivision('d.25', 7024);
+SELECT insert_fishing_subdivision('d.26', 7024);
+SELECT insert_fishing_subdivision('c.22', 7024);
+SELECT insert_fishing_subdivision('b.23', 7024);
+
+
+-- fix names and country
+UPDATE refbast.tr_area_are
+  SET are_name='Baltic marine'
+  WHERE are_id=2;
+UPDATE refbast.tr_area_are
+  SET are_name='Baltic inland'
+  WHERE are_id=3;
+UPDATE refbast.tr_area_are
+  SET are_name='Whole stock Baltic'
+  WHERE are_id=1;
+UPDATE refbast.tr_area_are
+  SET are_code='FN',are_name='Finland'
+  WHERE are_id=4;
+UPDATE refbast.tr_area_are
+  SET are_code='SW',are_name='Sweden'
+  WHERE are_id=5;
+UPDATE refbast.tr_area_are
+  SET are_code='EE',are_name='Estonia'
+  WHERE are_id=6;
+UPDATE refbast.tr_area_are
+  SET are_code='LV',are_name='Latvia'
+  WHERE are_id=7;
+UPDATE refbast.tr_area_are
+  SET are_code='LT',are_name='Lithuania'
+  WHERE are_id=8;
+UPDATE refbast.tr_area_are
+  SET are_code='PL',are_name='Poland'
+  WHERE are_id=9;
+UPDATE refbast.tr_area_are
+  SET are_code='DE',are_name='Germany'
+  WHERE are_id=10;
+UPDATE refbast.tr_area_are
+  SET are_code='DK',are_name='Denmark'
+  WHERE are_id=11;
+UPDATE refbast.tr_area_are
+  SET are_code='RU',are_name='Russia'
+  WHERE are_id=12;
 
 
 
-
+-- Fix error with division alongside adding an intermediate level 200 and 300
+UPDATE refbast.tr_area_are
+  SET are_are_id=7024
+  WHERE are_id=7016;
+UPDATE refbast.tr_area_are
+  SET are_are_id=7024
+  WHERE are_id=7018;
+UPDATE refbast.tr_area_are
+  SET are_are_id=7024
+  WHERE are_id=7019;
+UPDATE refbast.tr_area_are
+  SET are_are_id=7024
+  WHERE are_id=7020;
+UPDATE refbast.tr_area_are
+  SET are_are_id=7024
+  WHERE are_id=7021;
+UPDATE refbast.tr_area_are
+  SET are_are_id=7024
+  WHERE are_id=7022;
+UPDATE refbast.tr_area_are
+  SET are_are_id=7011
+  WHERE are_id=7023;
+UPDATE refbast.tr_area_are
+  SET are_are_id=7011
+  WHERE are_id=7024;
+UPDATE refbast.tr_area_are
+  SET are_are_id=7023
+  WHERE are_id=7012;
+UPDATE refbast.tr_area_are
+  SET are_are_id=7023
+  WHERE are_id=7013;
+UPDATE refbast.tr_area_are
+  SET are_are_id=7011
+  WHERE are_id=7014;
+UPDATE refbast.tr_area_are
+  SET are_are_id=7024
+  WHERE are_id=7015;
+UPDATE refbast.tr_area_are
+  SET are_are_id=7024
+  WHERE are_id=7017;
 
 ------------------------------------- NAS -------------------------------------
 
@@ -1227,7 +1342,7 @@ final_stretch AS (
     ON ms.main_riv = rc.main_riv
 )
 UPDATE refnas.tr_area_are t
-SET are_rivername = f.river_name
+SET are_name = f.river_name
 FROM final_stretch f
 WHERE t.are_code = f.hyriv_id::TEXT;
 
