@@ -333,7 +333,7 @@ Within each of those assessment units, the main river stretch have been gathered
 
 ::::
 :::: column
-![Map of main stretch of rivers in the Baltic area.](images/fig-river_section_level.png "A view of Scandinavia with lines representing main stretch of rivers that flow into the Baltic"){#fig-riverseclvl}
+![Map of main stretch of rivers in the Baltic area.](images/fig-River_section_level.png "A view of Scandinavia with lines representing main stretch of rivers that flow into the Baltic"){#fig-riverseclvl}
 ::::
 ::::::
 
@@ -578,7 +578,7 @@ The same method has been used here as for WGBAST. All rivers flowing into the sa
 ![River section level](images/fig-area_hierarchy_nas5.svg "A graph representing the hierarchical structure. The River section level is highlited in light green"){#fig-hiernas5}
 
 ## River section
-![Map of the river section level.](images/fig-river_section_nas.png "A view with lines representing the river sections spread across Europe and North America"){#fig-rivsecnas1}
+![Map of the river section level.](images/fig-River_section_nas.png "A view with lines representing the river sections spread across Europe and North America"){#fig-rivsecnas1}
 
 ::: {.notes}
 Same goes here with the river section level. Work on names is also done and will be released soon. As for WGBAST, ICES vocab is being used.

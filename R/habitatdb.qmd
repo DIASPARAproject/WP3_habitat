@@ -1328,11 +1328,11 @@ DT::datatable(fstock_lvl,
 
 #### River section
 
-This query inserts entries at the **river_section** level in the `refbast.tr_area_are` table by splitting the main river areas into smaller sections. We start by selecting all polygons corresponding to rivers (`are_lev_code = 'River'`) to define the broader river areas that will serve as the parent units.
+This query inserts entries at the **River_section** level in the `refbast.tr_area_are` table by splitting the main river areas into smaller sections. We start by selecting all polygons corresponding to rivers (`are_lev_code = 'River'`) to define the broader river areas that will serve as the parent units.
 
 Next, river segments are selected from the `tempo.riversegments_baltic` table, focusing only on the main channels (`ord_clas = 1`). Each river segment (`hyriv_id`) is spatially matched to its parent river polygon using `ST_Intersects`, ensuring that each segment is properly linked to its broader river unit.
 
-Each selected segment is then assigned a new `are_id` generated from the sequence `refbast.seq`, while the original `hyriv_id` from the river segment dataset is used as the `are_code`. The `are_lev_code` is set to `river_section`, and the marine flag (`are_ismarine`) is set to false. Only one unique entry per `hyriv_id` is inserted to avoid duplication, ensuring a clean and consistent representation of river sections within the database structure.
+Each selected segment is then assigned a new `are_id` generated from the sequence `refbast.seq`, while the original `hyriv_id` from the river segment dataset is used as the `are_code`. The `are_lev_code` is set to `River_section`, and the marine flag (`are_ismarine`) is set to false. Only one unique entry per `hyriv_id` is inserted to avoid duplication, ensuring a clean and consistent representation of river sections within the database structure.
 
 
 ```{sql}
@@ -1353,7 +1353,7 @@ river_segments AS (
     nextval('refbast.seq') AS are_id,
     rl.are_id AS are_are_id,
     rs.hyriv_id::TEXT AS are_code,
-    'river_section' AS are_lev_code,
+    'River_section' AS are_lev_code,
     false AS is_marine,
     NULL,
     rs.geom
@@ -1366,7 +1366,7 @@ SELECT DISTINCT ON (are_code) * FROM river_segments;
 ```
 
 
-![Map of main stretch of rivers in the Baltic area.](images/fig-river_section_level.png "A view of Scandinavia with lines representing main stretch of rivers that flow into the Baltic"){#fig-riverseclvl}
+![Map of main stretch of rivers in the Baltic area.](images/fig-River_section_level.png "A view of Scandinavia with lines representing main stretch of rivers that flow into the Baltic"){#fig-riverseclvl}
 
 ## Creating a hierarchical structure for WGNAS
 The work done on the structural hierarchy for WGNAS follows what has been done for WGBAST, although there is some differences in the layers used. Futhermore, in parallel of the Assessment Unit level, a Fisheries level has been added (@fig-area_hierarchy_nas).
@@ -2060,13 +2060,13 @@ DT::datatable(fstock_lvl,
 
 
 ### River section
-This query inserts new **river section** features into the `refnas.tr_area_are` table by identifying river segments that spatially intersect previously defined river-level areas. It begins with a Common Table Expression (`WITH`) named `river_level`, which selects the `are_id` and `geom_polygon` of all entries in `refnas.tr_area_are` where the level code (`are_lev_code`) is `'River'`. Then, in the `river_segments` CTE, it selects distinct river segments (`hyriv_id`) from `tempo.riversegments_nas` where the order class (`ord_clas`) is `1`—indicating main rivers—and which intersect any of the river-level geometries. For each intersecting segment, it prepares a new row: assigning a unique ID (`nextval('refnas.seq')`), linking it to the intersected river area via `are_are_id`, using the river segment ID as `are_code`, setting the level to `'river_section'`, marking it as non-marine (`false`), leaving `geom_polygon` empty (`NULL`), and storing the actual river geometry in `geom_line`. Finally, only one entry per `are_code` is retained using `DISTINCT ON`, ensuring no duplicates are inserted. This operation adds detailed linear representations of rivers, hierarchically linked to their corresponding catchment areas.
+This query inserts new **river section** features into the `refnas.tr_area_are` table by identifying river segments that spatially intersect previously defined river-level areas. It begins with a Common Table Expression (`WITH`) named `river_level`, which selects the `are_id` and `geom_polygon` of all entries in `refnas.tr_area_are` where the level code (`are_lev_code`) is `'River'`. Then, in the `river_segments` CTE, it selects distinct river segments (`hyriv_id`) from `tempo.riversegments_nas` where the order class (`ord_clas`) is `1`—indicating main rivers—and which intersect any of the river-level geometries. For each intersecting segment, it prepares a new row: assigning a unique ID (`nextval('refnas.seq')`), linking it to the intersected river area via `are_are_id`, using the river segment ID as `are_code`, setting the level to `'River_section'`, marking it as non-marine (`false`), leaving `geom_polygon` empty (`NULL`), and storing the actual river geometry in `geom_line`. Finally, only one entry per `are_code` is retained using `DISTINCT ON`, ensuring no duplicates are inserted. This operation adds detailed linear representations of rivers, hierarchically linked to their corresponding catchment areas.
 
 
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
-#| code-summary: Code to create the river_section level for WGNAS
+#| code-summary: Code to create the River_section level for WGNAS
 #| warning: FALSE
 #| message: FALSE
 
@@ -2081,7 +2081,7 @@ river_segments AS (
     nextval('refnas.seq') AS are_id,
     rl.are_id AS are_are_id,
     rs.hyriv_id::TEXT AS are_code,
-    'river_section' AS are_lev_code,
+    'River_section' AS are_lev_code,
     false AS is_marine,
     NULL,
     rs.geom
@@ -2093,14 +2093,14 @@ river_segments AS (
 SELECT DISTINCT ON (are_code) * FROM river_segments;
 ```
 
-![Map of the river section level.](images/fig-river_section_nas.png "A view with lines representing the river sections spread across Europe and North America"){#fig-rivsecnas1}
+![Map of the river section level.](images/fig-River_section_nas.png "A view with lines representing the river sections spread across Europe and North America"){#fig-rivsecnas1}
 
 ```{r}
-#| label: refnas.tr_area_are river_section level
+#| label: refnas.tr_area_are River_section level
 #| echo: FALSE
 #| warning: FALSE
 #| message: FALSE
-#| tbl-cap: Structure of the river_section level in the referential table
+#| tbl-cap: Structure of the River_section level in the referential table
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 

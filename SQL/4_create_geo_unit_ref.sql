@@ -401,7 +401,7 @@ river_segments AS (
     nextval('refbast.seq') AS are_id,
     rl.are_id AS are_are_id,
     rs.hyriv_id::TEXT AS are_code,
-    'river_section' AS are_lev_code,
+    'River_section' AS are_lev_code,
     false AS is_marine,
     NULL,
     rs.geom
@@ -489,7 +489,7 @@ WITH select_division AS (
 SELECT 7023,
     2 AS are_are_id,
     '27.3.d30-31' AS are_code,
-    'Subdivision Grouping' AS are_lev_code,
+    'Subdivision_grouping' AS are_lev_code,
     --are_wkg_code,
     true AS is_marine,
     'Gulf of Bothnia (300)',
@@ -505,7 +505,7 @@ WITH select_division AS (
 SELECT 7024,
     2 AS are_are_id,
     '27.3.d22-29' AS are_code,
-    'Subdivision Grouping' AS are_lev_code,
+    'Subdivision_grouping' AS are_lev_code,
     --are_wkg_code,
     true AS is_marine,
     'Main Baltic (200)',
@@ -557,6 +557,38 @@ SELECT insert_fishing_subdivision('d.26', 7024);
 SELECT insert_fishing_subdivision('c.22', 7024);
 SELECT insert_fishing_subdivision('b.23', 7024);
 
+
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine, are_name, geom_polygon, geom_line)
+WITH select_division AS (
+  SELECT geom FROM ref.tr_fishingarea_fia tff
+  WHERE  tff.fia_code IN ('27.3.d.28.1')
+)
+SELECT 7025,
+    7016 AS are_are_id,
+    '27.3.d.28.1' AS are_code,
+    'Subdivision' AS are_lev_code,
+    'WGBAST' AS are_wkg_code,
+    true AS is_marine,
+    'Gulf of Riga' AS are_name,
+    geom AS geom_polygon,
+    NULL AS geom_line
+    FROM select_division;--1
+
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine, are_name, geom_polygon, geom_line)
+WITH select_division AS (
+  SELECT geom FROM ref.tr_fishingarea_fia tff
+  WHERE  tff.fia_code IN ('27.3.d.28.2')
+)
+SELECT 7026,
+    7016 AS are_are_id,
+    '27.3.d.28.2' AS are_code,
+    'Subdivision' AS are_lev_code,
+    'WGBAST' AS are_wkg_code,
+    true AS is_marine,
+    'East of Gotland (Open Sea)' AS are_name,
+    geom AS geom_polygon,
+    NULL AS geom_line
+    FROM select_division;--1   
 
 -- fix names and country
 UPDATE refbast.tr_area_are
@@ -1261,7 +1293,7 @@ river_segments AS (
     nextval('refnas.seq') AS are_id,
     rl.are_id AS are_are_id,
     rs.hyriv_id::TEXT AS are_code,
-    'river_section' AS are_lev_code,
+    'River_section' AS are_lev_code,
     false AS is_marine,
     NULL,
     rs.geom
@@ -1285,7 +1317,7 @@ river_segments AS (
     nextval('refnas.seq') AS are_id,
     rl.are_id AS are_are_id,
     rs.hyriv_id::TEXT AS are_code,
-    'river_section' AS are_lev_code,
+    'River_section' AS are_lev_code,
     false AS is_marine,
     NULL,
     rs.geom
@@ -3363,6 +3395,60 @@ FROM length_select
 WHERE rn = 1;--119
 
 
+BEGIN;
+UPDATE refbast.tr_area_are as taa SET are_name = trr.riv_rivername
+FROM refbast.tr_rivernames_riv as trr WHERE trr.riv_are_code = taa.are_code 
+AND taa.are_name IS NULL; --61
+COMMIT;
+
+BEGIN;
+WITH sec AS (
+SELECT * FROM refbast.tr_area_are 
+WHERE are_lev_code = 'River_section'),
+ riv AS (
+ SELECT * FROM refbast.tr_area_are 
+WHERE are_lev_code = 'River'
+),
+sec_rename AS (
+SELECT sec.are_id, sec.are_code, sec.are_name 
+FROM riv JOIN sec ON riv.are_name = sec.are_name)
+
+UPDATE refbast.tr_area_are SET are_name = tr_area_are.are_name || ' River_section ' || tr_area_are.are_code
+FROM sec_rename
+WHERE tr_area_are.are_id = sec_rename.are_id
+AND are_lev_code ='River_section' ; --2382
+COMMIT;
+
+-- I have created landings_wgbast_river_names to create the correspondance with landings table
+
+WITH cor as(
+SELECT * FROM refbast.tr_area_are
+JOIN refbast.landings_wbast_river_names ON are_name = riv_are_name
+WHERE are_lev_code = 'River')
+UPDATE refbast.landings_wbast_river_names SET riv_are_code=cor.are_code
+FROM cor WHERE cor.are_name = landings_wbast_river_names.riv_are_name; --35
+
+-- Save with subrivers
+WITH cor as(
+SELECT * FROM refbast.tr_area_are
+JOIN refbast.landings_wbast_river_names ON are_name = riv_are_name
+WHERE are_lev_code = 'River_section')
+     parent AS (
+ SELECT are.* FROM tr_area_are are JOIN cor as(
+SELECT * FROM refbast.tr_area_are
+JOIN refbast.landings_wbast_river_names ON are_name = riv_are_name
+WHERE are_lev_code = 'River')
+UPDATE refbast.landings_wbast_river_names SET riv_are_code=cor.are_code
+FROM cor WHERE cor.are_name = landings_wbast_river_names.riv_are_name; --35   
+     
+     
+     )
+UPDATE refbast.landings_wbast_river_names SET riv_are_code=cor.are_code
+FROM cor WHERE cor.are_name = landings_wbast_river_names.riv_are_name; --35
+
+
+
+
 -------- WGNAS
 DROP TABLE IF EXISTS refnas.tr_rivernames_riv;
 CREATE TABLE refnas.tr_rivernames_riv(
@@ -3398,4 +3484,44 @@ JOIN refnas.tr_area_are narea
 	ON ST_Intersects(riv.geom, narea.geom_polygon)
 WHERE narea.are_lev_code = 'River';--1946
 
-	
+-- Missing river names (river)
+
+
+-------------------------------- Country level --------------------------------
+--SELECT  max(are_id) FROM refbast.tr_area_are
+ALTER SEQUENCE refbast.seq RESTART WITH  7027;
+
+
+
+INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH unit_selection AS (
+  SELECT trc.geom AS geom, trc.main_riv
+  FROM tempo.riversegments_baltic trc, janis.bast_assessment_units jau
+  WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."Ass_unit" = 3
+),
+retrieve_rivers AS(
+  SELECT DISTINCT trc.geom
+  FROM tempo.riversegments_baltic trc, unit_selection us
+  WHERE trc.main_riv IN (SELECT main_riv FROM unit_selection)
+),
+retrieve_catchments AS (
+  SELECT DISTINCT ST_Union(tbc.shape) AS geom
+  FROM tempo.catchments_baltic tbc, retrieve_rivers rr
+  WHERE ST_Intersects(tbc.shape,rr.geom)
+)
+SELECT nextval('refbast.seq') AS are_id,
+    3 AS are_are_id,
+    '3 Bothnian Sea' AS are_code,
+    'Assessment_unit' AS are_lev_code,
+    --are_wkg_code,
+    false AS is_marine,
+    ST_Union(geom) AS geom_polygon,
+    NULL AS geom_line
+    FROM retrieve_catchments;
+
+
+
+-- rivers which are not already in the referential 
+
+
+
