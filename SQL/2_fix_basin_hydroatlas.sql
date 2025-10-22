@@ -3661,6 +3661,45 @@ SELECT *
 FROM filtered_basin;--25
 
 
+
+--------------------------- Lakes ---------------------------
+-- Adriatic lakes
+SELECT DISTINCT ON (lvp.geom) lvp.*
+FROM lakeatlas.lakeatlas_v10_pol lvp
+JOIN h_adriatic.riversegments ar
+ON ST_Intersects(ar.geom,lvp.geom);
+
+-- Baltic 22-26
+SELECT DISTINCT ON (lvp.geom) lvp.*
+FROM lakeatlas.lakeatlas_v10_pol lvp
+JOIN h_baltic22to26.riversegments ar
+ON ST_Intersects(ar.geom,lvp.geom);
+
+-- Baltic 27-29 32
+SELECT DISTINCT ON (lvp.geom) lvp.*
+FROM lakeatlas.lakeatlas_v10_pol lvp
+JOIN h_baltic27to29_32.riversegments ar
+ON ST_Intersects(ar.geom,lvp.geom);
+
+
+DROP FUNCTION IF EXISTS create_lakes_tables();
+CREATE OR REPLACE FUNCTION insert_river_areas_nas() 
+RETURNS VOID AS $$
+DECLARE h_schema TEXT ARRAY DEFAULT ARRAY['h_adriatic','h_baltic22to26','h_baltic27to29_32','h_baltic30to31','h_barents','h_biscayiberian',
+					'h_blacksea','h_celtic','h_iceland','h_medcentral','h_medeast','h_medwest','h_norwegian',
+					'h_nseanorth','h_nseasouth','h_nseauk','h_southatlantic','h_southmedcentral','h_southmedeast',
+					'h_southmedwest','h_svalbard']
+BEGIN
+	CREATE TABLE h_schema.lakes;
+	INSERT INTO h_schema.lakes
+		SELECT DISTINCT ON (lvp.geom) lvp.*
+		FROM lakeatlas.lakeatlas_v10_pol lvp
+		JOIN h_schema.riversegments ar
+		ON ST_Intersects(ar.geom,lvp.geom);
+END;
+$$ LANGUAGE plpgsql;
+
+
 --1:42:52 to run everything
 
 DROP TABLE IF EXISTS tempo.riversegments_baltic;
@@ -3668,7 +3707,7 @@ CREATE TABLE tempo.riversegments_baltic (LIKE h_baltic30to31.riversegments);
 ALTER TABLE h_baltic30to31.riversegments INHERIT tempo.riversegments_baltic;
 ALTER TABLE h_baltic22to26.riversegments INHERIT tempo.riversegments_baltic;
 ALTER TABLE h_baltic27to29_32.riversegments INHERIT tempo.riversegments_baltic;
-CREATE INDEX idx_tempo_balt_catchments ON tempo.catchments_baltic USING GIST(geom);
+CREATE INDEX idx_tempo_balt_riversegments ON tempo.riversegments_baltic USING GIST(geom);
 
 
 DROP TABLE IF EXISTS tempo.catchments_baltic;
@@ -3676,7 +3715,7 @@ CREATE TABLE tempo.catchments_baltic (LIKE h_baltic30to31.catchments);
 ALTER TABLE h_baltic30to31.catchments INHERIT tempo.catchments_baltic;
 ALTER TABLE h_baltic22to26.catchments INHERIT tempo.catchments_baltic;
 ALTER TABLE h_baltic27to29_32.catchments INHERIT tempo.catchments_baltic;
-
+CREATE INDEX idx_tempo_balt_catchments ON tempo.catchments_baltic USING GIST(shape);
 
 DROP TABLE IF EXISTS tempo.riversegments_nas;
 CREATE TABLE tempo.riversegments_nas (LIKE h_barents.riversegments);
