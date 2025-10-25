@@ -488,7 +488,7 @@ WITH select_division AS (
 )
 SELECT 7023,
     2 AS are_are_id,
-    '27.3.d30-31' AS are_code,
+    '27.3.d.30-31' AS are_code,
     'Subdivision_grouping' AS are_lev_code,
     --are_wkg_code,
     true AS is_marine,
@@ -504,7 +504,7 @@ WITH select_division AS (
 )
 SELECT 7024,
     2 AS are_are_id,
-    '27.3.d22-29' AS are_code,
+    '27.3.d.22-29' AS are_code,
     'Subdivision_grouping' AS are_lev_code,
     --are_wkg_code,
     true AS is_marine,
@@ -3800,6 +3800,10 @@ WHERE are_lev_code = 'River')
 UPDATE refbast.landings_wbast_river_names SET riv_are_code=cor.are_code
 FROM cor WHERE cor.are_name = landings_wbast_river_names.riv_are_name; --35
 
+SELECT * FROM refbast.tr_area_are 
+WHERE are_lev_code = 'River'
+AND are_name LIKE 'man'
+
 -- Save with subrivers
 WITH cor as(
 SELECT * FROM refbast.tr_area_are
@@ -3818,6 +3822,17 @@ FROM cor WHERE cor.are_name = landings_wbast_river_names.riv_are_name; --35
 UPDATE refbast.landings_wbast_river_names SET riv_are_code=cor.are_code
 FROM cor WHERE cor.are_name = landings_wbast_river_names.riv_are_name; --35
 
+
+-- After having set the correspondance between wgbast landings names and are_code
+-- I put back some of the names
+-- some are not the same, I don't update then
+-- there is a trick with NORMALIZE otherwise coming from windows it didn't work...
+WITH update_me AS(
+SELECT DISTINCT ON (are_id) are_id, are_code, riv_are_name FROM refbast.tr_area_are a JOIN refbast.landings_wbast_river_names lw
+ON a.are_code= lw.riv_are_code 
+WHERE a.are_name IS NULL)
+UPDATE refbast.tr_area_are SET are_name = NORMALIZE(riv_are_name)
+FROM update_me WHERE update_me.are_id = tr_area_are.are_id; --11
 
 
 
@@ -3856,32 +3871,58 @@ JOIN refnas.tr_area_are narea
 	ON ST_Intersects(riv.geom, narea.geom_polygon)
 WHERE narea.are_lev_code = 'River';--1946
 
--- Missing river names (river)
+
 
 
 -------------------------------- Country level --------------------------------
+
+
+--------------------------------- fix Assessment_units --------------------------
+
 --SELECT  max(are_id) FROM refbast.tr_area_are
+
+
 ALTER SEQUENCE refbast.seq RESTART WITH  7027;
 
 
+SELECT * FROM refbast.tr_area_are WHERE are_lev_code  ='Assessment_unit';
 
-INSERT INTO refbast.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+CREATE TABLE refbast.area_temp( LIKE refbast.tr_area_are);
+
+-- 3 Bothnian Sea (are_id 15)
+DELETE FROM refbast.area_temp WHERE are_id = 15;
+
+INSERT INTO refbast.area_temp (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
 WITH unit_selection AS (
   SELECT trc.geom AS geom, trc.main_riv
   FROM tempo.riversegments_baltic trc, janis.bast_assessment_units jau
   WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."Ass_unit" = 3
+  --AND main_riv NOT IN (SELECT are_code::integer FROM refbast.tr_area_are WHERE are_lev_code IN ('River', 'River_section'))
 ),
 retrieve_rivers AS(
   SELECT DISTINCT trc.geom
   FROM tempo.riversegments_baltic trc, unit_selection us
   WHERE trc.main_riv IN (SELECT main_riv FROM unit_selection)
 ),
+/*
+existing AS (SELECT geom_polygon FROM refbast.tr_area_are 
+WHERE are_id IN (13,14,16,17,18)), 
+catchment_baltic_remaining AS (
+   SELECT tbc.* FROM tempo.catchments_baltic tbc,
+   existing e
+   WHERE NOT st_intersects(e.geom_polygon, tbc.shape)
+)
+*/
+
+-- exclude Bothnian Bay 3
 retrieve_catchments AS (
   SELECT DISTINCT ST_Union(tbc.shape) AS geom
-  FROM tempo.catchments_baltic tbc, retrieve_rivers rr
-  WHERE ST_Intersects(tbc.shape,rr.geom)
+  FROM tempo.catchments_baltic tbc, 
+  retrieve_rivers rr--,
+  WHERE ST_Intersects(tbc.shape,rr.geom) 
 )
-SELECT nextval('refbast.seq') AS are_id,
+
+SELECT 15 AS are_id,
     3 AS are_are_id,
     '3 Bothnian Sea' AS are_code,
     'Assessment_unit' AS are_lev_code,
@@ -3892,8 +3933,279 @@ SELECT nextval('refbast.seq') AS are_id,
     FROM retrieve_catchments;
 
 
+WITH subset AS (
+SELECT st_union(shape) AS shape FROM tempo.catchments_baltic WHERE main_bas IN (2120031160, 2120030870, 2120030910, 2120031130))
+UPDATE refbast.area_temp SET geom_polygon=ST_Union(geom_polygon, shape)
+FROM subset WHERE are_id=15;
 
--- rivers which are not already in the referential 
+WITH subset AS (
+SELECT * FROM tempo.catchments_baltic WHERE main_bas IN (2120031160))
+UPDATE refbast.area_temp SET geom_polygon=ST_Union(geom_polygon, shape)
+FROM subset WHERE are_id=15;
+
+UPDATE refbast.tr_area_are SET geom_polygon = area_temp.geom_polygon 
+FROM refbast.area_temp
+WHERE area_temp.are_id = 15
+AND tr_area_are.are_id = 15;
 
 
 
+--TODO ADD island + 3 catchments
+
+-- 6 Gulf of Finland
+
+DELETE FROM refbast.area_temp WHERE are_id = 18;
+INSERT INTO refbast.area_temp (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH unit_selection AS (
+  SELECT trc.geom AS geom, trc.main_riv
+  FROM tempo.riversegments_baltic trc, janis.bast_assessment_units jau
+  WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."Ass_unit" = 6
+  --AND main_riv NOT IN (SELECT are_code::integer FROM refbast.tr_area_are WHERE are_lev_code IN ('River', 'River_section'))
+),
+retrieve_rivers AS(
+  SELECT DISTINCT trc.geom
+  FROM tempo.riversegments_baltic trc, unit_selection us
+  WHERE trc.main_riv IN (SELECT main_riv FROM unit_selection)
+),
+/*
+existing AS (SELECT geom_polygon FROM refbast.tr_area_are 
+WHERE are_id IN (13,14,16,17,18)), 
+catchment_baltic_remaining AS (
+   SELECT tbc.* FROM tempo.catchments_baltic tbc,
+   existing e
+   WHERE NOT st_intersects(e.geom_polygon, tbc.shape)
+)
+*/
+retrieve_catchments AS (
+  SELECT DISTINCT ST_Union(tbc.shape) AS geom
+  FROM tempo.catchments_baltic tbc, 
+  retrieve_rivers rr--,
+  WHERE ST_Intersects(tbc.shape,rr.geom) 
+)
+
+SELECT 18 AS are_id,
+    3 AS are_are_id,
+    '6 Gulf of Finland' AS are_code,
+    'Assessment_unit' AS are_lev_code,
+    --are_wkg_code,
+    false AS is_marine,
+    ST_Union(geom) AS geom_polygon,
+    NULL AS geom_line
+    FROM retrieve_catchments;
+
+
+SELECT tbc.* FROM tempo.catchments_baltic tbc,
+janis.bast_assessment_units jau
+WHERE ST_Intersects(tbc.shape, jau.geom) 
+ AND jau."Ass_unit" = 6 
+
+
+UPDATE refbast.tr_area_are SET geom_polygon = area_temp.geom_polygon 
+FROM refbast.area_temp
+WHERE area_temp.are_id = 18
+AND tr_area_are.are_id = 18;
+
+WITH subset AS (
+SELECT st_union(shape) AS shape FROM tempo.catchments_baltic WHERE main_bas IN (2120028930))
+UPDATE refbast.tr_area_are SET geom_polygon= st_multi(shape)
+FROM subset WHERE are_id=439;
+INSERT INTO refbast.area_temp SELECT * FROM refbast.tr_area_are WHERE are_code = '2120028930'
+DELETE FROM refbast.area_temp
+SELECT * FROM refbast.tr_area_are WHERE are_code = '2120028930'
+--5 Eastern Main Basin (17)
+
+DELETE FROM refbast.area_temp WHERE are_id = 17;
+INSERT INTO refbast.area_temp (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH unit_selection AS (
+  SELECT trc.geom AS geom, trc.main_riv
+  FROM tempo.riversegments_baltic trc, janis.bast_assessment_units jau
+  WHERE ST_Intersects(trc.geom, jau.geom) AND trc.ord_clas = 1 AND jau."Ass_unit" = 5
+  --AND main_riv NOT IN (SELECT are_code::integer FROM refbast.tr_area_are WHERE are_lev_code IN ('River', 'River_section'))
+),
+retrieve_rivers AS(
+  SELECT DISTINCT trc.geom
+  FROM tempo.riversegments_baltic trc, unit_selection us
+  WHERE trc.main_riv IN (SELECT main_riv FROM unit_selection)
+),
+/*
+existing AS (SELECT geom_polygon FROM refbast.tr_area_are 
+WHERE are_id IN (13,14,16,17,18)), 
+catchment_baltic_remaining AS (
+   SELECT tbc.* FROM tempo.catchments_baltic tbc,
+   existing e
+   WHERE NOT st_intersects(e.geom_polygon, tbc.shape)
+)
+*/
+retrieve_catchments AS (
+  SELECT DISTINCT ST_Union(tbc.shape) AS geom
+  FROM tempo.catchments_baltic tbc, 
+  retrieve_rivers rr--,
+  WHERE ST_Intersects(tbc.shape,rr.geom) 
+)
+
+SELECT 17 AS are_id,
+    3 AS are_are_id,
+    '6 Gulf of Finland' AS are_code,
+    'Assessment_unit' AS are_lev_code,
+    --are_wkg_code,
+    false AS is_marine,
+    ST_Union(geom) AS geom_polygon,
+    NULL AS geom_line
+    FROM retrieve_catchments;
+
+
+UPDATE refbast.tr_area_are SET geom_polygon = area_temp.geom_polygon 
+FROM refbast.area_temp
+WHERE area_temp.are_id = 17
+AND tr_area_are.are_id = 17;
+
+ 
+-- Update rivers 15 (3)
+
+ WITH unit_riv AS (
+    SELECT DISTINCT trc.main_riv
+    FROM tempo.riversegments_baltic trc
+    JOIN janis.bast_assessment_units jau
+      ON ST_Intersects(trc.geom, jau.geom)
+    WHERE (trc.ord_clas = 1
+      AND jau."Ass_unit" = 3) 
+  ),
+  all_segments AS (
+    SELECT trc.main_riv, trc.geom
+    FROM tempo.riversegments_baltic trc
+    JOIN unit_riv ur ON ur.main_riv = trc.main_riv
+  ),
+  catchments_with_riv AS (
+    SELECT DISTINCT tcb.hybas_id, tcb.main_bas, trc.main_riv, tcb.shape
+    FROM tempo.catchments_baltic tcb
+    JOIN all_segments trc ON ST_Intersects(tcb.shape, trc.geom)
+  ),
+  deduplicated AS (
+    SELECT DISTINCT ON (hybas_id) main_riv, main_bas, hybas_id, shape
+    FROM catchments_with_riv
+  ),
+  merged AS (
+    SELECT main_riv, MIN(main_bas) AS main_bas, ST_Union(shape) AS geom
+    FROM deduplicated
+    GROUP BY main_riv
+  )
+INSERT INTO refbast.tr_area_are (
+  are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line
+  )
+  SELECT 
+    nextval('refbast.seq'),
+    15,
+    main_bas::TEXT,
+    'River',
+    false,
+    ST_Multi(geom),
+    NULL
+  FROM merged
+  WHERE geom IS NOT NULL
+  AND main_bas NOT IN (SELECT are_code::integer FROM refbast.tr_area_are WHERE are_lev_code='River');
+ 
+ CREATE TABLE temp_missing_basins (are_id integer PRIMARY KEY ,geom public.geometry(multipolygon, 4326) NULL) ;
+ DELETE FROM temp_missing_basins;
+ INSERT INTO temp_missing_basins SELECT 7101 are_id, st_multi(st_union(shape)) FROM tempo.catchments_baltic WHERE main_bas IN (2120031160);
+INSERT INTO temp_missing_basins SELECT 94 are_id, st_multi(st_union(shape)) FROM tempo.catchments_baltic WHERE main_bas IN (2120030480);
+
+
+UPDATE refbast.tr_area_are SET geom_polygon=geom
+FROM temp_missing_basins 
+WHERE tr_area_are.are_id=7101
+AND temp_missing_basins.are_id = 7101;
+
+UPDATE refbast.tr_area_are SET geom_polygon=geom
+FROM temp_missing_basins 
+WHERE tr_area_are.are_id=94
+AND temp_missing_basins.are_id = 94;
+  
+-- FIx rivers AU 6  
+  WITH unit_riv AS (
+    SELECT DISTINCT trc.main_riv
+    FROM tempo.riversegments_baltic trc
+    JOIN janis.bast_assessment_units jau
+      ON ST_Intersects(trc.geom, jau.geom)
+    WHERE (trc.ord_clas = 1
+      AND jau."Ass_unit" = 6)
+    
+  ),
+  all_segments AS (
+    SELECT trc.main_riv, trc.geom
+    FROM tempo.riversegments_baltic trc
+    JOIN unit_riv ur ON ur.main_riv = trc.main_riv
+  ),
+  catchments_with_riv AS (
+    SELECT DISTINCT tcb.hybas_id, tcb.main_bas, trc.main_riv, tcb.shape
+    FROM tempo.catchments_baltic tcb
+    JOIN all_segments trc ON ST_Intersects(tcb.shape, trc.geom)
+  ),
+  deduplicated AS (
+    SELECT DISTINCT ON (hybas_id) main_riv, main_bas, hybas_id, shape
+    FROM catchments_with_riv
+  ),
+  merged AS (
+    SELECT main_riv, MIN(main_bas) AS main_bas, ST_Union(shape) AS geom
+    FROM deduplicated
+    GROUP BY main_riv
+  )
+  INSERT INTO refbast.tr_area_are (
+  are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line
+  )
+  SELECT 
+    nextval('refbast.seq'),
+    18,
+    main_bas::TEXT,
+    'River',
+    false,
+    ST_Multi(geom),
+    NULL
+  FROM merged
+  WHERE geom IS NOT NULL
+  AND main_bas NOT IN (SELECT are_code::integer FROM refbast.tr_area_are WHERE are_lev_code='River'); --10
+
+  
+  -- FIx rivers AU 4 - 5 Eastern Main Basin 
+  WITH unit_riv AS (
+    SELECT DISTINCT trc.main_riv
+    FROM tempo.riversegments_baltic trc
+    JOIN janis.bast_assessment_units jau
+      ON ST_Intersects(trc.geom, jau.geom)
+    WHERE (trc.ord_clas = 1
+      AND jau."Ass_unit" = 5)
+    
+  ),
+  all_segments AS (
+    SELECT trc.main_riv, trc.geom
+    FROM tempo.riversegments_baltic trc
+    JOIN unit_riv ur ON ur.main_riv = trc.main_riv
+  ),
+  catchments_with_riv AS (
+    SELECT DISTINCT tcb.hybas_id, tcb.main_bas, trc.main_riv, tcb.shape
+    FROM tempo.catchments_baltic tcb
+    JOIN all_segments trc ON ST_Intersects(tcb.shape, trc.geom)
+  ),
+  deduplicated AS (
+    SELECT DISTINCT ON (hybas_id) main_riv, main_bas, hybas_id, shape
+    FROM catchments_with_riv
+  ),
+  merged AS (
+    SELECT main_riv, MIN(main_bas) AS main_bas, ST_Union(shape) AS geom
+    FROM deduplicated
+    GROUP BY main_riv
+  )
+  INSERT INTO refbast.tr_area_are (
+  are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line
+  )
+  SELECT 
+    nextval('refbast.seq'),
+    17,
+    main_bas::TEXT,
+    'River',
+    false,
+    ST_Multi(geom),
+    NULL
+  FROM merged
+  WHERE geom IS NOT NULL
+  AND main_bas NOT IN (SELECT are_code::integer FROM refbast.tr_area_are WHERE are_lev_code='River'); --7
+  */
