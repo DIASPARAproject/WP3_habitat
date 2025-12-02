@@ -1,5 +1,8 @@
-setwd("D:/workspace/DIASPARA_WP3_habitat/R")
-extract_and_convert_dot <- function(qmd_file = "workshop_presentation.qmd", output_dir = "images") {
+# setwd("D:/workspace/DIASPARA_WP3_habitat/R")
+setwd("C:/workspace/DIASPARA_WP3_migdb/R")
+#    dot_path <- "C:/Program Files/Graphviz/bin/dot.exe"
+dot_path <- "dot"
+extract_and_convert_dot <- function(qmd_file = "diaspara_diagrams.qmd", output_dir = "images") {
     if (!dir.exists(output_dir)) dir.create(output_dir)
 
     lines <- readLines(qmd_file)
@@ -7,7 +10,7 @@ extract_and_convert_dot <- function(qmd_file = "workshop_presentation.qmd", outp
     chunk_lines <- c()
     chunk_label <- NULL
 
-    dot_path <- "C:/Program Files/Graphviz/bin/dot.exe"
+
 
     for (i in seq_along(lines)) {
         line <- lines[i]
