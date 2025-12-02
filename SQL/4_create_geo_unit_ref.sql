@@ -3238,7 +3238,7 @@ SELECT nextval('refeel.seq') AS are_id,
        ST_Union(shape) AS geom_polygon,
        NULL          AS geom_line
 FROM tempo.catch_sat;
-SELECT version()
+
 
 ----------------- Complex ----------------- /!\ Faire tourner
 INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
@@ -3273,7 +3273,7 @@ SELECT nextval('refeel.seq') AS are_id,
        NULL          AS are_ismarine,
        geom          AS geom_polygon,
        NULL          AS geom_line
-FROM complex_with_parent;
+FROM complex_with_parent;--34
 
 -------------------- Greece --------------------
 -- West
@@ -3609,25 +3609,351 @@ INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_
 	       NULL          AS geom_line
 	FROM select_complex;
 
+
+-------------------- Italy --------------------
+-- Northeast Italy
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev06
+	WHERE hybas_id IN (2060012700,2060012730,2060012970,2060012990,2060013020)
+	UNION ALL
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev07
+	WHERE hybas_id IN (2070012980,2070013010)
+	UNION ALL
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev08
+	WHERE hybas_id IN (2080013100,2080013110)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       298 AS are_are_id,
+	       'Northeast Italy'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+-- Foggia
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev07
+	WHERE hybas_id IN (2070013980,2070014060)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       298 AS are_are_id,
+	       'Foggia'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+
+-- Lecce
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev09
+	WHERE hybas_id IN (2090014310,2090014330,2090014340,2090014350)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       298 AS are_are_id,
+	       'Lecce'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+-- Central Italy
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev06
+	WHERE hybas_id IN (2060015620)
+	UNION ALL 
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev08
+	WHERE hybas_id IN (2080016020,2080016050,2080016030)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       295 AS are_are_id,
+	       'Central Italy'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+-- Campania and Southern Latium
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev06
+	WHERE hybas_id IN (2060015480)
+	UNION ALL 
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev07
+	WHERE hybas_id IN (2070015430,2070015320)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       295 AS are_are_id,
+	       'Campania and Southern Latium'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+
+-- Gallura and Nuoro
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev08
+	WHERE hybas_id IN (2080047940,2080047980,2080048000)
+	UNION ALL 
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev09
+	WHERE hybas_id IN (2090048040,2090047990)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       295 AS are_are_id,
+	       'Gallura and Nuoro'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+
+-- Sassari
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev08
+	WHERE hybas_id IN (2080047820,2080047830,2080047840,2080047810,2080047800)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       295 AS are_are_id,
+	       'Sassari'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+-- Oristano
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev10
+	WHERE hybas_id IN (2100047750,2100047740,2100047730,2100047690,2100047680,2100047670,2100047650)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       295 AS are_are_id,
+	       'Oristano'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+-- East Cagliari
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev09
+	WHERE hybas_id IN (2090048060,2090048070,2090048080,2090048090,2090048100,2090048120,2090048130)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       295 AS are_are_id,
+	       'East Cagliari'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+
+-- South Cagliari
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev09
+	WHERE hybas_id IN (2090047500,2090047560,2090047540,2090047550)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       295 AS are_are_id,
+	       'South Cagliari'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+-- Sulcis Inglesiente
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev09
+	WHERE hybas_id IN (2090047600)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       295 AS are_are_id,
+	       'Sulcis Inglesiente'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+-- Siragusa and Ragusa
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev10
+	WHERE hybas_id IN (2100046560)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       296 AS are_are_id,
+	       'Siragusa and Ragusa'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+
+-- Messina
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev10
+	WHERE hybas_id IN (2100047280)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       296 AS are_are_id,
+	       'Messina'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+----------------- Spain -----------------
+-- Menorca
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev09
+	WHERE hybas_id IN (2090048770)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       296 AS are_are_id,
+	       'Menorca'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+-- Majorca
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev08
+	WHERE hybas_id IN (2080048620)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       296 AS are_are_id,
+	       'Majorca'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+-- Ibiza	
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev09
+	WHERE hybas_id IN (2090048590)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       296 AS are_are_id,
+	       'Ibiza'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+
+
+-- Valencia	
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev08
+	WHERE hybas_id IN (2080017280,2080017320,2080017330,2080017380,2080017390,2080017430,2080017440,2080017480,
+						2080017490,2080017500,2080017510)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       296 AS are_are_id,
+	       'Valencia'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+
+-- Murcia and Alicante	
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev08
+	WHERE hybas_id IN (2080017640,2080017690,2080684020,2080683930,2080017700)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       296 AS are_are_id,
+	       'Murcia and Alicante'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+
+-- Adra
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev08
+	WHERE hybas_id IN (2080017960)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       296 AS are_are_id,
+	       'Adra'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+-- Baix Emporda
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+	WITH select_complex AS (
+	SELECT shape AS geom FROM basinatlas.basinatlas_v10_lev08
+	WHERE hybas_id IN (2080016950)
+	)
+	SELECT nextval('refeel.seq') AS are_id,
+	       296 AS are_are_id,
+	       'Baix Emporda'   AS are_code,
+	       'Complex'     AS are_lev_code,
+	       FALSE          AS are_ismarine,
+	       ST_Union(geom) AS geom_polygon,
+	       NULL          AS geom_line
+	FROM select_complex;
+
+
 ----------------- Lagoons -----------------
 --INSERT INTO ref.tr_habitatlevel_lev VALUES( 
 --  'Lagoons',
 --  'Shallow body of water seperated from a larger body of water by a narrow landform'
 --  );
 --DROP TABLE tempo.gfcm_lagoon;
-CREATE TABLE tempo.gfcm_lagoon (country varchar, site_code varchar, site_name varchar, lat DOUBLE PRECISION,
-								long DOUBLE PRECISION, habitat_type varchar);
-COPY tempo.gfcm_lagoon FROM 'D:\workspace\data\Habitat_data_GFCM_xDIASPARA_15072025.csv' csv header;
+--CREATE TABLE tempo.gfcm_lagoon (country varchar, site_code varchar, site_name varchar, lat DOUBLE PRECISION,
+--								long DOUBLE PRECISION, habitat_type varchar);
+--COPY tempo.gfcm_lagoon FROM 'D:\workspace\data\Habitat_data_GFCM_xDIASPARA_15072025.csv' csv header;
+--
+--ALTER TABLE tempo.gfcm_lagoon
+--	ADD geom geometry;
+--UPDATE tempo.gfcm_lagoon
+--	SET geom = ST_SetSRID(ST_MakePoint(long,lat),4326);
 
-ALTER TABLE tempo.gfcm_lagoon
-	ADD geom geometry;
-UPDATE tempo.gfcm_lagoon
-	SET geom = ST_SetSRID(ST_MakePoint(long,lat),4326);
 
-SELECT DISTINCT ON (site_code) la.geom, gl.* FROM lakeatlas.lakeatlas_v10_pol la
-JOIN tempo.gfcm_lagoon gl
-ON ST_DWithin(gl.geom,la.geom,0.1)
-WHERE gl.habitat_type = 'LGN';--177
 
 SELECT * FROM tempo.gfcm_lagoon gl WHERE gl.habitat_type = 'LGN';--223
 
@@ -3647,14 +3973,108 @@ END;
 $$ LANGUAGE plpgsql;
 
 
+-- Adding laggons from gfcm to national lagoons
+TRUNCATE TABLE ONLY tempo.all_lagoons RESTART IDENTITY;
+--CREATE TABLE tempo.all_lagoons (LIKE tempo.tn_lagoons);
+ALTER TABLE tempo.tn_lagoons INHERIT tempo.all_lagoons;
+ALTER TABLE tempo.all_lagoons RENAME COLUMN "COUNTRY" TO "Country";
+ALTER TABLE tempo.all_lagoons ALTER COLUMN "Country" TYPE varchar(50);
+ALTER TABLE tempo.all_lagoons RENAME COLUMN "NATURAL" TO "Natural";
+ALTER TABLE tempo.es_lagoons INHERIT tempo.all_lagoons;
+ALTER TABLE tempo.al_lagoons INHERIT tempo.all_lagoons;
+ALTER TABLE tempo.it_lagoons INHERIT tempo.all_lagoons;
+ALTER TABLE tempo.gr_lagoons INHERIT tempo.all_lagoons;
+ALTER TABLE tempo.tr_lagoons INHERIT tempo.all_lagoons;
+ALTER TABLE tempo.all_lagoons ADD COLUMN site_name TEXT;
+
+
+UPDATE tempo.all_lagoons al
+SET site_name = gl.site_name
+FROM tempo.gfcm_lagoon gl
+WHERE ST_Intersects(al.geom, gl.geom)
+  AND gl.habitat_type = 'LGN'
+  AND al."LULC" = 521;--102
+
+CREATE OR REPLACE FUNCTION tempo.merge_and_update()
+RETURNS void
+LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    sql TEXT;
+BEGIN
+    sql := '
+        UPDATE tempo.all_lagoons el
+        SET site_name = gl.site_name
+        FROM tempo.gfcm_lagoon gl
+        WHERE el.site_name IS NULL
+          AND el."LULC" = 521
+          AND gl.habitat_type = ''LGN''
+          AND ST_Intersects(el.geom, ST_Buffer(gl.geom, 0.02))
+    ';
+    EXECUTE sql;
+    RAISE NOTICE 'site_name applied with buffer 0.02';
+
+    sql := '
+        CREATE TEMP TABLE tmp_merged ON COMMIT DROP AS
+        SELECT 
+            a.site_name,
+            (SELECT b.ctid
+             FROM tempo.all_lagoons b
+             WHERE b.site_name = a.site_name
+             ORDER BY ST_Area(b.geom) DESC
+             LIMIT 1) AS keep_ctid,
+            ST_Multi(ST_Union(a.geom)) AS geom
+        FROM tempo.all_lagoons a
+        WHERE a.site_name IS NOT NULL
+        GROUP BY a.site_name
+    ';
+    EXECUTE sql;
+    RAISE NOTICE 'tmp_merged built for fusion';
+
+    sql := '
+        DELETE FROM tempo.all_lagoons a
+        USING tmp_merged t
+        WHERE a.site_name = t.site_name
+          AND a.ctid <> t.keep_ctid
+    ';
+    EXECUTE sql;
+    RAISE NOTICE 'duplicates removed';
+
+    sql := '
+        UPDATE tempo.all_lagoons el
+        SET geom = t.geom
+        FROM tmp_merged t
+        WHERE el.ctid = t.keep_ctid
+    ';
+    EXECUTE sql;
+    RAISE NOTICE 'geometries updated';
+END;
+$$;
+
+
+SELECT tempo.merge_and_update();
+  
+INSERT INTO tempo.all_lagoons(
+SELECT 1 AS id,
+	   ST_Multi(ST_Envelope(ST_Buffer(gl.geom,0.005))) AS geom,
+	   NULL AS "Country",
+	   NULL AS "Natural",
+	   521 AS "LULC",
+	   gl.site_name AS site_name
+FROM tempo.gfcm_lagoon gl
+WHERE gl.habitat_type = 'LGN'
+AND gl.site_name NOT IN (SELECT site_name FROM tempo.all_lagoons WHERE site_name IS NOT NULL));--103
+
+
 
 -- France
-INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line, are_name)
 WITH lagunes_selection AS (
 	SELECT lag_polygone AS geom, lag_nom
 	FROM tempo.fr_lagoons tl 
-)--,
---lag_with_comp AS (
+),
+lag_with_comp AS (
   SELECT DISTINCT ON (ls.lag_nom)
          ls.geom,
          ls.lag_nom,
@@ -3664,8 +4084,7 @@ WITH lagunes_selection AS (
     ON ST_Intersects(ls.geom, ta.geom_polygon)
   WHERE ta.are_lev_code = 'Complex'
 )
-SELECT --nextval('refeel.seq') AS are_id,
-	   NULL AS are_id,
+SELECT nextval('refeel.seq') AS are_id,
        are_id AS are_are_id,
        gen_lgr_code('LFR')   AS are_code,
        'Lagoons'     AS are_lev_code,
@@ -3673,7 +4092,7 @@ SELECT --nextval('refeel.seq') AS are_id,
        geom          AS geom_polygon,
        NULL          AS geom_line,
        lag_nom		 AS are_name
-FROM lag_with_comp;
+FROM lag_with_comp;--28
 
 -- Greece
 DROP SEQUENCE IF EXISTS lgr_seq;
@@ -3684,14 +4103,10 @@ CREATE SEQUENCE lgr_seq
   OWNED BY NONE;
 
 
-INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, are_name, geom_polygon, geom_line)
 WITH lagunes_selection AS (
-	--SELECT ST_Multi(ST_Union(ggw.geom)) AS geom, gl.site_name FROM tempo.gr_lagoons ggw 
-	SELECT DISTINCT ON (ggw.geom) ggw.geom, gl.site_name FROM tempo.gr_lagoons ggw 
-	LEFT JOIN tempo.gfcm_lagoon gl ON ST_DWithin(ggw.geom,gl.geom,0.0001)
-	AND gl.habitat_type = 'LGN'
-	WHERE ggw."LULC" = 521
-	--GROUP BY gl.site_name
+	SELECT DISTINCT ON (al.geom) al.geom, al.site_name FROM tempo.all_lagoons al 
+	WHERE al."LULC" = 521
 ),
 lag_with_comp AS (
   SELECT
@@ -3701,18 +4116,19 @@ lag_with_comp AS (
   FROM lagunes_selection ls
   JOIN refeel.tr_area_are ta
     ON ST_Intersects(ls.geom, ta.geom_polygon)
-  WHERE ta.are_lev_code = 'Complex'
+  WHERE ta.are_code IN('Western Greece','Western Peloponnese','Eastern Peloponnese','Gulf of Corinth',
+  						'Crete','Central Greece','South Aegean Islands','Central Macedonia',
+  						'North Aegean Islands','Eastern Macedonia and Thrace')
 )
-SELECT --nextval('refeel.seq') AS are_id,
-	   NULL AS are_id,
+SELECT nextval('refeel.seq') AS are_id,
        are_id AS are_are_id,
        gen_lgr_code('LGR')   AS are_code,
        'Lagoons'     AS are_lev_code,
        NULL          AS are_ismarine,
+       site_name 	 AS are_name,
        geom          AS geom_polygon,
-       NULL          AS geom_line,
-       site_name 	 AS are_name
-FROM lag_with_comp;
+       NULL          AS geom_line
+	FROM lag_with_comp;--209
 
 
 -- Albania
@@ -3724,12 +4140,10 @@ CREATE SEQUENCE lgr_seq
   OWNED BY NONE;
  
  
-INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, are_name, geom_polygon, geom_line)
 WITH lagunes_selection AS (
-	SELECT DISTINCT ON (ggw.geom) ggw.geom, gl.site_name FROM tempo.al_lagoons ggw 
-	LEFT JOIN tempo.gfcm_lagoon gl ON ST_DWithin(ggw.geom,gl.geom,0.001)
-	AND gl.habitat_type = 'LGN'
-	WHERE ggw."LULC" = 521 
+	SELECT DISTINCT ON (al.geom) al.geom, al.site_name FROM tempo.all_lagoons al 
+	WHERE al."LULC" = 521
 ),
 lag_with_comp AS (
   SELECT
@@ -3739,26 +4153,31 @@ lag_with_comp AS (
   FROM lagunes_selection ls
   JOIN refeel.tr_area_are ta
     ON ST_Intersects(ls.geom, ta.geom_polygon)
-  WHERE ta.are_lev_code = 'Complex'
+  WHERE ta.are_code IN('Northern Albania','Southern Albania')
 )
-SELECT --nextval('refeel.seq') AS are_id,
-	   NULL AS are_id,
+SELECT nextval('refeel.seq') AS are_id,
        are_id AS are_are_id,
-       site_name   AS are_code,
+       gen_lgr_code('LAL')   AS are_code,
        'Lagoons'     AS are_lev_code,
        NULL          AS are_ismarine,
+       site_name 	 AS are_name,
        geom          AS geom_polygon,
        NULL          AS geom_line
-FROM lag_with_comp;
+	FROM lag_with_comp;--10
 
 
 -- Turkey
-INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+DROP SEQUENCE IF EXISTS lgr_seq;
+CREATE SEQUENCE lgr_seq
+  START 1
+  INCREMENT 1
+  MINVALUE 1
+  OWNED BY NONE;	
+
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, are_name, geom_polygon, geom_line)
 WITH lagunes_selection AS (
-	SELECT DISTINCT ON (ggw.geom) ggw.geom, gl.site_name FROM tempo.tr_lagoons ggw 
-	LEFT JOIN tempo.gfcm_lagoon gl ON ST_DWithin(ggw.geom,gl.geom,0.001)
-	AND gl.habitat_type = 'LGN'
-	WHERE ggw."LULC" = 521 
+	SELECT DISTINCT ON (al.geom) al.geom, al.site_name FROM tempo.all_lagoons al 
+	WHERE al."LULC" = 521
 ),
 lag_with_comp AS (
   SELECT
@@ -3768,26 +4187,32 @@ lag_with_comp AS (
   FROM lagunes_selection ls
   JOIN refeel.tr_area_are ta
     ON ST_Intersects(ls.geom, ta.geom_polygon)
-  WHERE ta.are_lev_code = 'Complex'
+  WHERE ta.are_code IN('Western Black Sea Turkey','Eastern Black Sea Turkey','Northwestern Med Turkey',
+  						'Southwestern Med Turkey','Southeastern Med Turkey')
 )
-SELECT --nextval('refeel.seq') AS are_id,
-	   NULL AS are_id,
+SELECT nextval('refeel.seq') AS are_id,
        are_id AS are_are_id,
-       site_name   AS are_code,
+       gen_lgr_code('LTR')   AS are_code,
        'Lagoons'     AS are_lev_code,
        NULL          AS are_ismarine,
+       site_name 	 AS are_name,
        geom          AS geom_polygon,
        NULL          AS geom_line
-FROM lag_with_comp;
+	FROM lag_with_comp;--90
 
 
 -- Tunisia
-INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+DROP SEQUENCE IF EXISTS lgr_seq;
+CREATE SEQUENCE lgr_seq
+  START 1
+  INCREMENT 1
+  MINVALUE 1
+  OWNED BY NONE;
+	
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, are_name, geom_polygon, geom_line)
 WITH lagunes_selection AS (
-	SELECT DISTINCT ON (ggw.geom) ggw.geom, gl.site_name FROM tempo.tn_lagoons ggw 
-	LEFT JOIN tempo.gfcm_lagoon gl ON ST_DWithin(ggw.geom,gl.geom,0.001)
-	AND gl.habitat_type = 'LGN'
-	WHERE ggw."LULC" = 521 
+	SELECT DISTINCT ON (al.geom) al.geom, al.site_name FROM tempo.all_lagoons al 
+	WHERE al."LULC" = 521
 ),
 lag_with_comp AS (
   SELECT
@@ -3797,18 +4222,91 @@ lag_with_comp AS (
   FROM lagunes_selection ls
   JOIN refeel.tr_area_are ta
     ON ST_Intersects(ls.geom, ta.geom_polygon)
-  WHERE ta.are_lev_code = 'Complex'
+  WHERE ta.are_code IN('Northern Tunisia','Northeastern Tunisia','Southeastern Tunisia')
 )
-SELECT --nextval('refeel.seq') AS are_id,
-	   NULL AS are_id,
+SELECT nextval('refeel.seq') AS are_id,
        are_id AS are_are_id,
-       site_name   AS are_code,
+       gen_lgr_code('LTN')   AS are_code,
        'Lagoons'     AS are_lev_code,
        NULL          AS are_ismarine,
+       site_name 	 AS are_name,
        geom          AS geom_polygon,
        NULL          AS geom_line
-FROM lag_with_comp;
+	FROM lag_with_comp;--233
 
+	
+	
+-- Italy
+DROP SEQUENCE IF EXISTS lgr_seq;
+CREATE SEQUENCE lgr_seq
+  START 1
+  INCREMENT 1
+  MINVALUE 1
+  OWNED BY NONE;
+ 
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, are_name, geom_polygon, geom_line)
+WITH lagunes_selection AS (
+	SELECT DISTINCT ON (al.geom) al.geom, al.site_name FROM tempo.all_lagoons al 
+	WHERE al."LULC" = 521
+),
+lag_with_comp AS (
+  SELECT
+         ls.geom,
+         ls.site_name,
+         ta.are_id AS are_id
+  FROM lagunes_selection ls
+  JOIN refeel.tr_area_are ta
+    ON ST_Intersects(ls.geom, ta.geom_polygon)
+  WHERE ta.are_code IN('Northeast Italy','Central Italy','Foggia','Campania and Southern Latium','Lecce','Messina',
+  						'Siragusa and Ragusa','Gallura and Nuoro','East Cagliari','South Cagliari','Sulcis Inglesiente',
+  						'Oristano','Sassari')
+)
+SELECT nextval('refeel.seq') AS are_id,
+       are_id AS are_are_id,
+       gen_lgr_code('LIT')   AS are_code,
+       'Lagoons'     AS are_lev_code,
+       NULL          AS are_ismarine,
+       site_name 	 AS are_name,
+       geom          AS geom_polygon,
+       NULL          AS geom_line
+	FROM lag_with_comp;--238
+	
+	
+-- Spain
+DROP SEQUENCE IF EXISTS lgr_seq;
+CREATE SEQUENCE lgr_seq
+  START 1
+  INCREMENT 1
+  MINVALUE 1
+  OWNED BY NONE;
+ 
+INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, are_name, geom_polygon, geom_line)
+WITH lagunes_selection AS (
+	SELECT DISTINCT ON (al.geom) al.geom, al.site_name FROM tempo.all_lagoons al 
+	WHERE al."LULC" = 521
+),
+lag_with_comp AS (
+  SELECT
+         ls.geom,
+         ls.site_name,
+         ta.are_id AS are_id
+  FROM lagunes_selection ls
+  JOIN refeel.tr_area_are ta
+    ON ST_Intersects(ls.geom, ta.geom_polygon)
+  WHERE ta.are_code IN('Baix Emporda','Menorca','Ibiza','Valencia','Murcia and Alicante','Adra','Majorca')
+)
+SELECT nextval('refeel.seq') AS are_id,
+       are_id AS are_are_id,
+       gen_lgr_code('LSP')   AS are_code,
+       'Lagoons'     AS are_lev_code,
+       NULL          AS are_ismarine,
+       site_name 	 AS are_name,
+       geom          AS geom_polygon,
+       NULL          AS geom_line
+	FROM lag_with_comp;--26
+	
+	
+	
 ----------------- River -----------------
 
 INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
@@ -3849,7 +4347,7 @@ SELECT
     ST_Multi(geom),
     NULL
 FROM merged
-WHERE geom IS NOT NULL;
+WHERE geom IS NOT NULL;--6261
 
 --------------------------- River_section ---------------------------
 INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
@@ -3872,7 +4370,7 @@ river_segments AS (
     ON ST_Intersects(rs.geom, rl.geom_polygon)
     WHERE rs.ord_clas = 1
 )
-SELECT DISTINCT ON (are_code) * FROM river_segments;
+SELECT DISTINCT ON (are_code) * FROM river_segments;--75237
 
 
 --------------------------- Creating referential to match rivers to basin ---------------------------  
@@ -4037,7 +4535,11 @@ JOIN refnas.tr_area_are narea
 	ON ST_Intersects(riv.geom, narea.geom_polygon)
 WHERE narea.are_lev_code = 'River';--1946
 
-
+UPDATE refnas.tr_area_are tra
+SET are_name = riv.rivername
+FROM janis.rivers_db_graeme riv
+WHERE tra.are_lev_code = 'River'
+  AND ST_Intersects(riv.geom, tra.geom_polygon);
 
 
 -------------------------------- Country level --------------------------------
@@ -4374,4 +4876,14 @@ AND temp_missing_basins.are_id = 94;
   FROM merged
   WHERE geom IS NOT NULL
   AND main_bas NOT IN (SELECT are_code::integer FROM refbast.tr_area_are WHERE are_lev_code='River'); --7
+  
+  
+  
+  -- FIx rivers AU 2 Eastern Main Basin 
+  UPDATE refbast.tr_area_are a
+  SET geom_polygon = b.geom
+  FROM public.temp_missing_basins b
+  WHERE a.are_id = b.are_id
+  AND b.are_id = 94;
+ 
   */
