@@ -4535,7 +4535,11 @@ JOIN refnas.tr_area_are narea
 	ON ST_Intersects(riv.geom, narea.geom_polygon)
 WHERE narea.are_lev_code = 'River';--1946
 
-
+UPDATE refnas.tr_area_are tra
+SET are_name = riv.rivername
+FROM janis.rivers_db_graeme riv
+WHERE tra.are_lev_code = 'River'
+  AND ST_Intersects(riv.geom, tra.geom_polygon);
 
 
 -------------------------------- Country level --------------------------------
