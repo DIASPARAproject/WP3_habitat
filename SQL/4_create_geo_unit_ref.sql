@@ -4969,6 +4969,9 @@ INSERT INTO tempo.tr_area_are
 SELECT * FROM tempo.tr_area_are;
 
 -- Server
+
+
+/*
 UPDATE refeel.tr_area_are a
 SET geom_polygon = t.geom_polygon
 FROM tempo.tr_area_are t
@@ -4981,6 +4984,41 @@ WHERE are_lev_code = 'river_section';
 INSERT INTO refeel.tr_area_are
 SELECT * FROM tempo.tr_area_are
 WHERE are_id NOT IN (SELECT are_id FROM refeel.tr_area_are);--82418
+*/
+
+-- 1- drop the constraints (to mess up everything yeaaaaaah)
+
+ALTER TABLE refeel.tr_area_are DROP CONSTRAINT refeel.tr_area_are.tr_area_area_pkey;
+ALTER TABLE refeel.tr_area_are DROP CONSTRAINT  fk_are_are_id;
+
+-- match the lines (we should have the same code)
+
+INSERT INTO refeel.tr_area_are
+SELECT * FROM tempo.tr_area_are
+WHERE are_code NOT IN (SELECT are_code FROM refeel.tr_area_are);
+
+DELETE FROM refeel.tr_area_are
+WHERE are_code NOT IN  (SELECT are_code FROM tempo.tr_area_are);
+
+-- Code is OK (unique) and the same, use it to update things.
+
+UPDATE refeel.tr_area_are SET (are_id, are_are_id, are_lev_code, are_wkg_code
+are_ismarine,are_name,geom_polygon,geom_line) =
+(t.are_id, t.are_are_id, t.are_lev_code, t.are_wkg_code,
+t.are_ismarine, t.are_name, t.geom_polygon, t.geom_line) FROM tempo.tr_area_are t
+WHERE t.are_code = tr_area_are.are_code:
+
+
+-- On répare tout.
+
+ALTER TABLE refeel.tr_area_are ADD CONSTRAINT tr_area_area_pkey 
+  PRIMARY KEY (are_id);
+
+ALTER TABLE refeel.tr_area_are
+ADD CONSTRAINT fk_are_are_id FOREIGN KEY (are_are_id)
+  REFERENCES refeel.tr_area_are (are_id) ON DELETE CASCADE
+  ON UPDATE CASCADE;
+
 
 
 -- From local to server WGNAS
@@ -4994,6 +5032,8 @@ UPDATE refnas.tr_area_are a
 SET geom_polygon = t.geom_polygon
 FROM tempo.tr_area_are t
 WHERE a.are_code = t.are_code;--16311
+
+
 
 
   */
