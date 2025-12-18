@@ -117,3 +117,11 @@ pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostme
 pg_dump --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara --table refnas.tr_area_are -v | psql --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara
 
 pg_dump --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara --table refbast.tr_area_are -v | psql --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara
+
+# Dump lakes to server 26/11/25
+
+pg_dump --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara --table h_adriatic.lakes --table h_baltic22to26.lakes --table h_baltic27to29_32.lakes --table h_baltic30to31.lakes --table h_barents.lakes --table h_biscayiberian.lakes --table h_blacksea.lakes --table h_celtic.lakes --table h_iceland.lakes --table h_medcentral.lakes --table h_medeast.lakes --table h_medwest.lakes --table h_norwegian.lakes --table h_nseanorth.lakes --table h_nseasouth.lakes --table h_nseauk.lakes --table h_southatlantic.lakes --table h_southmedcentral.lakes --table h_southmedeast.lakes --table h_southmedwest.lakes --table h_svalbard.lakes -v | psql --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara
+
+
+# Dump refeel.tr_area_are to tempo.tr_area_are on server
+pg_dump --dbname=postgresql://${env:userlocal}:${env:passlocal}@${env:hostdiaspara}/diaspara -Fc -f tr_area_are.pgc  --table refeel.tr_area_are -v | (Get-Content tr_area_are.pgc) | ForEach-Object { $_ -replace "refeel\.tr_area_are", "tempo.tr_area_are" } | Set-Content tr_area_are.pgc | psql postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara -f tr_area_are.pgc

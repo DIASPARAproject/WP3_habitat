@@ -744,6 +744,23 @@ WHERE REGEXP_REPLACE(tableoid::regclass::text, '\.catchments$', '') IN (
 	'h_svalbard'
 ); --1 SERVER OK
 
+--UPDATE refnas.tr_area_are ta
+--SET geom_polygon = sub.geom
+--FROM (
+--    SELECT ST_Union(cn.shape) AS geom
+--    FROM tempo.catchments_nas cn
+--    WHERE REGEXP_REPLACE(
+--        cn.tableoid::regclass::text,
+--        '\.catchments$',
+--        ''
+--    ) IN (
+--        'h_barents', 'h_biscayiberian', 'h_celtic', 'h_iceland',
+--        'h_norwegian', 'h_nseanorth', 'h_nseasouth',
+--        'h_nseauk', 'h_svalbard'
+--    )
+--) sub
+--WHERE ta.are_code = 'NEAC inland';
+
 
 
 WITH unioned_polygons AS (
@@ -770,6 +787,16 @@ SET
 WHERE are_id = 1; --1  SERVER OK
 
 
+--UPDATE refnas.tr_area_are ta
+--SET geom_polygon = sub.geom
+--FROM (
+--    SELECT ST_Union(geom_polygon) AS geom
+--    FROM refnas.tr_area_are cn
+--    WHERE are_id IN (2,3)
+--    ) sub
+--WHERE ta.are_code = 'NEAC';
+
+
 INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
 WITH selected_level AS (
 	SELECT ST_Union(geom) AS geom
@@ -786,7 +813,7 @@ SELECT nextval('refnas.seq') AS are_id,
 	NULL AS geom_line
 	FROM selected_level; --1
 
-
+SELECT count (*) FROM refeel.tr_area_are where are_lev_code = 'Assessment_unit';
 
 ------------------------------- Country level -------------------------------
 DROP FUNCTION IF EXISTS insert_country_nas(country TEXT);
@@ -794,27 +821,23 @@ CREATE OR REPLACE FUNCTION insert_country_nas(country TEXT)
 RETURNS VOID AS 
 $$
 BEGIN
-  EXECUTE '
-    INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
-    WITH country_selection AS (
-      SELECT ST_MULTI(ST_Union(tbc.shape)) AS geom, rc.cou_iso3code
-      FROM tempo.catchments_nas tbc
-      JOIN ref.tr_country_cou rc 
-      ON ST_Intersects(tbc.shape, rc.geom)
-      WHERE rc.cou_iso3code = ''' || country || '''
-      GROUP BY rc.cou_iso3code
-    )
-    SELECT nextval(''refnas.seq'') AS are_id,
-           3 AS are_are_id,
-           ''' || country || ''' AS are_code,
-           ''Country'' AS are_lev_code,
-           false AS are_ismarine,
-           geom AS geom_polygon,
-		   NULL AS geom_line
-    FROM country_selection;
-  ';
+  INSERT INTO refnas.tr_area_are (
+    are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line
+  )
+  SELECT 
+    nextval('refnas.seq') AS are_id,
+    3 AS are_are_id,
+    cou_iso3code AS are_code,
+    'Country' AS are_lev_code,
+    false AS are_ismarine,
+    geom AS geom_polygon,
+    NULL AS geom_line
+  FROM ref.tr_country_cou
+  WHERE cou_iso3code = country;
 END;
 $$ LANGUAGE plpgsql;
+
+
 
 ALTER SEQUENCE refnas.seq RESTART WITH 5;
 SELECT insert_country_nas('FIN');
@@ -1557,20 +1580,18 @@ SELECT nextval('refeel.seq') AS are_id,
 	ST_Multi(ST_Union(geom)) AS geom_polygon,
 	NULL AS geom_line
 FROM ref.tr_fishingarea_fia tff 
-WHERE fia_division IN ('27.4.c','27.4.b','27.4.a','27.3.a');
+WHERE fia_division IN ('27.4.c','27.4.b','27.4.a','27.3.a','27.7.e','27.7.d');
 
-
-INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
-SELECT nextval('refeel.seq') AS are_id,
-	2 AS are_are_id,
-	'Marine English Channel' AS are_code,
-	'Assessment_unit' AS are_lev_code,
-	true AS are_ismarine,
-	ST_Multi(ST_Union(geom)) AS geom_polygon,
-	NULL AS geom_line
-FROM ref.tr_fishingarea_fia tff 
-WHERE fia_division IN ('27.7.e','27.7.d');
-
+--UPDATE refeel.tr_area_are ta
+--SET geom_polygon = sub.geom
+--FROM (
+--    SELECT ST_Multi(ST_Union(geom)) AS geom
+--    FROM ref.tr_fishingarea_fia
+--    WHERE fia_division IN (
+--        '27.4.c','27.4.b','27.4.a','27.3.a','27.7.e','27.7.d'
+--    )
+--) sub
+--WHERE ta.are_id = 157;
 
 
 INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
@@ -2736,7 +2757,7 @@ CREATE TABLE tempo.catch_echannel AS (
 	)
     SELECT DISTINCT ON (hce.shape) hce.*
     FROM tempo.hydro_riversegments_europe AS hre
-    JOIN tempo.regions_echannel rn
+    JOIN tempo.regions_echannel rn 
     ON hre.main_riv = rn.main_riv
    JOIN tempo.hydro_small_catchments_europe AS hce
    ON ST_Intersects(hce.shape,hre.geom)
@@ -4880,10 +4901,99 @@ AND temp_missing_basins.are_id = 94;
   
   
   -- FIx rivers AU 2 Eastern Main Basin 
-  UPDATE refbast.tr_area_are a
-  SET geom_polygon = b.geom
-  FROM public.temp_missing_basins b
-  WHERE a.are_id = b.are_id
-  AND b.are_id = 94;
- 
+  
+DELETE FROM refbast.area_temp WHERE are_id = 14;
+
+INSERT INTO refbast.area_temp (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
+WITH unit_selection AS (
+  SELECT trc.geom AS geom, trc.main_riv
+  FROM tempo.riversegments_baltic trc, janis.bast_assessment_units jau
+  WHERE ST_Intersects(trc.geom, jau.geom) AND jau."Ass_unit" = 2
+  --AND main_riv NOT IN (SELECT are_code::integer FROM refbast.tr_area_are WHERE are_lev_code IN ('River', 'River_section'))
+),
+retrieve_rivers AS(
+  SELECT DISTINCT trc.geom
+  FROM tempo.riversegments_baltic trc, unit_selection us
+  WHERE trc.main_riv IN (SELECT main_riv FROM unit_selection)
+),
+/*
+existing AS (SELECT geom_polygon FROM refbast.tr_area_are 
+WHERE are_id IN (13,14,16,17,18)), 
+catchment_baltic_remaining AS (
+   SELECT tbc.* FROM tempo.catchments_baltic tbc,
+   existing e
+   WHERE NOT st_intersects(e.geom_polygon, tbc.shape)
+)
+*/
+
+-- exclude Bothnian Bay 3
+retrieve_catchments AS (
+  SELECT DISTINCT ST_Union(tbc.shape) AS geom
+  FROM tempo.catchments_baltic tbc, 
+  retrieve_rivers rr--,
+  WHERE ST_Intersects(tbc.shape,rr.geom) 
+)
+
+SELECT 14 AS are_id,
+    3 AS are_are_id,
+    '2 Western Bothnian Bay' AS are_code,
+    'Assessment_unit' AS are_lev_code,
+    --are_wkg_code,
+    false AS is_marine,
+    ST_Union(geom) AS geom_polygon,
+    NULL AS geom_line
+    FROM retrieve_catchments;
+
+
+WITH subset AS (
+SELECT st_union(shape) AS shape FROM tempo.catchments_baltic WHERE main_bas IN (2120031160, 2120030870, 2120030910, 2120031130))
+UPDATE refbast.area_temp SET geom_polygon=ST_Union(geom_polygon, shape)
+FROM subset WHERE are_id=15;
+
+WITH subset AS (
+SELECT * FROM tempo.catchments_baltic WHERE main_bas IN (2120031160))
+UPDATE refbast.area_temp SET geom_polygon=ST_Union(geom_polygon, shape)
+FROM subset WHERE are_id=15;
+
+UPDATE refbast.tr_area_are SET geom_polygon = area_temp.geom_polygon 
+FROM refbast.area_temp
+WHERE area_temp.are_id = 14
+AND tr_area_are.are_id = 14;
+  
+
+-- From local to server WGEEL
+-- Local
+CREATE TABLE tempo.tr_area_are (LIKE refeel.tr_area_are);
+INSERT INTO tempo.tr_area_are
+	SELECT * FROM refeel.tr_area_are;--82710
+SELECT * FROM tempo.tr_area_are;
+
+-- Server
+UPDATE refeel.tr_area_are a
+SET geom_polygon = t.geom_polygon
+FROM tempo.tr_area_are t
+WHERE a.are_code = t.are_code;--288
+
+UPDATE tempo.tr_area_are
+SET are_lev_code = 'River_section'
+WHERE are_lev_code = 'river_section';
+
+INSERT INTO refeel.tr_area_are
+SELECT * FROM tempo.tr_area_are
+WHERE are_id NOT IN (SELECT are_id FROM refeel.tr_area_are);--82418
+
+
+-- From local to server WGNAS
+DROP TABLE IF EXISTS tempo.tr_area_are;
+CREATE TABLE tempo.tr_area_are (LIKE refnas.tr_area_are);
+INSERT INTO tempo.tr_area_are
+	SELECT * FROM refnas.tr_area_are;--16311
+
+-- Server
+UPDATE refnas.tr_area_are a
+SET geom_polygon = t.geom_polygon
+FROM tempo.tr_area_are t
+WHERE a.are_code = t.are_code;--16311
+
+
   */
