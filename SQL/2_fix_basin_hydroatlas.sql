@@ -3683,22 +3683,61 @@ ON ST_Intersects(ar.geom,lvp.geom);
 
 
 DROP FUNCTION IF EXISTS create_lakes_tables();
-CREATE OR REPLACE FUNCTION insert_river_areas_nas() 
+CREATE OR REPLACE FUNCTION create_lakes_tables() 
 RETURNS VOID AS $$
-DECLARE h_schema TEXT ARRAY DEFAULT ARRAY['h_adriatic','h_baltic22to26','h_baltic27to29_32','h_baltic30to31','h_barents','h_biscayiberian',
-					'h_blacksea','h_celtic','h_iceland','h_medcentral','h_medeast','h_medwest','h_norwegian',
-					'h_nseanorth','h_nseasouth','h_nseauk','h_southatlantic','h_southmedcentral','h_southmedeast',
-					'h_southmedwest','h_svalbard']
+DECLARE 
+    h_schema TEXT[] := ARRAY[
+		'h_adriatic','h_baltic22to26','h_baltic27to29_32','h_baltic30to31','h_barents','h_biscayiberian',
+		'h_blacksea','h_celtic','h_iceland','h_medcentral','h_medeast','h_medwest','h_norwegian',
+		'h_nseanorth','h_nseasouth','h_nseauk','h_southatlantic','h_southmedcentral','h_southmedeast',
+		'h_southmedwest','h_svalbard'
+	];
+    sch TEXT;
 BEGIN
-	CREATE TABLE h_schema.lakes;
-	INSERT INTO h_schema.lakes
-		SELECT DISTINCT ON (lvp.geom) lvp.*
-		FROM lakeatlas.lakeatlas_v10_pol lvp
-		JOIN h_schema.riversegments ar
-		ON ST_Intersects(ar.geom,lvp.geom);
+    -- temp table to stock already done geom
+    CREATE TEMP TABLE processed_lakes (
+        geom geometry
+    );
+
+    FOREACH sch IN ARRAY h_schema
+    LOOP
+        -- create schema.lakes if doesn't exists
+        EXECUTE format('
+            CREATE TABLE IF NOT EXISTS %I.lakes AS
+            SELECT *
+            FROM lakeatlas.lakeatlas_v10_pol
+            WHERE false;
+        ', sch);
+
+        -- Insert non processed geom
+        EXECUTE format('
+            INSERT INTO %I.lakes
+            SELECT DISTINCT ON (lvp.geom) lvp.*
+            FROM lakeatlas.lakeatlas_v10_pol lvp
+            JOIN %I.catchments ar
+                ON ST_Intersects(ar.shape, lvp.geom)
+            WHERE NOT EXISTS (
+                SELECT 1 FROM processed_lakes pl
+                WHERE ST_Equals(pl.geom, lvp.geom)
+            );
+        ', sch, sch);
+
+        -- when processed, add to temp table
+        EXECUTE format('
+            INSERT INTO processed_lakes
+            SELECT geom FROM %I.lakes
+            WHERE NOT EXISTS (
+                SELECT 1 FROM processed_lakes pl
+                WHERE ST_Equals(pl.geom, %I.lakes.geom)
+            );
+        ', sch, sch);
+
+    END LOOP;
 END;
 $$ LANGUAGE plpgsql;
 
+
+SELECT create_lakes_tables();
 
 --1:42:52 to run everything
 

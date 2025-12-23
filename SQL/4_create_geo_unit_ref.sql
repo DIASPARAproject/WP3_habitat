@@ -787,14 +787,14 @@ SET
 WHERE are_id = 1; --1  SERVER OK
 
 
---UPDATE refnas.tr_area_are ta
---SET geom_polygon = sub.geom
---FROM (
---    SELECT ST_Union(geom_polygon) AS geom
---    FROM refnas.tr_area_are cn
---    WHERE are_id IN (2,3)
---    ) sub
---WHERE ta.are_code = 'NEAC';
+UPDATE refnas.tr_area_are ta
+SET geom_polygon = sub.geom
+FROM (
+    SELECT ST_Union(geom_polygon) AS geom
+    FROM refnas.tr_area_are cn
+    WHERE are_id IN (2,3)
+    ) sub
+WHERE ta.are_code = 'NEAC';
 
 
 INSERT INTO refnas.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
@@ -4984,7 +4984,13 @@ WHERE are_lev_code = 'river_section';
 INSERT INTO refeel.tr_area_are
 SELECT * FROM tempo.tr_area_are
 WHERE are_id NOT IN (SELECT are_id FROM refeel.tr_area_are);--82418
+
+UPDATE refeel.tr_area_are a
+SET are_ismarine = FALSE
+WHERE are_lev_code = 'Complex';--74
 */
+
+
 
 -- 1- drop the constraints (to mess up everything yeaaaaaah)
 
@@ -5033,6 +5039,10 @@ SET geom_polygon = t.geom_polygon
 FROM tempo.tr_area_are t
 WHERE a.are_code = t.are_code;--16311
 
+UPDATE refnas.tr_area_are a
+SET geom_polygon = ST_Simplify(b.geom_polygon,0.3)
+FROM refnas.tr_area_are b
+WHERE a.are_code = 'NEAC';
 
 
 
