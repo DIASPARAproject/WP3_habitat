@@ -1591,7 +1591,10 @@ WHERE fia_division IN ('27.4.c','27.4.b','27.4.a','27.3.a','27.7.e','27.7.d');
 --        '27.4.c','27.4.b','27.4.a','27.3.a','27.7.e','27.7.d'
 --    )
 --) sub
---WHERE ta.are_id = 157;
+--WHERE ta.are_id = 5;
+
+--DELETE FROM refeel.tr_area_are
+--WHERE are_code = 'Marine English Channel';
 
 
 INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_ismarine, geom_polygon, geom_line)
@@ -2047,6 +2050,10 @@ FROM ranked;
 		   NULL AS geom_line
     FROM country_selection;
 
+--UPDATE refeel.tr_area_are
+--SET geom_polygon = sub.geom
+--FROM (SELECT geom FROM refwgeel.tr_country_cou WHERE cou_code = 'IL') sub
+--WHERE are_code = 'IL';
 
 ------------------------------- EMU -------------------------------
    
