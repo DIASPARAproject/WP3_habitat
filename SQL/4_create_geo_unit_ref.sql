@@ -4986,27 +4986,37 @@ SELECT * FROM tempo.tr_area_are
 WHERE are_id NOT IN (SELECT are_id FROM refeel.tr_area_are);--82418
 */
 
+ALTER TABLE tempo.tr_area_are RENAME TO tr_area_are_wgeel;
+SELECT * FROM tempo.tr_area_are_wgeel LIMIT 10
+
+UPDATE tempo.tr_area_are_wgeel
+SET are_lev_code = 'River_section'
+WHERE are_lev_code = 'river_section'; --75237
+
+
+
 -- 1- drop the constraints (to mess up everything yeaaaaaah)
 
-ALTER TABLE refeel.tr_area_are DROP CONSTRAINT refeel.tr_area_are.tr_area_area_pkey;
 ALTER TABLE refeel.tr_area_are DROP CONSTRAINT  fk_are_are_id;
+ALTER TABLE refeel.tr_area_are DROP CONSTRAINT tr_area_area_pkey;
+
 
 -- match the lines (we should have the same code)
 
-INSERT INTO refeel.tr_area_are
-SELECT * FROM tempo.tr_area_are
-WHERE are_code NOT IN (SELECT are_code FROM refeel.tr_area_are);
+INSERT INTO refeel.tr_area_are(are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine, are_name, geom_polygon, geom_line)
+SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine, are_name, geom_polygon, geom_line FROM tempo.tr_area_are_wgeel
+WHERE are_code NOT IN (SELECT are_code FROM refeel.tr_area_are); --4
 
 DELETE FROM refeel.tr_area_are
-WHERE are_code NOT IN  (SELECT are_code FROM tempo.tr_area_are);
+WHERE are_code NOT IN  (SELECT are_code FROM tempo.tr_area_are_wgeel); --4
 
 -- Code is OK (unique) and the same, use it to update things.
 
-UPDATE refeel.tr_area_are SET (are_id, are_are_id, are_lev_code, are_wkg_code
-are_ismarine,are_name,geom_polygon,geom_line) =
+UPDATE refeel.tr_area_are SET (are_id, are_are_id, are_lev_code, are_wkg_code,
+are_ismarine, are_name, geom_polygon, geom_line) =
 (t.are_id, t.are_are_id, t.are_lev_code, t.are_wkg_code,
-t.are_ismarine, t.are_name, t.geom_polygon, t.geom_line) FROM tempo.tr_area_are t
-WHERE t.are_code = tr_area_are.are_code:
+t.are_ismarine, t.are_name, t.geom_polygon, t.geom_line) FROM tempo.tr_area_are_wgeel t
+WHERE t.are_code = tr_area_are.are_code; --82710
 
 
 -- On répare tout.
