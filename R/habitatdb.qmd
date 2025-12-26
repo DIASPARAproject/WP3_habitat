@@ -71,29 +71,11 @@ load_library("janitor") # clean_names
 load_library("rnaturalearth")
 cred <- read_yaml("../credentials.yml")
 con_diaspara <- dbConnect(Postgres(), 
-                           dbname = cred$dbnamehydro,
-                           host = cred$host,
-                           port = cred$port,
-                           user = cred$userdiaspara,
-                           password = cred$passworddiaspara)
-con_diaspara_admin <- dbConnect(Postgres(), 
-                           dbname = cred$dbnamehydro,
-                           host = cred$host,
-                           port = cred$port,
-                           user = cred$usersalmo,
-                           password = cred$passwordsalmo)
-          
-#con_diaspara <- dbConnect(Postgres(), 
-#                           dbname = cred$dbnamehydro,
-#                           host = cred$hostmercure,
-#                           port = cred$port,
-#                           user = cred$usermercure,
-#                           password = cred$passwordmercure)                
-
-
-
-
-
+                          dbname = cred$dbnamediaspara,
+                          host = cred$hostdistant,
+                          port = cred$port,
+                          user = cred$userdiaspara,
+                          password = cred$passworddiaspara)             
 
 ```
 
