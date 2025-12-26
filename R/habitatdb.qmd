@@ -712,12 +712,10 @@ FROM filtered_basin;
 ## Creating a hierarchical structure for WGBAST
 
 Based on the map of catchments, a table is created
-to store the referential of habitat, both continental and marine,  
-specific to each working group : 
+to store the referential of habitat, both continental and marine, specific to each working group : 
 [hierarchical structure](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p7/midb.html#area-tr_area_are). 
 This area is meant to be a [referential tables](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p7/midb.html#referential-tables). 
-Several levels have been layed out (@fig-area_hierarchy_bast) depending on the needs 
-of each working group.
+Several levels have been layed out (@fig-area_hierarchy_bast) depending on the needs of each working group.
 
 ![The nested structure layed out in table tr_area_area, dotted box indicate that the level 
 is optional. This table represents the structure for refbast.](images/fig-area_hierarchy_bast.svg){#fig-area_hierarchy_bast}
@@ -1075,8 +1073,6 @@ DT::datatable(fstock_lvl,
 
 ```
 
-
-!
 
 #### Country {#sec-wgbast-country}
 
@@ -1497,7 +1493,7 @@ digraph {
 ```
 
 This structure is added into a table called `refnas.tr_area_are`.
-As for **WGBAST** hierarchy, the first layer of the structure is the global Stock level (@fig-fullnas1). It includes all catchments that have a river flowing into areas studied by WGNAS (@fig-inlandnas1) as well as all ICES Subareas corresponding to said areas of interest (@fig-stcknas1). 
+As for **WGBAST** hierarchy, the first layer of the structure is the global Stock level (@fig-fullnas1). It includes all catchments that have a river flowing into areas studied by WGNAS as well as all ICES Subareas corresponding to said areas of interest (@fig-stcknas1). 
 
 This query performs an update of the main **NEAC** area, corresponding to the record with the identifier (`are_id`) equal to `1`. It begins by merging (`ST_Union`) all geometries found in the `geom_polygon` column of the `refnas.tr_area_are` table, then creates a concave hull around this union using the `ST_ConcaveHull` function. The resulting geometry is filtered to retain only shapes with an area (`ST_Area`) greater than `1`, thereby eliminating artifacts or small fragments. The final `UPDATE` statement modifies the record with `are_id = 1`: the parent area reference (`are_are_id`) is set to `NULL`, the area code becomes simply `'NEAC'`, the level remains `'Stock'`, the marine status is left undefined (`are_ismarine = NULL`), the main geometry is replaced with the filtered shape converted into a multipolygon via `ST_Multi`, and the linear geometry (`geom_line`) is set to `NULL`.
 
@@ -1927,8 +1923,6 @@ DT::datatable(fstock_lvl,
 #knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
-
-![Map of the inland stock level.](images/fig-stock_inland_nas.png "A view of Europe with a polygon surrounding the inland stock hierarchical level"){#fig-inlandnas1}
 
 #### Assessment unit
 Following data from [WGNAS dataset](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p4/wgnas_salmoglob_description.html#area) and geometries from [Olmos et al. 2020](https://doi.org/10.1111/gcb.14913) we created inland assessment units around Europe and North America. 
@@ -3003,8 +2997,6 @@ END;
 $$;
 
 ```
-
-![Map of river network from EU-Hydro for the Baltic ICES subdivisions 30 & 31.](images/fig-euhydrobalt3031.png "A view of the Baltic river networks for ICES subdivisions 30 & 31"){#fig-eubalt3031}
 
 This query inserts new spatial units into the `refeel.tr_area_are` table, representing **Lagoons-level areas** derived from lagoon polygons in the `tempo.all_lagoons` table.
 
