@@ -1,43 +1,30 @@
 ---
-title: "diaspara habitat database creation script"
-subtitle: "DIASPARA WP3.1 working document"
-author: "Oliviéro Jules, Briand Cédric, Helminen Jani"
+title-block: false
 date: last-modified
 date-format: "DD-MM-YYYY"
-description: "Design an international database of habitat of migratory fish, version = build"
-title-block-banner: "images/diaspara_bandeau.png"
-title-block-banner-color: "white"
-format:
- html:
-  code-fold: true
-  code-tools: true
-  self-contained: true
-  theme: styles.scss
-  smooth-scroll: true
-  fontcolor: black
-  toc: true
-  toc-location: left
-  toc-title: Summary
-  toc-depth: 3
-execute: 
- keep-md: true
- crossref: true
+description: "Design an international database of habitat of migratory fish, version = final"
+format: 
+  pdf:
+    documentclass : report
+    include-in-header:  
+      - text: |
+            \usepackage{tikz}
+    include-before-body: habitatdbpdf_header.tex
+    toc: true
+    toc-depth: 3
+    toc-title: Contents
+    number-sections: true
+    colorlinks: true    
+    use-rsvg-convert: false
+    pdf-engine-opts: ["-shell-escape"]
 filters:
   - include-code-files
-reference-location: document
 bibliography: diaspara.bib
-include-after-body: "footer.html"
 ---
 
-
-# River network choice
-To create the habitat database we decided to use a single river network.
-The Hydrological data and maps based on SHuttle Elevation Derivatives at multiple Scales (**HydroSHEDS**).
-
-# HydroSHEDS
-## Data description
-**HydroSHEDS** is a global database providing high-resolution hydrographic data derived from NASA's Shuttle Radar Topography Mission (SRTM). Covering most land areas, it offers structured datasets for hydrological modeling, watershed analysis, and environmental research. The data is available at resolutions up to 3 arc-seconds (~90m) in raster (GeoTIFF) and vector (shapefiles,geodatabases) formats. 
-We use the geodatabases format. It includes river networks, watershed boundaries, drainage directions, and flow accumulation. Core products include **HydroBASINS** for watershed boundaries, **HydroRIVERS** for river networks, **HydroLAKES** for lakes and reservoirs, and **HydroATLAS**, which adds environmental attributes.
+Note : If you are reading this file as a pdf you should try to open it on the 
+diaspara website, as some code does not render well as a pdf :
+[habitat database](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p8/rep5.html)
 
 
 ```{r init}
@@ -90,16 +77,19 @@ con_diaspara <- dbConnect(Postgres(),
                           user = cred$usermercure,
                           password = cred$passwordmercure)                
 
-
-
-
-
-
 ```
 
 
-<details>
-<summary>Descriptions of riversegments variables</summary>
+# River network choice
+To create the habitat database we decided to use a single river network.
+The Hydrological data and maps based on SHuttle Elevation Derivatives at multiple Scales (**HydroSHEDS**).
+
+# HydroSHEDS
+## Data description
+**HydroSHEDS** is a global database providing high-resolution hydrographic data derived from NASA's Shuttle Radar Topography Mission (SRTM). Covering most land areas, it offers structured datasets for hydrological modeling, watershed analysis, and environmental research. The data is available at resolutions up to 3 arc-seconds (~90m) in raster (GeoTIFF) and vector (shapefiles,geodatabases) formats. 
+We use the geodatabases format. It includes river networks, watershed boundaries, drainage directions, and flow accumulation. Core products include **HydroBASINS** for watershed boundaries, **HydroRIVERS** for river networks, **HydroLAKES** for lakes and reservoirs, and **HydroATLAS**, which adds environmental attributes.
+
+**Descriptions of riversegments variables**
 
 ```{r}
 #| label: riversegment variables
@@ -124,19 +114,14 @@ knitr::kable(data_description) %>% kable_styling(bootstrap_options = c("striped"
 
 ```
 
-</details>
-
-
 
 ## Importing HydroSHEDS
 The first thing is to download and process the hydrological network from the **HydroSHEDS** website. To do so we create a PowerShell script that iterates through predefined file IDs (`$files`) and corresponding dataset types (`$atlas`), constructing download URLs and filenames dynamically. The script navigates to the source directory, downloads each dataset as a ZIP file using `curl`, extracts it to a specified output directory, and then connects to the PostgreSQL database (`diaspara`). Within the database, it ensures a clean schema by dropping any existing schema of the same name and recreating it for fresh data import.
 
-<details> 
-<summary>PowerShell code to download HydroSHEDS</summary>
 
+**PowerShell code to download HydroSHEDS**
 ```{.ps1 include="../bash/0_powershell_import_hydroatlas.ps1"}
 ```
-</details> 
 
 The same process is used to import a country layer and ICES divisions.
 ICES divisions are downloaded from the ICES website.
@@ -148,7 +133,6 @@ The `-f "PostgreSQL"` specifies the output format, while `-a_srs EPSG:4326` ensu
 
 <details>
 <summary>Code to import data to the database</summary>
-
 ```{.ps1 include="../bash/1_osgeo4w_ogr2ogr_gdb_postgres_hydroatlas.ps1"}
 ```
 </details>
@@ -163,6 +147,8 @@ Once the data downloaded we choose to to split the database into smaller groups 
 
 European hydrological data are extracted by first selecting large-scale catchments from `basinatlas.basinatlas_v10_lev03`, a layer representing coarse-resolution catchments at level 3. We filtered these catchments based on specific `hybas_id` values and stored them in a temporary table `tempo.hydro_large_catchments_europe`. Next, we refine our selection by extracting smaller, more detailed catchments from `basinatlas.basinatlas_v10_lev12`, which represents the most detailed level (level 12) of the HydroBASINS hierarchy. We ensure that these smaller catchments are spatially contained within the large catchments using `ST_Within`, saving them in `tempo.hydro_small_catchments_europe`, and add a GIST index on geometries to improve spatial query efficiency. Finally, we select river segments from `riveratlas.riveratlas_v10` that intersect with the chosen small catchments using `ST_Intersects`, storing the results in `tempo.hydro_riversegments_europe`.
 
+
+**Code to split data into smaller entities**
 ```{sql}
 #| label: smaller groups
 #| code-summary: Code to split data into smaller entities
@@ -214,6 +200,7 @@ The same method is used to select catchemnts and river segments in the Southern 
 
 Next we need to extract the most downstream river segments from `tempo.hydro_riversegments_europe`. To achieve this, we filter the table to retain only the river segments where `hyriv_id` is equal to `main_riv`, which correspond to the most downstream river segment of the river basin, ensuring that for each reach, only its most downstream segment is selected. The results are then stored in `tempo.riveratlas_mds`.
 
+**Code to select the most downstream river segments**
 ```{sql}
 #| label: most downstream rivers
 #| code-summary: Code to select the most downstream river segments
@@ -237,6 +224,7 @@ The same method has been used for Southern Mediterranean data.
 
 To identify the most downstream point for each river segment in `tempo.riveratlas_mds`, a new column, `downstream_point`, is added to store the point geometry (EPSG:4326). The last coordinate of each segment’s geometry was extracted using `ST_PointN` on the cut down line geometry from `ST_Dump`, ensuring that the most downstream point is correctly identified. The table is then updated by assigning the extracted downstream point to the corresponding `hyriv_id`. Finally, a GIST index on `downstream_point` is created to improve the efficiency of spatial queries.
 
+**Code to create the most downstream point**
 ```{sql}
 #| label: most downstream point
 #| code-summary: Code to create the most downstream point
@@ -276,6 +264,7 @@ ICES divisions are already used in the Baltic by WGBAST thus we have kept this s
 A new table, `tempo.ices_areas_3229_27`, is created by selecting river segments from `tempo.riveratlas_mds` where the `downstream_point` of each segment is within a specified distance (0.01 units) of the geometry in `ices_areas."ices_areas_20160601_cut_dense_3857"`. The selection is further restricted to areas with specific `subdivisio` values ('32', '29', '28', '27'). Additionally, to avoid duplicates, only segments whose `downstream_point` is not already present in `tempo.ices_areas_3031` are included.
 The same method is used for the whole Baltic area.
 
+**Code to retrieve most downstream points for 27, 28, 29 & 32 ICES areas**
 ```{sql}
 #| label: baltic downstream points
 #| code-summary: Code to retrieve most downstream points for 27, 28, 29 & 32 ICES areas
@@ -317,6 +306,7 @@ Similarly, we selecte downstream points that are within 0.04 degrees of the geom
 
 Finally, we combine both sets of points while applying an exclusion condition: any points from the ICES area selection that already exist in the ICES ecoregion selection are removed, ensuring no duplicates are kept, while maintaining priority for the ecoregion-based selection. The resulting dataset `tempo.ices_ecoregions_nsea_north` contains the most downstream points filtered by ICES ecoregions, ICES areas, and country boundaries for Norway and Sweden.
 
+**Code to retrieve most downstream points for the Northern part of the North Sea ICES ecoregion**
 ```{sql}
 #| label: northern north sea downstream points
 #| code-summary: Code to retrieve most downstream points for the Northern part of the North Sea ICES ecoregion
@@ -384,7 +374,7 @@ To avoid duplication, we compile a list of excluded points by gathering all down
 We then identify the missing points by filtering out any downstream points from our selection that match an already excluded point. This ensures that only new and unique points were retained.  
 Finally, we insert these missing points into `tempo.ices_areas_3229_27`.
 
-
+**Code to retrieve missing most downstream points for 27, 28, 29 & 32 ICES areas using a larger buffer**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -442,6 +432,7 @@ We then identify missing points by removing any downstream points from our selec
 
 Finally, we insert these missing points into `tempo.ices_ecoregions_nsea_north`, adding new downstream points that meet the criteria while avoiding duplicates.
 
+**Code to retrieve most downstream points for the Northern part of the North Sea ICES ecoregion with a larger buffer**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -512,12 +503,14 @@ SELECT mp.*
 FROM missing_points AS mp;
 ```
 
+
 ### Step 5 : Copy all riversegments corresponding to the previously selected riversegments using the main_riv identifier
 
 A new schema `h_baltic_3229_27` is created to store the selected river segments. Within this schema, we create the `riversegments` table by selecting distinct river segments from `tempo.hydro_riversegments_europe` that match the `main_riv` values found in `tempo.ices_areas_3229_27`. This ensures that only river segments associated with the relevant ICES subdivisions are included.  
 
 To optimize the table, we add a primary key constraint on `hyriv_id`, ensuring data integrity and uniqueness. Additionally, two indexes are created: a **B-tree** index on `main_riv` to improve lookup efficiency and a **GIST** index on `geom` to speed up spatial queries.
 
+**Code to retrieve all river segments corresponding to the selected area**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -549,6 +542,7 @@ We create the `h_baltic_26_22.catchments` table by selecting distinct small catc
 
 To improve performance and maintain data integrity, we add a primary key constraint on `hybas_id`. Additionally, we created a **B-tree** index on `main_bas` to optimize lookups and a **GIST** index on `shape` to enhance spatial query efficiency.
 
+**Code to retrieve all catchments corresponding to previously selected river segments**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -589,6 +583,7 @@ Next, we identify endorheic basins from `basinatlas.basinatlas_v10_lev12` that i
 
 Finally, we populate `h_biscay_iberian.riversegments` by selecting distinct river segments from `tempo.hydro_riversegments_europe` that intersected with the newly added catchments. To prevent duplicate entries, we exclude any river segments that already existed in `h_biscay_iberian.riversegments`.
 
+**Code to retrieve missing endorheic basins**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -664,7 +659,7 @@ We identify the last set of catchments by selecting distinct small catchments fr
 
 To avoid duplication, we exclude catchments that are already present in `h_baltic_3031.catchments`, `h_baltic_3229_27.catchments`, and `h_baltic_26_22.catchments`. The remaining catchments, which are not already accounted for, are inserted into `h_baltic_3229_27.catchments`.
 
-
+**Code to retrieve all missing islands and coastal catchments**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -717,8 +712,7 @@ to store the referential of habitat, both continental and marine, specific to ea
 This area is meant to be a [referential tables](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p7/midb.html#referential-tables). 
 Several levels have been layed out (@fig-area_hierarchy_bast) depending on the needs of each working group.
 
-![The nested structure layed out in table tr_area_area, dotted box indicate that the level 
-is optional. This table represents the structure for refbast.](images/fig-area_hierarchy_bast.svg){#fig-area_hierarchy_bast}
+![The nested structure layed out in table tr_area_area, dotted box indicate that the level is optional. This table represents the structure for refbast.](images/fig-area_hierarchy_bast.png){#fig-area_hierarchy_bast}
 
 The first layer of the structure is the global Stock level (@fig-fullstocklvl). 
 It includes all catchments that have a river flowing into the Baltic as well as all ICES subdivisions
@@ -726,6 +720,7 @@ It includes all catchments that have a river flowing into the Baltic as well as 
 
 The following query generates a generalized geometry by merging all geometries (inland and marine stock) in the `refbast.tr_area_are` table into a single shape. First, we apply `ST_Union` to dissolve boundaries between geometries, then extract their exterior rings and convert them into polygons. These are passed through `ST_ConcaveHull` to produce a simplified, more natural outer boundary that better follows the actual spatial extent. We then calculate the area of the resulting geometry and filter out any that are too small (area ≤ 1), ensuring only significant shapes are retained and getting rid of some small artifacts. The final geometry is wrapped as a `MultiPolygon` and used to update one entry in the table along with metadata fields. Its `are_id` is 1 since it is the highest level of the hierarchy, `are_are_id` is `NULL` because there is no higher level to reference to, its `are_lev_code` is `Stock` and `are_ismarine` is `NULL` as this level is both inland and marine.
 
+**Code to create the global stock level in the Baltic**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -757,6 +752,7 @@ SET
 WHERE are_id = 1;
 ```
 
+
 ```{r}
 #| label: refbast.tr_area_are Stock level
 #| echo: FALSE
@@ -769,17 +765,16 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refbast.tr_area_are
   WHERE are_id = 1;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
-
 
 ![Map of the full stock level.](images/bast_stock.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-fullstocklvl}
 
@@ -794,7 +789,7 @@ We insert a new spatial unit into the `refbast.tr_area_are` table to represent a
 To define its geometry, we aggregate spatial features from the `ref.tr_fishingarea_fia` table using `ST_Union`, specifically targeting geometries where the `fia_level` is `'Division'` and the `fia_division` corresponds to either `'27.3.b, c'` or `'27.3.d'`.
 A new unique identifier is generated using the `refbast.seq` sequence for `are_id`, and the new area is linked to the global Stock level through the `are_are_id` of `1`.
 
-
+**Code to create the marine stock level in the Baltic**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -828,14 +823,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refbast.tr_area_are
   WHERE are_id = ANY(ARRAY[1,2]);")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -845,7 +840,7 @@ We insert a new level into the `refbast.tr_area_are` table, corresponding to the
 The geometry is retrieved from the `ref.tr_fishingarea_fia` table by selecting records where the `fia_level` is `'Division'` and the `fia_division` is `'27.3.b, c'`. This geometry is directly passed into the insert statement without modification. 
 The sequence `refbast.seq` keeps generating a new `are_id`, and the area is assigned the parent `are_are_id` of `3`, linking it to the higher-level of structure (@fig-fullstocklvl).
 
-
+**Code to create the 27.3.b, c ICES division level in the Baltic**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -882,14 +877,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id = ANY(ARRAY[1,2,7010,7011])
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -900,7 +895,7 @@ DT::datatable(fstock_lvl,
 Two subdivision groupings exist in the historical database. They are dividing the Baltic into two main areas and are structured as followed : Gulf of Bothnia 300 (`27.3.d.30`,`27.3.d.31`) and Main Baltic 200 (`27.3.d.22`,`27.3.d.23`,`27.3.d.24`,`27.3.d.25`,`27.3.d.26`,`27.3.d.27`,`27.3.d.28`,`27.3.d.29`).
 Those two areas were created by grouping ICES subdivisions together.
 
-
+**Code to create the 300, Gulf of Bothnia subdivision grouping level**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -939,14 +934,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id = ANY(ARRAY[1,2,7011,7023,7024])
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -956,7 +951,7 @@ DT::datatable(fstock_lvl,
 
 The same method is applied here to create the subdivision level. To give more flexibility and reusability, the logic is encapsulated in a SQL function. The function `insert_fishing_subdivision` takes two parameters: a `subdiv` text representing the subdivision code suffix (e.g., `'d.31'`), and a parent area ID `p_are_are_id` to define the hierarchical relationship. The subdivision code (`are_code`) is dynamically built by concatenating `'27.3.'` with the input `subdiv`. Unlike the previous division-level query, this function filters geometries where `fia_level = 'Subdivision'`, and inserts the corresponding geometry into the `refbast.tr_area_are` table, while maintaining the correct parent-child linkage through `are_are_id`.
 
-
+**Code to create a function to add all ICES subdivisions level in the Baltic**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -1007,14 +1002,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id = ANY(ARRAY[1,2]) OR are_lev_code IN ('Division','Subdivision')
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1023,12 +1018,14 @@ DT::datatable(fstock_lvl,
 ![Map of the ICES subdivision level.](images/bast_sub.png "A view of of the Baltic with polygons surrounding each ICES subdivisions"){#fig-marinesubdivlvl}
 
 
+
 ### Continental level
 #### Stock
 
 The inland stock level includes all catchments through which rivers flow into the Baltic Sea (@fig-fullstocklvl).
 In the query above, we insert a new area into the `refbast.tr_area_are` table with the label `'Baltic inland'` at the `'Stock'` level. The geometry is built by merging (`ST_Union`) all relevant catchments from the `tempo.catchments_baltic` table that inherits from previously built catchment tables. These catchments are selected based on their source tables, identified by the suffixes `'h_baltic30to31'`, `'h_baltic22to26'`, and `'h_baltic27to29_32'`. The resulting geometry is tagged as non-marine (`are_ismarine = false`) to distinguish inland from marine stock areas.
 
+**Code to create the inland stock level in the Baltic**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -1062,14 +1059,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refbast.tr_area_are
   WHERE are_id = ANY(ARRAY[1,3]);")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1086,7 +1083,7 @@ The resulting area is non-marine (`are_ismarine = false`), and the function auto
  a unique `are_id` from the sequence, while setting the `are_are_id` to `3` to indicate that it
  is nested under the inland stock level (@fig-fullstocklvl).
 
-
+**Code to create the country level in the Baltic**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -1142,14 +1139,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id = ANY(ARRAY[1,3,4,5,6,7,8,9,10,11,12])
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1175,6 +1172,7 @@ multipolygon. The resulting area is labeled with the name of the assessment unit
 and marked as non-marine (`false`). This level references to `are_are_id` = 3
  (@fig-fullstocklvl). 
 
+**Code to create the WGBAST assessment unit 1 level in the Baltic**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -1225,14 +1223,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id = ANY(ARRAY[1,3]) OR are_lev_code = 'Assessment_unit' 
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1251,7 +1249,7 @@ Once the relevant river outlets are selected, we retrieve all associated river s
 These merged catchments are then inserted into the target table with their corresponding `main_bas` (that corresponds to the `main_riv` outlet id) used as the `are_code`, the `are_lev_code` is set to `River`, and the marine flag (`are_ismarine`) is set to false. This ensures that each outlet is associated with a unique, non-overlapping polygon representing its own river stretch.
 Finally, `are_are_id` is linked to the corresponding `are_id` of each assessment unit.
 
-
+**Code to create a function to retrieve main rivers within an assessment unit**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -1322,14 +1320,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id = ANY(ARRAY[1,3,13]) OR are_are_id = 13
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1344,7 +1342,7 @@ Next, river segments are selected from the `tempo.riversegments_baltic` table, f
 
 Each selected segment is then assigned a new `are_id` generated from the sequence `refbast.seq`, while the original `hyriv_id` from the river segment dataset is used as the `are_code`. The `are_lev_code` is set to `River_section`, and the marine flag (`are_ismarine`) is set to false. Only one unique entry per `hyriv_id` is inserted to avoid duplication, ensuring a clean and consistent representation of river sections within the database structure.
 
-
+**Code to create a function to retrieve main stretch of river section within each reach**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -1377,6 +1375,7 @@ SELECT DISTINCT ON (are_code) * FROM river_segments;
 
 
 ![Map of main stretch of rivers in the Baltic area.](images/bast_rs.png "A view of Scandinavia with lines representing main stretch of rivers that flow into the Baltic"){#fig-riverseclvl}
+
 
 ## Creating a hierarchical structure for WGNAS {#sec-wgnas-stock}
 The work done on the structural hierarchy for WGNAS follows what has been done for WGBAST, although there is some differences in the layers used. Futhermore, in parallel of the Assessment Unit level, a Fisheries level has been added (@fig-area_hierarchy_nas).
@@ -1493,11 +1492,13 @@ digraph {
          
 ```
 
+
 This structure is added into a table called `refnas.tr_area_are`.
 As for **WGBAST** hierarchy, the first layer of the structure is the global Stock level (@fig-fullnas1). It includes all catchments that have a river flowing into areas studied by WGNAS as well as all ICES Subareas corresponding to said areas of interest (@fig-stcknas1). 
 
 This query performs an update of the main **NEAC** area, corresponding to the record with the identifier (`are_id`) equal to `1`. It begins by merging (`ST_Union`) all geometries found in the `geom_polygon` column of the `refnas.tr_area_are` table, then creates a concave hull around this union using the `ST_ConcaveHull` function. The resulting geometry is filtered to retain only shapes with an area (`ST_Area`) greater than `1`, thereby eliminating artifacts or small fragments. The final `UPDATE` statement modifies the record with `are_id = 1`: the parent area reference (`are_are_id`) is set to `NULL`, the area code becomes simply `'NEAC'`, the level remains `'Stock'`, the marine status is left undefined (`are_ismarine = NULL`), the main geometry is replaced with the filtered shape converted into a multipolygon via `ST_Multi`, and the linear geometry (`geom_line`) is set to `NULL`.
 
+**Code to create the global stock level for WGNAS**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -1542,14 +1543,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id = 1
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1562,7 +1563,7 @@ The first query inserts a new record into the `refnas.tr_area_are` table represe
 
 Similarly, the second query inserts a marine area called **NAC marine** using the same structure. It also begins with a `WITH` clause named `selected_level`, which merges (`ST_Union(geom)`) geometries from the `ref.tr_fishingarea_fia` table, but this time focusing on area `'21'` at the `'Division'` level. The resulting unified geometry is used to populate the `geom_polygon` column. The area is assigned an auto-incremented `are_id`, no parent (`are_are_id = NULL`), an area code of `'NAC marine'`, a level `'Stock'`, is explicitly identified as marine (`are_ismarine = true`), and has no line geometry (`geom_line = NULL`).
 
-
+**Code to create the marine stock level for WGNAS**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -1614,14 +1615,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refnas.tr_area_are
   WHERE are_id = ANY(ARRAY[1,2,4]);")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-#knitr::kable(fstock_lvl, format = "html") %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1631,7 +1632,7 @@ DT::datatable(fstock_lvl,
 
 This query inserts new entries into the `refnas.tr_area_are` table, each representing a **ICES marine subarea** within the broader fishing area `'27'`. It pulls source data from the `ref.tr_fishingarea_fia` table, filtering for rows where the area level (`fia_level`) is `'Subarea'` and the main area code (`fia_area`) is `'27'`. For each matching row, it extracts the subarea code (`fia_code`) to use as the new area code (`are_code`), and inserts the associated geometry (`geom`) into the `geom_polygon` column. The `are_id` is generated dynamically using the `refnas.seq` sequence, each inserted row is assigned the parent area ID `1` (`are_are_id = 1`), the level is marked as `'Subarea'` (`are_lev_code`), and all entries are flagged as marine (`are_ismarine = true`). The linear geometry field (`geom_line`) is not used and is therefore set to `NULL`.
 
-
+**Code to create the ICES subarea level for WGNAS**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -1666,14 +1667,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id = ANY(ARRAY[1,2]) OR are_lev_code = 'Subarea'
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1687,7 +1688,7 @@ This query inserts new records into the `refnas.tr_area_are` table, each corresp
 
 For each resulting pair, a new `are_id` is generated using `nextval('refnas.seq')`, and the parent area (`are_are_id`) is set to the matching subarea's `are_id`. The division code (`div.fia_code`) becomes the new area code (`are_code`), the level is explicitly set to `'Division'` (`are_lev_code`), and all divisions are marked as marine (`are_ismarine = true`). The corresponding geometry (`div.geom`) is inserted into the `geom_polygon` column, while `geom_line` is left empty (`NULL`).
 
-
+**Code to create the ICES Division level for WGNAS**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -1726,14 +1727,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   OR are_lev_code = 'Division'
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1747,6 +1748,7 @@ This query inserts a new spatial unit into the `refnas.tr_area_are` table, repre
 
 The resulting unified geometry is inserted as a single polygon into the `geom_polygon` column. A new area ID (`are_id`) is automatically generated using `nextval('refnas.seq')`, the parent area is set to `2` (`are_are_id = 2`), the area code is labeled `'postsmolt 1'`, and the level is defined as `'Assessment_unit'` via `are_lev_code`. The area is explicitly marked as marine (`are_ismarine = true`), and no line geometry is provided (`geom_line = NULL`).
 
+**Code to create the assessment unit 1 level for WGNAS**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -1785,14 +1787,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   AND are_ismarine = 'true'
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1817,6 +1819,7 @@ We decided to create a Fisheries level following work done by [WGNAS](https://di
 This query updates an existing record in the `refnas.tr_area_are` table that represents the **"GLD fishery"**. It begins with a Common Table Expression (`WITH geomunion`) that selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table. It filters for entries where the area level (`fia_level`) is `'Division'` and the division code (`fia_division`) is one of the specified values: `'21.0.A'`, `'21.1.A'`, `'21.1.B'`, `'21.0.B'`, `'21.1.C'`, `'21.1.D'`, or `'21.1.E'`.
 The merged geometry (`geom`) is then used in an `UPDATE` to overwrite the `geom_polygon` field of the area whose code (`are_code`) is `'GLD fishery'`. Additionally, the parent area reference (`are_are_id`) is updated and set to `4`.
 
+**Code to create the fisheries GLD level for WGNAS**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -1848,14 +1851,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refnas.tr_area_are
   WHERE are_id = ANY(ARRAY[1,2,4]) OR are_lev_code = 'Fisheries';")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1875,10 +1878,12 @@ Question to WGNAS
 ::::
 :::
 
+
 ### Continental level
 #### Stock
 This query adds an entry named **NEAC inland** (@fig-fullstocklvl) to the same table. It retrieves data from `tempo.catchments_nas`, a temporary table containing inland hydrographic features (`shape`). It selects only the records whose source table (dynamically extracted via `tableoid`) belongs to a specific set of tables such as `'h_barents'`, `'h_biscayiberian'`, `'h_celtic'`, etc. The selected shapes are merged using `ST_Union(shape)` to create a single polygon representing the inland part of the NEAC area. As before, a new `are_id` is generated, `are_are_id` is set to `1`, `are_code` is `'NEAC inland'`, the level remains `'Stock'`, `are_ismarine` is set to `false`, the geometry is inserted into `geom_polygon`, and `geom_line` is again set to `NULL`.
 
+**Code to create the inland stock level for WGNAS**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -1914,14 +1919,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refnas.tr_area_are
   WHERE are_id = ANY(ARRAY[1,3]);")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1935,7 +1940,7 @@ It takes two input parameters:
 * `p_are_are_id` (`INT`): the new parent area ID to assign (`are_are_id`).
 Inside the function, an `UPDATE` is performed on `refnas.tr_area_are` (aliased as `tgt`), where the `are_code` matches `p_are_code` and the level code (`are_lev_code`) is `'Assessment_unit'`. It joins with the `janis.wgnas_su` table (aliased as `src`), using the `su_ab` field to find the matching spatial unit. For the matching row, it updates the `geom_polygon` column with the geometry from `janis.wgnas_su.geom`, and sets the parent reference (`are_are_id`) to the value passed in `p_are_are_id`.
 
-
+**Code to create the inland assessment unit level for WGNAS**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -1974,14 +1979,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   AND are_ismarine = FALSE
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -1997,6 +2002,7 @@ In the dataset, assassment units (AU) that seem to refer to countries are presen
 The function `insert_river_areas_nas` inserts new river catchment areas into the `refnas.tr_area_are` table based on spatial intersections between major river segments (`ord_clas = 1`) from `tempo.riversegments_nas` and a given assessment unit (`p_ass_unit`) from `janis.wgnas_su`. It first identifies the relevant rivers, selects all segments belonging to them, and then determines which catchments (`main_bas`) intersect those segments. These catchments are merged into single geometries per basin, filtered to exclude those already present in the target table or explicitly listed in `p_excluded_id`, and inserted as new entries with a generated ID, a parent reference (`p_are_are_id`), the basin code as `are_code`, the level set to `'River'`, `are_ismarine` marked `false`, and the merged geometry stored in `geom_polygon`.
 A similar function is created for North America as `insert_river_areas_nac`.
 
+**Code to create the River level for WGNAS**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -2070,14 +2076,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id = ANY(ARRAY[1,3,78]) OR are_are_id = 78
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -2087,7 +2093,7 @@ DT::datatable(fstock_lvl,
 #### River section
 This query inserts new **river section** features into the `refnas.tr_area_are` table by identifying river segments that spatially intersect previously defined river-level areas. It begins with a Common Table Expression (`WITH`) named `river_level`, which selects the `are_id` and `geom_polygon` of all entries in `refnas.tr_area_are` where the level code (`are_lev_code`) is `'River'`. Then, in the `river_segments` CTE, it selects distinct river segments (`hyriv_id`) from `tempo.riversegments_nas` where the order class (`ord_clas`) is `1`—indicating main rivers—and which intersect any of the river-level geometries. For each intersecting segment, it prepares a new row: assigning a unique ID (`nextval('refnas.seq')`), linking it to the intersected river area via `are_are_id`, using the river segment ID as `are_code`, setting the level to `'River_section'`, marking it as non-marine (`false`), leaving `geom_polygon` empty (`NULL`), and storing the actual river geometry in `geom_line`. Finally, only one entry per `are_code` is retained using `DISTINCT ON`, ensuring no duplicates are inserted. This operation adds detailed linear representations of rivers, hierarchically linked to their corresponding catchment areas.
 
-
+**Code to create the River_section level for WGNAS**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -2133,30 +2139,32 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id = ANY(ARRAY[1,3,78,3152]) OR are_are_id = 3152
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-#knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 ```
 
 
 #### Country
 To add the country level, the same work has been done as for WGBAST (@sec-wgbast-country).
 
+
 ## Creating a hierarchical structure for WGEEL
 
 The hierarchical structure for WGEEL is the same as for the two other working groups. The scope of the habitat database is larger for eel since the Mediterranean Sea is part of the assessed area. Lagoons and Complex of lagoons are also part of this structure (@fig-area_hierarchy_eel).
 
-![Hierarchical structure of WGEEL habitat database.](images/fig-area_hierarchy_wgeel.svg){#fig-area_hierarchy_eel}
+![Hierarchical structure of WGEEL habitat database.](images/fig-area_hierarchy_wgeel.png){#fig-area_hierarchy_eel}
 
 This structure will be added into a table named `refeel.tr_area_are`. The global Stock is still the first layer and is made of a fusion between the Marine and the Inland Stock (@fig-wgeel_stock). It includes all catchments flowing into areas studied by WGEEL as well as all ICES Divisions and GFCM Subdivisions (for the Mediterranean) corresponding to said areas of interest.
 
 To create this layer the same approach has been used as for WGNAS (@sec-wgnas-stock).
 
+**Code to create the Global Stock level for WGEEL**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -2219,6 +2227,7 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 
 To create the Marine Stock level, the same query has been used as for WGNAS (@sec-wgnas-mstock). The only difference being that the `Major` level of `ref.tr_fishingarea_fia` was used to select the Mediterranean as well as the Northern part of Europe (@fig-wgeel_stock).
 
+**Code to create the Marine Stock level for WGEEL**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -2255,14 +2264,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id IN (1,2)
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -2272,7 +2281,7 @@ This query inserts a new spatial unit into the `refeel.tr_area_are` table, repre
 
 The resulting unified geometry is converted to a multi-geometry (`ST_Multi`) and inserted as a single polygon into the `geom_polygon` column. A new area ID (`are_id`) is automatically generated using `nextval('refeel.seq')`, the parent area is set to `are_are_id = 2` (`Marine Stock`), the area code is labeled `'Marine Barents'`, and the level is defined as `'Assessment_unit'` via `are_lev_code`. The area is explicitly marked as marine (`are_ismarine = true`), and no line geometry is provided (`geom_line = NULL`).
  
-
+**Code to create the Marine Assessment unit level for WGEEL**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -2307,14 +2316,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id IN (1,2) OR are_lev_code = 'Assessment_unit' AND are_ismarine = true
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -2330,7 +2339,7 @@ It starts with a Common Table Expression (`WITH region_selection`) that selects 
 
 The unified geometry produced by the CTE is then inserted as a single polygon into the `geom_polygon` column. A new area identifier (`are_id`) is automatically generated using `nextval('refeel.seq')`, while the parent area is set to the originating assessment unit (`are_are_id = are_id` from the CTE). The area code is defined as `'Western Mediterranean'`, the spatial level is set to `'Regional'` via `are_lev_code`, and the area is explicitly marked as marine (`are_ismarine = true`). No line geometry is provided (`geom_line = NULL`).
 
-
+**Code to create the Marine Regional level for WGEEL**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -2375,14 +2384,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id IN (1,2) OR are_lev_code = 'Regional' AND are_ismarine = true
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -2398,7 +2407,7 @@ A second CTE (`ranked`) then selects, for each fishing division (`fia_division`)
 
 Finally, the selected records are inserted into the table with the division geometry stored in the `geom_polygon` column and no line geometry provided (`geom_line = NULL`).
 
-
+**Code to create the ICES Divison level for WGEEL**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -2452,14 +2461,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id IN (1,2,19) OR are_lev_code = 'Division' AND are_are_id = 19
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -2469,6 +2478,7 @@ DT::datatable(fstock_lvl,
 
 This level is created using the same query as for the Division level (@sec-wgeel-div). The only difference being that `fia_level = 'Subdivision'` is selected instead of `Division`.
 
+**Code to create the ICES Subdivision level for WGEEL**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -2521,14 +2531,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id IN (1,2,21) OR are_lev_code = 'Subdivision' AND are_are_id = 21
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -2544,6 +2554,8 @@ It selects and merges (`ST_Union`) the geometries (`shape`) from the `tempo.catc
 
 The resulting unified geometry is inserted as a single polygon into the `geom_polygon` column. A new area identifier (`are_id`) is automatically generated using `nextval('refeel.seq')`, the parent area is set to `1` (`are_are_id = 1`), the area code is defined as `'Inland'`, and the spatial level is set to `'Stock'` via `are_lev_code`. The area is explicitly marked as non-marine (`are_ismarine = false`), and no line geometry is provided (`geom_line = NULL`).
 
+
+**Code to create the Inland Stock level for WGEEL**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -2584,14 +2596,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id IN (1,3)
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -2603,7 +2615,7 @@ It selects and merges (`ST_Union`) the geometries (`shape`) from the `tempo.catc
 
 The resulting unified geometry is inserted as a single polygon into the `geom_polygon` column. A new area identifier (`are_id`) is automatically generated using `nextval('refeel.seq')`, the parent area is set to `3` (`are_are_id = 3`), the area code is defined as `'Inland Barents'`, and the spatial level is set to `'Assessment_unit'` via `are_lev_code`. The area is explicitly marked as non-marine (`are_ismarine = false`), and no line geometry is provided (`geom_line = NULL`).
 
-
+**Code to create the Inland Assessment unit level for WGEEL**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -2639,14 +2651,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id IN (1,3) OR are_lev_code = 'Assessment_unit' AND are_ismarine = false
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -2664,7 +2676,7 @@ To avoid duplicates, the `deduplicated` CTE keeps a single record per catchment 
 
 Finally, for each resulting river basin, a new area is inserted with a generated identifier (`are_id` via `nextval('refeel.seq')`), the parent area set to the associated assessment unit, and the basin code (`main_bas`) used as the area code. The spatial level is defined as `'River'`, the area is marked as non-marine (`are_ismarine = false`), and the merged geometry is stored as a multi-polygon (`ST_Multi`) in the `geom_polygon` column. No line geometry is provided (`geom_line = NULL`).
 
-
+**Code to create the River level for WGEEL**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -2728,14 +2740,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   ORDER BY are_id
   LIMIT 20;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -2752,7 +2764,7 @@ The second CTE (`river_segments`) identifies first-order river segments (`ord_cl
 
 Finally, the query inserts one record per river section by selecting distinct entries on `are_code`, ensuring that each river segment is represented only once in the table.
 
-
+**Code to create the River section level for WGEEL**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -2797,14 +2809,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id IN (1,3,1312) OR are_lev_code = 'River_section' AND are_are_id = 1312
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -2828,14 +2840,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id IN (1,3) OR are_lev_code = 'Regional' AND are_ismarine = false
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -2849,7 +2861,7 @@ It begins with a Common Table Expression (`WITH select_complex`) that selects ba
 
 The selected basin geometries are then merged into a single polygon using `ST_Union` and inserted into the `geom_polygon` column. A new area identifier (`are_id`) is automatically generated using `nextval('refeel.seq')`, the parent area is set to `295` (`are_are_id = 295`), the area code is defined as `'Campania and Southern Latium'`, and the spatial level is set to `'Complex'` via `are_lev_code`. The area is explicitly marked as non-marine (`are_ismarine = false`), and no line geometry is provided (`geom_line = NULL`).
 
-
+**Code to create the Complex level for WGEEL**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -2890,14 +2902,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id IN (1,2,295) OR are_lev_code = 'Complex' AND are_are_id = 295
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -2918,7 +2930,7 @@ The function then removes duplicate lagoons by deleting all rows that share the 
 
 Finally, the function updates the geometry of the remaining lagoons with the merged shapes from `tmp_merged`, ensuring that each site has a single, unified polygon. Throughout the process, `RAISE NOTICE` statements provide progress updates for each step.
 
-
+**Code to create an are_code for Lagoons without a name**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -3009,7 +3021,7 @@ A second CTE (`lag_with_comp`) associates each lagoon with its parent spatial un
 
 Finally, each lagoon is inserted as a new record in `refeel.tr_area_are` with the following properties: a new area ID generated from `nextval('refeel.seq')`, the parent area (`are_are_id`) set to the intersecting parent unit, a generated area code using `gen_lgr_code('LIT')`, the level set to `'Lagoons'` (`are_lev_code`), the lagoon’s site name (`are_name`), and the polygon geometry (`geom_polygon`). No marine flag or line geometry is provided (`are_ismarine = NULL`, `geom_line = NULL`).
 
-
+**Code to create the Lagoons level for WGEEL**
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
@@ -3066,14 +3078,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id IN (1,2,295,366) OR are_lev_code = 'Lagoons' AND are_are_id = 366
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -3097,14 +3109,14 @@ fstock_lvl <- dbGetQuery(con_diaspara,
   WHERE are_id IN (1,3) OR are_lev_code = 'EMU'
   ORDER BY are_id;")
 
-DT::datatable(fstock_lvl,
-                rownames = FALSE,
-  options = list(
-    pageLength = 7,        
-    scrollX= TRUE   
-  ))
+# DT::datatable(fstock_lvl,
+#                 rownames = FALSE,
+#   options = list(
+#     pageLength = 7,        
+#     scrollX= TRUE   
+#   ))
 
-# knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 

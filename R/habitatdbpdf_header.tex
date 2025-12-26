@@ -1,0 +1,34 @@
+% Custom Title Page
+\begin{titlepage}
+    \centering
+
+    % Top bandeau
+    \includegraphics[width=\textwidth]{images/diaspara_bandeau_2.png}\par
+    \vspace{2cm}
+
+    % Two-column layout: logo left, title block right
+    \begin{minipage}[t]{0.4\textwidth}
+         \centering
+          \vspace{2cm}
+         \includegraphics[width=\textwidth]{images/diaspara_logo.png}
+    \end{minipage}    
+    \hfill
+    \begin{minipage}[t]{0.55\textwidth}
+        \raggedright
+        {\Huge \bfseries DIASPARA WP3.1 HABITAT DATABASE final report\par}
+        {\Large version = pre-release, for review.\par}
+        \vspace{0.5cm}        
+        \vspace{1cm}
+        {\large Oliviéro Jules, Briand Cédric, Helminen Jani \par}
+        \vspace{1cm}
+        {\large \today \par}
+    \end{minipage}
+    \vfill
+    % Bottom bandeau
+    \begin{tikzpicture}[remember picture,overlay]
+        \node[anchor=south,yshift=0.5cm] at (current page.south) {
+            \includegraphics[width=0.7\paperwidth]{images/diaspara_participants_logo_withEULogo.png}
+        \par
+        };
+    \end{tikzpicture}
+\end{titlepage}% Custom Title Page
