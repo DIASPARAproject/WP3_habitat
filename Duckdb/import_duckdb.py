@@ -14,31 +14,31 @@ pg_url = f"postgresql://{pg_user}:{pg_password}@{pg_host}:5432/{pg_db}"
 engine = sqlalchemy.create_engine(pg_url)
 
 schemas = {
-    # "h_adriatic": ["catchments", "riversegments","lakes"],
-    # "h_baltic22to26": ["catchments", "riversegments","lakes"],
-    # "h_baltic30to31": ["catchments", "riversegments","lakes"],
-    # "h_baltic27to29_32": ["catchments", "riversegments","lakes"],
-    # "h_barents": ["catchments", "riversegments","lakes"],
-    # "h_biscayiberian": ["catchments", "riversegments","lakes"],
-    # "h_blacksea": ["catchments", "riversegments","lakes"],
-    # "h_celtic": ["catchments", "riversegments","lakes"],
-    # "h_iceland": ["catchments", "riversegments","lakes"],
-    # "h_medcentral": ["catchments", "riversegments","lakes"],
-    # "h_medeast": ["catchments", "riversegments","lakes"],
-    # "h_medwest": ["catchments", "riversegments","lakes"],
-    # "h_norwegian": ["catchments", "riversegments","lakes"],
-    # "h_nseanorth": ["catchments", "riversegments","lakes"],
-    # "h_nseasouth": ["catchments", "riversegments","lakes"],
-    # "h_nseauk": ["catchments", "riversegments","lakes"],
-    # "h_southatlantic": ["catchments", "riversegments","lakes"],
-    # "h_southmedcentral": ["catchments", "riversegments","lakes"],
-    # "h_southmedeast": ["catchments", "riversegments","lakes"],
-    # "h_southmedwest": ["catchments", "riversegments","lakes"],
-    # "h_svalbard": ["catchments", "riversegments","lakes"],
-    "ref": ["tr_habitatlevel_lev", "tr_icworkinggroup_wkg"],
-    "refnas": ["tr_area_are", "tr_rivernames_riv"],
-    "refbast": ["tr_area_are", "tr_rivernames_riv", "landings_wbast_river_names"],
-    "refeel": ["tr_area_are"]
+    "h_adriatic": ["catchments", "riversegments","lakes"],
+    "h_baltic22to26": ["catchments", "riversegments","lakes"],
+    "h_baltic30to31": ["catchments", "riversegments","lakes"],
+    "h_baltic27to29_32": ["catchments", "riversegments","lakes"],
+    "h_barents": ["catchments", "riversegments","lakes"],
+    "h_biscayiberian": ["catchments", "riversegments","lakes"],
+    "h_blacksea": ["catchments", "riversegments","lakes"],
+    "h_celtic": ["catchments", "riversegments","lakes"],
+    "h_iceland": ["catchments", "riversegments","lakes"],
+    "h_medcentral": ["catchments", "riversegments","lakes"],
+    "h_medeast": ["catchments", "riversegments","lakes"],
+    "h_medwest": ["catchments", "riversegments","lakes"],
+    "h_norwegian": ["catchments", "riversegments","lakes"],
+    "h_nseanorth": ["catchments", "riversegments","lakes"],
+    "h_nseasouth": ["catchments", "riversegments","lakes"],
+    "h_nseauk": ["catchments", "riversegments","lakes"],
+    "h_southatlantic": ["catchments", "riversegments","lakes"],
+    "h_southmedcentral": ["catchments", "riversegments","lakes"],
+    "h_southmedeast": ["catchments", "riversegments","lakes"],
+    "h_southmedwest": ["catchments", "riversegments","lakes"],
+    "h_svalbard": ["catchments", "riversegments","lakes"],
+    #"ref": ["tr_habitatlevel_lev", "tr_icworkinggroup_wkg"],
+    #"refnas": ["tr_area_are", "tr_rivernames_riv"],
+    #"refbast": ["tr_area_are", "tr_rivernames_riv", "landings_wbast_river_names"],
+    #"refeel": ["tr_area_are"]
 }
 
 def convert_uuids_to_str(df):
@@ -62,6 +62,13 @@ for schema, tables in schemas.items():
                 print(f"Exported {schema}.{table} with geometry (shape)")
 
             elif table == "riversegments":
+                gdf = gpd.read_postgis(f"SELECT * FROM {full_table}", engine, geom_col="geom")
+                filename = f"{schema}_{table}.parquet"
+                gdf.to_parquet(filename, index=False)
+                parquet_files.append(filename)
+                print(f"Exported {schema}.{table} with geometry (geom)")
+
+            elif table == "lakes":
                 gdf = gpd.read_postgis(f"SELECT * FROM {full_table}", engine, geom_col="geom")
                 filename = f"{schema}_{table}.parquet"
                 gdf.to_parquet(filename, index=False)
