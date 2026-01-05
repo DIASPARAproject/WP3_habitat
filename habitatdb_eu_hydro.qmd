@@ -1,0 +1,395 @@
+---
+title: "diaspara habitat database creation script"
+subtitle: "DIASPARA WP3.1 working document- EU hydro"
+author: "Oliviéro Jules, Briand Cédric, Helminen Jani"
+date: last-modified
+date-format: "DD-MM-YYYY"
+description: "Design an international database of habitat of migratory fish, version = build"
+title-block-banner: "images/diaspara_bandeau.png"
+title-block-banner-color: "white"
+format:
+ html:
+  code-fold: true
+  code-tools: true
+  self-contained: true
+  theme: styles.scss
+  smooth-scroll: true
+  fontcolor: black
+  toc: true
+  toc-location: left
+  toc-title: Summary
+  toc-depth: 3
+execute: 
+ keep-md: true
+ crossref: true
+filters:
+  - include-code-files
+reference-location: document
+bibliography: diaspara.bib
+include-after-body: "footer.html"
+---
+
+
+# Choice of 2 river networks
+To create the habitat database we decided to use two river networks in parallel.
+The Hydrological data and maps based on SHuttle Elevation Derivatives at multiple Scales (**HydroSHEDS**) and **EU-Hydro** from Copernicus (European Union's Earth Observation Programme).
+
+**EU-Hydro**, being an European only dataset, will not include the Southern Mediterranean.
+
+
+# EU-Hydro
+## Data description
+**EU-Hydro** is a pan-European hydrographic dataset developed under the Copernicus Land Monitoring Service. It provides a detailed and consistent interpretation of surface water bodies and river networks across 39 European Environment Agency (EEA) countries. Based on high-resolution remote sensing imagery from 2006, 2009, and 2012, EU-Hydro includes a photo-interpreted river network, inland water bodies, canals, and ditches. From version 1.2, it integrates river segments derived from the EU Digital Elevation Model (EU-DEM), improving the completeness and accuracy of the dataset. It serves as a key resource for environmental monitoring, water resource management, and hydrological studies at the European level.
+
+```{r}
+#| label: river segment variables
+#| code-summary: Description of river segments variables
+#| echo: TRUE
+#| warning: FALSE
+#| message: FALSE
+#| tbl-cap: Variables description
+
+
+data_description <- dbGetQuery(con_diaspara, 
+  "SELECT cols.column_name AS var_name, 
+        pgd.description AS description
+  FROM information_schema.columns cols
+  LEFT JOIN pg_catalog.pg_statio_all_tables st 
+      ON st.schemaname = cols.table_schema AND st.relname = cols.table_name
+  LEFT JOIN pg_catalog.pg_description pgd 
+      ON pgd.objoid = st.relid AND pgd.objsubid = cols.ordinal_position
+  WHERE cols.table_schema = 'e_gota'
+  AND cols.table_name = 'euhydro_gota_v013 — River_Net_l';")
+
+knitr::kable(data_description) %>% kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+We will also be using a Nodes layer that contains informations on the source, the outlet and the branching tributaries of rivers.
+
+## Importing EU-Hydro
+To be decided. We cannot make it work at the moment
+
+## Building the database
+The EU-Hydro data is split into several schemas following main basins. River segments, canals, ditches and inland waters are divided into several tables. The first work will be done on river segments. Other data will be added later on.
+
+![Map of river network from EU-Hydro split into basins.](images/fig-euhydrobase.png "A view of Europe river networks"){#fig-eubase}
+
+The river network will be devided following the same idea as for HydroSHEDS'. ICES Areas and Ecoregions will be used as a base layer to create different schemas.
+
+### Step 1 : Restructuring and fixing issues
+To be able to properly integrate data to our database, some changes have been made on the data. To make those changes, functions have been created.
+
+Firstly, the SRID and geometry had to be switched from 3035 to 4326 and from 3D to 2D (the z-dimension of the geometry being always equals to 0).
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to create a function that changes srid and geometry
+#| warning: FALSE
+#| message: FALSE
+
+DROP FUNCTION IF EXISTS altergeometry(basin TEXT);
+CREATE OR REPLACE FUNCTION altergeometry(basin TEXT)
+RETURNS TABLE (table_name TEXT, srid INTEGER) AS
+$$
+DECLARE 
+    schema_name TEXT := quote_ident('e_' || basin);
+    river_table TEXT := quote_ident('euhydro_' || basin || '_v013 — River_Net_l');
+    nodes_table TEXT := quote_ident('euhydro_' || basin || '_v013 — Nodes');
+    sql_query TEXT;
+BEGIN 
+    sql_query := 
+        'ALTER TABLE ' || schema_name || '.' || river_table || 
+        ' ALTER COLUMN geom TYPE geometry(MultiLineString, 4326) 
+          USING ST_Transform(ST_Force2D(geom), 4326);';
+    EXECUTE sql_query;
+    sql_query := 
+        'ALTER TABLE ' || schema_name || '.' || nodes_table || 
+        ' ALTER COLUMN geom TYPE geometry(Point, 4326) 
+          USING ST_Transform(ST_Force2D(geom), 4326);';
+    EXECUTE sql_query;
+
+	RETURN QUERY EXECUTE 
+        'SELECT ' || quote_literal(river_table) || ' AS table_name, srid 
+         FROM (SELECT DISTINCT ST_SRID(geom) AS srid FROM ' || schema_name || '.' || river_table || ') sub
+         UNION ALL 
+         SELECT ' || quote_literal(nodes_table) || ' AS table_name, srid 
+         FROM (SELECT DISTINCT ST_SRID(geom) AS srid FROM ' || schema_name || '.' || nodes_table || ') sub;';
+END;
+$$ LANGUAGE plpgsql;
+```
+
+Then, a function to restructure the column order of the river segment tables was created to harmonise tables' structure between different basins.
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to restructure columns order
+#| warning: FALSE
+#| message: FALSE
+
+DROP FUNCTION IF EXISTS restructurecolumns(basin TEXT);
+CREATE OR REPLACE FUNCTION restructurecolumns(basin TEXT)
+RETURNS VOID AS $$
+DECLARE 
+    schema_name TEXT := quote_ident('e_' || basin);
+    source_table TEXT := quote_ident('euhydro_' || basin || '_v013 — River_Net_l');
+    target_table TEXT := quote_ident('riverseg');
+    sql_query TEXT;
+BEGIN
+    sql_query := 
+        'CREATE TABLE ' || schema_name || '.' || target_table || ' AS SELECT ' ||
+        '"OBJECTID",
+         geom,
+         "DFDD",
+         "RN_I_ID",
+         "REX",
+         "HYP",
+         "LOC",
+         "FUN",
+         "NVS",
+         "LENGTH",
+         "TR",
+         "LONGPATH",
+         "CUM_LEN",
+         "PENTE",
+         "CGNELIN",
+         "BEGLIFEVER",
+         "ENDLIFEVER",
+         "UPDAT_BY",
+         "UPDAT_WHEN",
+         "ERM_ID",
+         "MC",
+         "MONOT_Z",
+         "LENGTH_GEO",
+         "INSPIRE_ID",
+         "thematicId",
+         "OBJECT_ID",
+         "TNODE",
+         "STRAHLER",
+         "nameTxtInt",
+         "nameText",
+         "NEXTUPID",
+         "NEXTDOWNID",
+         "FNODE",
+         "CatchID",
+         "Shape_Length",
+         "PFAFSTETTER" ' ||
+        ' FROM ' || schema_name || '.' || source_table;
+
+    EXECUTE sql_query;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+Finally, indexes and unicity constraints are added to variables that will be used to divide the dataset as well as river segments ids.
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to retrieve all missing islands and coastal catchments
+#| warning: FALSE
+#| message: FALSE
+
+DROP FUNCTION IF EXISTS create_indexes_and_constraint(basin TEXT);
+CREATE OR REPLACE FUNCTION create_indexes_and_constraint(basin TEXT)
+RETURNS VOID AS
+$$
+DECLARE 
+    schema_name TEXT := quote_ident('e_' || basin);
+    river_table TEXT := quote_ident('euhydro_' || basin || '_v013 — River_Net_l');
+    sql_query TEXT;
+BEGIN 
+    sql_query := 
+        'CREATE INDEX IF NOT EXISTS idx_t_node_' || basin || '_riv 
+         ON ' || schema_name || '.' || river_table || ' USING btree("TNODE");';
+    EXECUTE sql_query;
+    sql_query := 
+        'CREATE INDEX IF NOT EXISTS idx_next_did_' || basin || '_riv 
+         ON ' || schema_name || '.' || river_table || ' USING btree("NEXTDOWNID");';
+    EXECUTE sql_query;
+    sql_query := 
+        'CREATE INDEX IF NOT EXISTS idx_obj_id_' || basin || ' 
+         ON ' || schema_name || '.' || river_table || ' USING btree("OBJECT_ID");';
+    EXECUTE sql_query;
+    sql_query := 
+        'ALTER TABLE ' || schema_name || '.' || river_table || ' 
+         ADD CONSTRAINT c_uk_object_id_' || basin || ' UNIQUE("OBJECT_ID");';
+    EXECUTE sql_query;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+
+### Step 2: Selecting outlets
+We create the table `tempo.selected_tnodes_balt_3031` to identify river outlet nodes near ICES marine subdivisions 31 and 30 in the Baltic region. First, in the `select_outlet` CTE, we extract nodes where `"HYDRONODCT" = 'Outlet'` from the Neva, Angerman, Kemi, and Gota river networks. Then, in `ices_nodes`, we filter these outlet nodes by checking if they are within `ST_DWithin(sr.geom, ia.geom, 0.04)` of ICES marine areas. Finally, in `select_riv`, we retrieve river segments from `"euhydro_*_v013 — River_Net_l"` tables that are connected to the selected outlet nodes via `"TNODE" = ir."OBJECT_ID"`, ensuring only distinct entries are included in the final table.
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to retrieve river segments outlets for basins within range of ICES subdivisions 30 and 31
+#| warning: FALSE
+#| message: FALSE
+
+DROP TABLE IF EXISTS tempo.selected_tnodes_balt_3031;
+CREATE TABLE tempo.selected_tnodes_balt_3031 AS
+WITH select_outlet AS (
+    SELECT * FROM e_neva."euhydro_neva_v013 — Nodes" WHERE "HYDRONODCT" = 'Outlet'
+    UNION ALL
+    SELECT * FROM e_angerman."euhydro_angerman_v013 — Nodes" WHERE "HYDRONODCT" = 'Outlet'
+    UNION ALL
+    SELECT * FROM e_kemi."euhydro_kemi_v013 — Nodes" WHERE "HYDRONODCT" = 'Outlet'
+    UNION ALL
+    SELECT * FROM e_gota."euhydro_gota_v013 — Nodes" WHERE "HYDRONODCT" = 'Outlet'
+),
+ices_nodes AS (
+    SELECT sr.*
+    FROM select_outlet sr
+    JOIN ices_areas.ices_areas_20160601_cut_dense_3857 AS ia
+    ON ST_DWithin(sr.geom, ia.geom, 0.04)
+    WHERE ia.subdivisio = ANY(ARRAY['31','30'])
+),
+select_riv AS (
+    SELECT enr.*
+    FROM e_neva."euhydro_neva_v013 — River_Net_l" enr
+    JOIN ices_nodes ir ON enr."TNODE" = ir."OBJECT_ID"
+    UNION ALL
+    SELECT enr.*
+    FROM e_angerman."euhydro_angerman_v013 — River_Net_l" enr
+    JOIN ices_nodes ir ON enr."TNODE" = ir."OBJECT_ID"
+    UNION ALL
+    SELECT enr.*
+    FROM e_kemi."euhydro_kemi_v013 — River_Net_l" enr
+    JOIN ices_nodes ir ON enr."TNODE" = ir."OBJECT_ID"
+    UNION ALL
+    SELECT enr.*
+    FROM e_gota."euhydro_gota_v013 — River_Net_l" enr
+    JOIN ices_nodes ir ON enr."TNODE" = ir."OBJECT_ID"
+)
+SELECT DISTINCT ON ("OBJECT_ID") "OBJECT_ID" AS seaoutlet, select_riv.* FROM select_riv;
+```
+
+### Step 3: Merging basins
+To facilitate the next query, all basins touching the selected ICES areas have been merged into a temporary table. While doing to the name of the basin is added to the table.
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to merge all riversegments into one table
+#| warning: FALSE
+#| message: FALSE
+
+DROP TABLE IF EXISTS tempo.e_balt_3031;
+CREATE TABLE tempo.e_balt_3031 AS(
+	SELECT *, 'neva' AS basin FROM e_neva."euhydro_neva_v013 — River_Net_l"
+	    UNION ALL
+	    SELECT *, 'angerman' AS basin FROM e_angerman."euhydro_angerman_v013 — River_Net_l"
+	    UNION ALL
+	    SELECT *, 'kemi' AS basin FROM e_kemi."euhydro_kemi_v013 — River_Net_l"
+	    UNION ALL
+	    SELECT *, 'gota' AS basin FROM e_gota."euhydro_gota_v013 — River_Net_l"
+);
+```
+
+
+![Map of river network from EU-Hydro and selected outlets in the Baltic for ICES subdivisions 30 & 31.](images/fig-euhydrooutlets.png "A view of selected outlets for Baltic subdivisions 30 & 31"){#fig-euoutlets}
+
+### Step 4: Retrieving river segments
+To facilitate the workflow we created a function to retrieve all river segments linked to the outlet segments. This function also modify all variables names to harmonize them with the rest of the database.
+
+We create the function `makesegments(schema text, outlet_table text, segment_table text)` to recursively trace river segments upstream from specified outlet nodes. In the returned variables we decided to keep the `"OBJECT_ID"` of each outlet's river segment as `seaoutlet`. Inside the function, we define the recursive CTE `river_tree`, which starts by selecting river segments where `"TNODE"` matches `"TNODE"` from the outlet table. It then iteratively joins upstream segments using `"NEXTDOWNID"`, tracking depth and preventing cycles using `is_cycle` and `path`. Finally, we return all river segments along with their associated `seaoutlet`.
+
+```{sql}
+#| eval: FALSE
+#| echo: TRUE
+#| code-summary: Code to retrieve all river segments linked to preselected outlets
+#| warning: FALSE
+#| message: FALSE
+
+DROP FUNCTION IF EXISTS makesegments(schema text, outlet_table text, segment_table text);
+CREATE FUNCTION makesegments(schema text, outlet_table text, segment_table text)
+RETURNS TABLE(
+    objectid bigint,
+    geom public.geometry,
+    dfdd character varying(5),
+    rn_i_id character varying(256),
+    rex character varying(256),
+    hyp integer,
+    loc integer,
+    fun integer,
+    nvs integer,
+    length double precision,
+    tr character varying(10),
+    longpath double precision,
+    cum_len double precision,
+    pente double precision,
+    cgnelin integer,
+    beglifever timestamp without time zone,
+    endlifever timestamp without time zone,
+    updat_by character varying(15),
+    updat_when timestamp without time zone,
+    erm_id character varying(256),
+    mc integer,
+    monot_z integer,
+    length_geo double precision,
+    inspire_id character varying(256),
+    thematicid character varying(42),
+    object_id character varying(255),
+    tnode character varying(255),
+    strahler double precision,
+    nametxtint character varying(254),
+    nametext character varying(254),
+    nextupid character varying(255),
+    nextdownid character varying(255),
+    fnode character varying(255),
+    catchid integer,
+    shape_length double precision,
+    pfafstetter character varying(255),
+    basin text,
+    seaoutlet character varying(255)
+) 
+AS
+$$
+DECLARE 
+	schema TEXT := quote_ident(schema::text);
+    seg_table TEXT := quote_ident(segment_table::text);
+    out_table TEXT := quote_ident(outlet_table::text);
+    sql_query TEXT;
+BEGIN 
+    sql_query := 
+    'WITH RECURSIVE river_tree ("OBJECTID", "NEXTDOWNID", "OBJECT_ID", seaoutlet, basin, depth, is_cycle, path) AS (
+        SELECT enr."OBJECTID", enr."NEXTDOWNID", enr."OBJECT_ID", ttn.seaoutlet, enr.basin, 0, FALSE, 
+            ARRAY[enr."OBJECT_ID"]::varchar[]
+        FROM ' ||schema||'.'|| seg_table || ' enr
+        JOIN ' ||schema||'.'|| out_table || ' ttn ON enr."TNODE" = ttn."TNODE"
+        UNION ALL
+        SELECT enr."OBJECTID", enr."NEXTDOWNID", enr."OBJECT_ID", rt.seaoutlet, rt.basin, rt.depth+1,
+            enr."OBJECT_ID" = ANY(path),
+            path || ARRAY[rt."OBJECT_ID"]
+        FROM ' ||schema||'.'|| seg_table || ' enr
+        JOIN river_tree rt ON enr."NEXTDOWNID" = rt."OBJECT_ID" AND NOT is_cycle
+    )
+    SELECT en.*, river_tree.seaoutlet
+    FROM ' ||schema||'.'|| seg_table || ' en
+    JOIN river_tree ON (en."OBJECTID", en.basin) = (river_tree."OBJECTID", river_tree.basin)';
+
+    RETURN QUERY EXECUTE sql_query;
+END
+$$ LANGUAGE plpgsql;
+```
+
+![Map of river network from EU-Hydro for the Baltic ICES subdivisions 30 & 31.](images/fig-euhydrobalt3031.png "A view of the Baltic river networks for ICES subdivisions 30 & 31"){#fig-eubalt3031}
+
+The same method is applied for all basins using either ICES subdivision or ICES ecoregions.
+
+WIP - Issues with some basins to fix
+![Map of river network from EU-Hydro split into ICES areas.](images/fig-euhydroices.png "A view of Europe river networks"){#fig-eubase}
+
+# Acknowlegment
+
+HydroSHEDS : Lehner, B., Verdin, K., Jarvis, A. (2008). New global hydrography derived from spaceborne elevation data. Eos, Transactions, American Geophysical Union, 89(10): 93–94. https://doi.org/10.1029/2008eo100001
+
+EU-Hydro : COPERNICUS Land Monitoring Service, 2019: EU-Hydro. Last access: 24/03/2025
+https://land.copernicus.eu/imagery-in-situ/eu-hydro
+
