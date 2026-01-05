@@ -18,7 +18,7 @@ format:
   toc: true
   toc-location: left
   toc-title: Summary
-  toc-depth: 3
+  toc-depth: 4
 execute: 
  keep-md: true
  crossref: true
@@ -33,6 +33,19 @@ include-after-body: "footer.html"
 # River network choice
 To create the habitat database we decided to use a single river network.
 The Hydrological data and maps based on SHuttle Elevation Derivatives at multiple Scales (**HydroSHEDS**).
+
+::: {.callout-note appearance="simple"}
+Some development have been done with the [EU-hydro](https://github.com/DIASPARAproject/WP3_habitat/blob/main/R/habitatdb_eu_hydro.qmd), they relied however on a lot of fixes made by Andrew French 
+which unfortunately couldn't be integrated at the time of finishing this report.
+:::
+
+::: {.callout-warning appearance="simple"}
+The Hydrosheds here is just used as dictionary providing consistent names about
+europe, it doesn't mean that other GIS will no be used by the different working groups, 
+but only that in the future the names in the continental habitat will be provided
+from the area table, and some of the codes for basins will be based on hydroshed.
+:::
+
 
 # HydroSHEDS
 ## Data description
@@ -70,12 +83,12 @@ load_library("sf")
 load_library("janitor") # clean_names
 load_library("rnaturalearth")
 cred <- read_yaml("../credentials.yml")
-con_diaspara_loc <- dbConnect(Postgres(), 
-                           dbname = cred$dbnamehydro,
-                           host = cred$host,
-                           port = cred$port,
-                           user = cred$userdiaspara,
-                           password = cred$passworddiaspara)
+# con_diaspara_loc <- dbConnect(Postgres(), 
+#                            dbname = cred$dbnamehydro,
+#                            host = cred$host,
+#                            port = cred$port,
+#                            user = cred$userdiaspara,
+#                            password = cred$passworddiaspara)
 # con_diaspara_admin <- dbConnect(Postgres(), 
 #                            dbname = cred$dbnamehydro,
 #                            host = cred$host,
@@ -1335,6 +1348,12 @@ DT::datatable(fstock_lvl,
 
 
 ![Map of reaches composing WGBAST first assessment units level.](images/bast_river.png "A view of the Bothian bay with polygons surrounding each reach within the first assessment unit"){#fig-riverlvl}
+
+::: {.callout-caution}
+The names of the basin are not all present, and some might be wrong. We will
+work in the future with WGBAST to fix them and release a new version of the 
+tables in Zenodo
+:::
 
 #### River section
 
@@ -3109,6 +3128,25 @@ DT::datatable(fstock_lvl,
 ```
 
 ![Map of an example of the EMU level for the WGEEL habitat database.](images/fig-wgeel_emu.png){#fig-wgeel_emu}
+
+# Sharing this referential
+
+::: {.callout-tip appearance="simple"}
+## Zenodo link
+The referential is available in Zenodo, please make sure to connect to the latest
+version.
+[DOI](10.5281/zenodo.14726598)
+:::
+
+::: {.callout-tip appearance="simple"}
+# Link to ICES
+
+Here is a proof of concept worked out by Carlos to download from ICES
+Just add a new vector layer in Qgis using http.
+data.ices.dk/HabitatsAPI/getCatchments?region=Adriatic
+
+
+:::
 
 # Acknowlegment
 
