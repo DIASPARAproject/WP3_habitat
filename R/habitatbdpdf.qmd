@@ -23,7 +23,7 @@ bibliography: diaspara.bib
 ---
 
 Note : If you are reading this file as a pdf you should try to open it on the 
-diaspara website, as some code does not render well as a pdf :
+diaspara website, as some code does not render well as a pdf:
 [habitat database](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p8hab/rep5.html)
 
 
@@ -84,6 +84,19 @@ con_diaspara <- dbConnect(Postgres(),
 To create the habitat database we decided to use a single river network.
 The Hydrological data and maps based on SHuttle Elevation Derivatives at multiple Scales (**HydroSHEDS**).
 
+::: {.callout-note appearance="simple"}
+Some development was also done with the [EU-hydro](https://github.com/DIASPARAproject/WP3_habitat/blob/main/R/habitatdb_eu_hydro.qmd). This code relied on a lot of fixes made by Andrew French. These fixes could unfortunately be integrated by the time of finishing this report. However, that does not exclude the use of EU-Hydro (or other) data in the future. 
+:::
+
+::: {.callout-warning appearance="simple"}
+The HydroSHEDS data, with a reach to the full project area, was used for creating the referential in this project. 
+
+The Hydrosheds here is just used as dictionary providing consistent names about
+europe. It does not mean that other GIS will not be used by the different working groups, 
+but only that in the future the names in the continental habitat will be provided
+from the area table, and some of the codes for basins will be based on hydroshed.
+:::
+
 # HydroSHEDS
 ## Data description
 **HydroSHEDS** is a global database providing high-resolution hydrographic data derived from NASA's Shuttle Radar Topography Mission (SRTM). Covering most land areas, it offers structured datasets for hydrological modeling, watershed analysis, and environmental research. The data is available at resolutions up to 3 arc-seconds (~90m) in raster (GeoTIFF) and vector (shapefiles,geodatabases) formats. 
@@ -141,7 +154,7 @@ The same process is used to insert other downloaded data to the database.
 
 
 ## Building the database{#sec-hcatch}
-Once the data downloaded we choose to to split the database into smaller groups following ICES Areas and Ecoregions.
+Once the data are downloaded we choose to to split the database into smaller groups following ICES Areas and Ecoregions.
 
 ### Step 1 : Spliting data into smaller groups for efficiency (Europe/N.Africa)
 
@@ -192,9 +205,9 @@ CREATE TABLE tempo.hydro_riversegments_europe AS(
 ); --589947
 ```
 
-The same method is used to select catchemnts and river segments in the Southern Mediterranean area.
+The same method is used to select catchments and river segments in the Southern Mediterranean area.
 
-![Map of all catchemnts present in the database.](images/fig-all_catchments.png "A view of all European and Northern African catchments "){#fig-all_catchments}
+![Map of all catchments present in the database.](images/fig-all_catchments.png "A view of all European and Northern African catchments "){#fig-all_catchments}
 
 ### Step 2 : Selecting the most downstream riversegment for each reach
 
@@ -300,9 +313,9 @@ For the rest of the dataset, ICES ecoregions are used to group catchments and ri
 
 The most downstream points are gathered from `tempo.riveratlas_mds`, applying three filters: a country filter, an ICES ecoregion filter, and an exclusion condition.  
 
-First, we retrieve distinct downstream points that are within 0.04 degrees of the geometries in `ices_ecoregions.ices_ecoregions_20171207_erase_esri`, specifically selecting `objectid = 11`, which corresponded to the desired ICES ecoregion. Additionally, these points have to be within 0.02 degrees of the geometries in `tempo.ne_10m_admin_0_countries`, ensuring they are located in Norway or Sweden.  
+First, we retrieve distinct downstream points that are within 0.04 degrees of the geometries in `ices_ecoregions.ices_ecoregions_20171207_erase_esri`, specifically selecting `objectid = 11`, which corresponded to the desired ICES ecoregion. Additionally, these points have to be within 0.02 degrees of the geometries in `tempo.ne_10m_admin_0_countries`, ensuring they are located in Norway or Sweden (in this case, when working on the northern part of the North Sea).  
 
-Similarly, we selecte downstream points that are within 0.04 degrees of the geometries in `ices_areas.ices_areas_20160601_cut_dense_3857`, specifically for `subdivisio = '23'`, while also ensuring they are within 0.02 degrees of Norway or Sweden. This is done because of an overlap between ICES ecoregions and ICES areas in this particular zone. 
+Similarly, we selected downstream points that are within 0.04 degrees of the geometries in `ices_areas.ices_areas_20160601_cut_dense_3857`, specifically for `subdivisio = '23'`, while also ensuring they are within 0.02 degrees of Norway or Sweden. This is done because of an overlap between ICES ecoregions and ICES areas in this particular zone. 
 
 Finally, we combine both sets of points while applying an exclusion condition: any points from the ICES area selection that already exist in the ICES ecoregion selection are removed, ensuring no duplicates are kept, while maintaining priority for the ecoregion-based selection. The resulting dataset `tempo.ices_ecoregions_nsea_north` contains the most downstream points filtered by ICES ecoregions, ICES areas, and country boundaries for Norway and Sweden.
 
@@ -646,11 +659,11 @@ WHERE NOT EXISTS (
 );--57
 ```
 
-![Map of catchemnts on the Iberian peninsula with missing endorheic basins.](images/fig-endo_biscay.png "A view of the Iberian peninsula with missing endorheic basins"){#fig-endo_biscay}
+![Map of catchments on the Iberian peninsula with missing endorheic basins.](images/fig-endo_biscay.png "A view of the Iberian peninsula with missing endorheic basins"){#fig-endo_biscay}
 
 ![Map of the concave hull on the Iberian peninsula.](images/fig-conc_biscay.png "A view of the concave hull on the Iberian peninsula"){#fig-conc_biscay}
 
-![Map of catchemnts on the Iberian peninsula without missing endorheic basins.](images/fig-fendo_biscay.png "A view of the Iberian peninsula without missing endorheic basins"){#fig-fendo_biscay}
+![Map of catchments on the Iberian peninsula without missing endorheic basins.](images/fig-fendo_biscay.png "A view of the Iberian peninsula without missing endorheic basins"){#fig-fendo_biscay}
 
 
 ### Step 8 : Retrieve all missing islands and coastal catchments not linked to a riversegments by using an intersection with ICES areas
@@ -697,9 +710,9 @@ SELECT *
 FROM filtered_basin;
 ```
 
-![Map of catchemnts on the Baltic with missing islands basins.](images/fig-missing_baltic2732.png "A view of the Baltic with missing islands"){#fig-missing_baltic2732}
+![Map of catchments on the Baltic with missing islands basins.](images/fig-missing_baltic2732.png "A view of the Baltic with missing islands"){#fig-missing_baltic2732}
 
-![Map of catchemnts on the Baltic without missing islands basins.](images/fig-full_baltic2732.png "A view of the Baltic without missing islands"){#fig-full_baltic2732}
+![Map of catchments on the Baltic without missing islands basins.](images/fig-full_baltic2732.png "A view of the Baltic without missing islands"){#fig-full_baltic2732}
 
 ![Final map of catchments from HydroSHEDS split into ICES areas and ecoregions.](images/fig-final.png "A view of Europe and Northern Africa catchments"){#fig-final}
 
@@ -1075,7 +1088,7 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 
 This next layer is optional, it is added here as an example to show what it could look like.
 
-A function is created here to insert the country layer into the talbe. 
+A function is created here to insert the country layer into the table. 
 This `insert_country_baltic` function takes a country name as input and
  inserts a new row into the `refbast.tr_area_are` table representing the specified country at
  the `'Country'` level. It does so by taking the country’s geometry in `ref.tr_country_cou`. 
@@ -1333,6 +1346,12 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 
 
 ![Map of reaches composing WGBAST first assessment units level.](images/bast_river.png "A view of the Bothian bay with polygons surrounding each reach within the first assessment unit"){#fig-riverlvl}
+
+::: {.callout-caution}
+The names of the basin are not all present, and some might be wrong. We will
+work in the future with WGBAST to fix them and release a new version of the 
+tables in Zenodo
+:::
 
 #### River section
 
@@ -3122,7 +3141,7 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 
 ![Map of an example of the EMU level for the WGEEL habitat database.](images/fig-wgeel_emu.png){#fig-wgeel_emu}
 
-# Acknowlegment
+# Acknowlegments and references
 
 HydroSHEDS : Lehner, B., Verdin, K., Jarvis, A. (2008). New global hydrography derived from spaceborne elevation data. Eos, Transactions, American Geophysical Union, 89(10): 93–94. https://doi.org/10.1029/2008eo100001
 
