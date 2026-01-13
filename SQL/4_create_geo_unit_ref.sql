@@ -5045,5 +5045,10 @@ FROM refnas.tr_area_are b
 WHERE a.are_code = 'NEAC';
 
 
+/*
+ * Corrections of names by Jani
+*/
 
-  */
+SELECT * FROM refbast.tr_area_are WHERE are_lev_code='River'
+UPDATE refbast.tr_area_are   SET are_name='new name'   WHERE are_id=7777777777777777;
+

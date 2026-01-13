@@ -3135,7 +3135,7 @@ DT::datatable(fstock_lvl,
 ## Zenodo link
 The referential is available in Zenodo, please make sure to connect to the latest
 version.
-[DOI](10.5281/zenodo.14726598)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18155125.svg)](https://doi.org/10.5281/zenodo.18155125)
 :::
 
 ::: {.callout-tip appearance="simple"}
@@ -3151,5 +3151,7 @@ data.ices.dk/HabitatsAPI/getCatchments?region=Adriatic
 # Acknowlegment
 
 HydroSHEDS : Lehner, B., Verdin, K., Jarvis, A. (2008). New global hydrography derived from spaceborne elevation data. Eos, Transactions, American Geophysical Union, 89(10): 93–94. https://doi.org/10.1029/2008eo100001
+
+
 
 
