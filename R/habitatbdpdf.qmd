@@ -3122,6 +3122,26 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 
 ![Map of an example of the EMU level for the WGEEL habitat database.](images/fig-wgeel_emu.png){#fig-wgeel_emu}
 
+# Sharing this referential
+
+::: {.callout-tip appearance="simple"}
+## Zenodo link
+The referential is available in Zenodo, please make sure to connect to the latest
+version.
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18155125.svg)](https://doi.org/10.5281/zenodo.18155125)
+:::
+
+::: {.callout-tip appearance="simple"}
+# Link to ICES
+
+Here is a proof of concept worked out by Carlos to download from ICES
+Just add a new vector layer in Qgis using http.
+data.ices.dk/HabitatsAPI/getCatchments?region=Adriatic
+
+
+:::
+
+
 # Acknowlegment
 
 HydroSHEDS : Lehner, B., Verdin, K., Jarvis, A. (2008). New global hydrography derived from spaceborne elevation data. Eos, Transactions, American Geophysical Union, 89(10): 93–94. https://doi.org/10.1029/2008eo100001
