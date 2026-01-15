@@ -4,7 +4,7 @@ library(dplyr)
 
 con <- DBI::dbConnect(drv=RPostgres::Postgres(),
 		dbname = "diaspara",
-		host = "185.135.126.250",
+		host = "db.mercure.eaux-et-vilaine.bzh",
 		user = "diaspara_read",
 		password = "************"  
 )
