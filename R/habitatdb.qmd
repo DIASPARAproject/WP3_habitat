@@ -1,10 +1,10 @@
 ---
-title: "diaspara habitat database creation script"
-subtitle: "DIASPARA WP3.1 working document"
+title: "DIASPARA habitat database creation script"
+subtitle: "DIASPARA WP3.1 Habitat database"
 author: "Oliviéro Jules, Briand Cédric, Helminen Jani"
 date: last-modified
 date-format: "DD-MM-YYYY"
-description: "Design an international database of habitat of migratory fish, version = build"
+description: "Design an international database of habitat of migratory fish, version = pre-release, for review"
 title-block-banner: "images/diaspara_bandeau.png"
 title-block-banner-color: "white"
 format:
@@ -29,6 +29,7 @@ bibliography: diaspara.bib
 include-after-body: "footer.html"
 ---
 
+Diadromous species use both Marine and continental environments. They are subjected to multiple stressor acting locally or at the global scale. Currently ICES has designed its databases for the marine environment, and we need an habitat referential to better account for stressor (dam, connectivity, pollution, fishery) acting at the very local scale in the continental environment. The objective is to propose a vocabulary for habitat based on the hydroshed database and covering all continental freshwater and transitional habitats across Europe, but also to provide a referential for units from the river, to the wider stock level, including the marine environment, and adapted to the needs of the diadromous expert groups (WGNAS, WGBAST, WGTRUTTA, WGEEL).
 
 # River network choice
 To create the habitat database we decided to use a single river network.
@@ -66,7 +67,7 @@ setwd("D:/workspace/DIASPARA_WP3_habitat/R")
 datawd <- "D:/DIASPARA/wgbast"
 } else if (Sys.info()[["user"]] == 'cedric.briand'){
 setwd("C:/workspace/DIASPARA_WP3_habitat/R")
-datawd <- "C:/Users/cedric.briand/OneDrive - EPTB Vilaine/Projets/DIASPARA/wgbast"
+datawd <- "C:/Users/cedric.briand/OneDrive - EPTB Eaux&Vilaine/Projets/DIASPARA/wgbast"
 }
 source("utilities/load_library.R")
 load_library("tidyverse")
@@ -84,7 +85,7 @@ load_library("sf")
 load_library("janitor") # clean_names
 load_library("rnaturalearth")
 cred <- read_yaml("../credentials.yml")
-# con_diaspara_loc <- dbConnect(Postgres(), 
+# con_diaspara <- dbConnect(Postgres(), 
 #                            dbname = cred$dbnamehydro,
 #                            host = cred$host,
 #                            port = cred$port,
@@ -98,11 +99,11 @@ cred <- read_yaml("../credentials.yml")
 #                            password = cred$passwordsalmo)
           
 con_diaspara <- dbConnect(Postgres(), 
-                          dbname = cred$dbnamehydro,
-                          host = cred$hostmercure,
+                          dbname = cred$dbnamediaspara,
+                          host = cred$hostdistant,
                           port = cred$port,
-                          user = cred$usermercure,
-                          password = cred$passwordmercure)                
+                          user = cred$userdiaspara,
+                          password = cred$passworddiaspara)                
 
 
 
@@ -123,7 +124,7 @@ con_diaspara <- dbConnect(Postgres(),
 #| tbl-cap: Variables description
 
 
-data_description <- dbGetQuery(con_diaspara_loc, 
+data_description <- dbGetQuery(con_diaspara, 
   "SELECT cols.column_name AS var_name, 
         pgd.description AS description
   FROM information_schema.columns cols
@@ -722,7 +723,7 @@ FROM filtered_basin;
 
 ![Final map of catchments from HydroSHEDS split into ICES areas and ecoregions.](images/fig-final.png "A view of Europe and Northern Africa catchments"){#fig-final}
 
-
+# Hierarchical structure for working groups.
 ## Creating a hierarchical structure for WGBAST
 
 Based on the map of catchments, a table is created
@@ -3136,7 +3137,9 @@ DT::datatable(fstock_lvl,
 ## Zenodo link
 The referential is available in Zenodo, please make sure to connect to the latest
 version.
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18155125.svg)](https://doi.org/10.5281/zenodo.18155125)
+
+[![DOI](images/zenodo.18155125.svg)](https://doi.org/10.5281/zenodo.18155125)
+
 :::
 
 ::: {.callout-tip appearance="simple"}

@@ -2,7 +2,7 @@
 title-block: false
 date: last-modified
 date-format: "DD-MM-YYYY"
-description: "Design an international database of habitat of migratory fish, version = final"
+description: "DIASPARA WP3.1 Habitat database. Design an international database of habitat of migratory fish"
 format: 
   pdf:
     documentclass : report
@@ -15,7 +15,7 @@ format:
     toc-title: Contents
     number-sections: true
     colorlinks: true    
-    use-rsvg-convert: false
+    use-rsvg-convert: true
     pdf-engine-opts: ["-shell-escape"]
 filters:
   - include-code-files
@@ -26,6 +26,7 @@ Note : If you are reading this file as a pdf you should try to open it on the
 diaspara website, as some code does not render well as a pdf :
 [habitat database](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p8hab/rep5.html)
 
+Diadromous species use both Marine and continental environments. They are subjected to multiple stressor acting locally or at the global scale. Currently ICES has designed its databases for the marine environment, and we need an habitat referential to better account for stressor (dam, connectivity, pollution, fishery) acting at the very local scale in the continental environment. The objective is to propose a vocabulary for habitat based on the hydroshed database and covering all continental freshwater and transitional habitats across Europe, but also to provide a referential for units from the river, to the wider stock level, including the marine environment, and adapted to the needs of the diadromous expert groups (WGNAS, WGBAST, WGTRUTTA, WGEEL).
 
 ```{r init}
 #| echo: FALSE
@@ -57,12 +58,12 @@ load_library("sf")
 load_library("janitor") # clean_names
 load_library("rnaturalearth")
 cred <- read_yaml("../credentials.yml")
-con_diaspara_loc <- dbConnect(Postgres(), 
-                           dbname = cred$dbnamehydro,
-                           host = cred$host,
-                           port = cred$port,
-                           user = cred$userdiaspara,
-                           password = cred$passworddiaspara)
+# con_diaspara <- dbConnect(Postgres(), 
+#                            dbname = cred$dbnamehydro,
+#                            host = cred$host,
+#                            port = cred$port,
+#                            user = cred$userdiaspara,
+#                            password = cred$passworddiaspara)
 # con_diaspara_admin <- dbConnect(Postgres(), 
 #                            dbname = cred$dbnamehydro,
 #                            host = cred$host,
@@ -71,11 +72,11 @@ con_diaspara_loc <- dbConnect(Postgres(),
 #                            password = cred$passwordsalmo)
           
 con_diaspara <- dbConnect(Postgres(), 
-                          dbname = cred$dbnamehydro,
-                          host = cred$hostmercure,
+                          dbname = cred$dbnamediaspara,
+                          host = cred$hostdistant,
                           port = cred$port,
-                          user = cred$usermercure,
-                          password = cred$passwordmercure)                
+                          user = cred$userdiaspara,
+                          password = cred$passworddiaspara)                
 
 ```
 
@@ -112,7 +113,7 @@ We use the geodatabases format. It includes river networks, watershed boundaries
 #| tbl-cap: Variables description
 
 
-data_description <- dbGetQuery(con_diaspara_loc, 
+data_description <- dbGetQuery(con_diaspara, 
   "SELECT cols.column_name AS var_name, 
         pgd.description AS description
   FROM information_schema.columns cols
@@ -716,7 +717,7 @@ FROM filtered_basin;
 
 ![Final map of catchments from HydroSHEDS split into ICES areas and ecoregions.](images/fig-final.png "A view of Europe and Northern Africa catchments"){#fig-final}
 
-
+# Hierarchical structure for working groups.
 ## Creating a hierarchical structure for WGBAST
 
 Based on the map of catchments, a table is created
@@ -1395,122 +1396,11 @@ SELECT DISTINCT ON (are_code) * FROM river_segments;
 
 ![Map of main stretch of rivers in the Baltic area.](images/bast_rs.png "A view of Scandinavia with lines representing main stretch of rivers that flow into the Baltic"){#fig-riverseclvl}
 
-
 ## Creating a hierarchical structure for WGNAS {#sec-wgnas-stock}
 The work done on the structural hierarchy for WGNAS follows what has been done for WGBAST, although there is some differences in the layers used. Futhermore, in parallel of the Assessment Unit level, a Fisheries level has been added (@fig-area_hierarchy_nas).
-```{dot}
-//| label: fig-area_hierarchy_nas
-//| fig-cap: Hierarchical structure of WGNAS habitat database
 
-digraph {
-    compound=true;
-    newrank=true;
-    rankdir="LR";
 
-    subgraph clusterZ {
-      label = Stock
-      style=full
-      color=red
-      fontcolor=red
-      center=true
-
-      subgraph clusterA {
-        label = "Inland Stock"
-        style=full
-        color=green
-        fontcolor=green
-        center=true
-
-        subgraph clusterB {
-        label = Assessment_unit
-        style=full
-        color=green3
-        fontcolor=green3
-        center=true
-
-          subgraph clusterC {
-          label = River
-          style=full
-          color=green2
-          fontcolor=green2
-          center=true
-                
-            subgraph clusterD {
-            label = River_section
-            style=full
-            color=green1
-            fontcolor=green1
-              section [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-          }
-        }
- 
-        subgraph clusterE{
-        label=Country
-        style=dashed
-        color=firebrick
-        fontcolor=firebrick
-          Fishing [
-          style=invis
-          ]
-        }
-      }
-
-      subgraph clusterF {
-      label = "Marine Stock"
-      style=full
-      color=royalblue4
-      fontcolor=royalblue4
-      center=true
-
-        subgraph clusterG {
-        label = Subarea
-        style=full
-        color=royalblue3
-        fontcolor=royalblue3
-        center=true
-
-          subgraph clusterH {
-          label = Division
-          style=full
-          color=royalblue2
-          fontcolor=royalblue2
-          center=true
-                
-            subgraph clusterI {
-            label = Assessment_unit
-            style=full
-            color=royalblue
-            fontcolor=royalblue
-              here [
-              label=data,
-              shape=box, 
-              style =invis
-              ]  
-            }
-
-            subgraph clusterJ{
-            label=Fisheries
-            style=full
-            color=royalblue
-            fontcolor=royalblue
-            other [
-            style=invis
-            ]
-            }
-          }
-        }   
-      }
-    }
-    section -> Fishing -> here -> other [style=invis];
-}
-         
-```
-
+![Hierarchical structure of WGNAS habitat database](images/fig-area_hierarchy_nas.png){#fig-area_hierarchy_nas}
 
 This structure is added into a table called `refnas.tr_area_are`.
 As for **WGBAST** hierarchy, the first layer of the structure is the global Stock level (@fig-fullnas1). It includes all catchments that have a river flowing into areas studied by WGNAS as well as all ICES Subareas corresponding to said areas of interest (@fig-stcknas1). 
@@ -2171,6 +2061,7 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 
 #### Country
 To add the country level, the same work has been done as for WGBAST (@sec-wgbast-country).
+
 
 
 ## Creating a hierarchical structure for WGEEL
@@ -3147,7 +3038,7 @@ knitr::kable(fstock_lvl) %>% kable_styling(bootstrap_options = c("striped", "hov
 ## Zenodo link
 The referential is available in Zenodo, please make sure to connect to the latest
 version.
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18155125.svg)](https://doi.org/10.5281/zenodo.18155125)
+[![DOI](images/zenodo.18155125.svg)](https://doi.org/10.5281/zenodo.18155125)
 :::
 
 ::: {.callout-tip appearance="simple"}
