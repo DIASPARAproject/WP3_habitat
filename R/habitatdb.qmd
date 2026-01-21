@@ -29,29 +29,31 @@ bibliography: diaspara.bib
 include-after-body: "footer.html"
 ---
 
-Diadromous species use both Marine and continental environments. They are subjected to multiple stressor acting locally or at the global scale. Currently ICES has designed its databases for the marine environment, and we need an habitat referential to better account for stressor (dam, connectivity, pollution, fishery) acting at the very local scale in the continental environment. The objective is to propose a vocabulary for habitat based on the hydroshed database and covering all continental freshwater and transitional habitats across Europe, but also to provide a referential for units from the river, to the wider stock level, including the marine environment, and adapted to the needs of the diadromous expert groups (WGNAS, WGBAST, WGTRUTTA, WGEEL).
+Diadromous species use both Marine and continental environments. They are subjected to multiple stressor acting locally or at the global scale, many of them acting in continental waters. Currently ICES has designed its databases for the marine environment, and we need an habitat referential to better account for stressor (dam, connectivity, pollution, fishery) acting at the very local scale in the continental environment. The objective is to propose a referential database of habitat
+that could be used as a vocabulary for habitat based on the HydroSHEDS database and covering all continental freshwater and transitional habitats across Europe, but also to provide a referential for units from the river, to the wider stock level, including the marine environment, and adapted to the needs of the diadromous expert groups (WGNAS, WGBAST, WGTRUTTA, WGEEL). {>>Should we define vocabulary? this is a specific work, and I have seen it used much outside ICES world<<}
 
 # River network choice
-To create the habitat database we decided to use a single river network.
-The Hydrological data and maps based on SHuttle Elevation Derivatives at multiple Scales (**HydroSHEDS**).
+To create the habitat database we decided to use a single river network. This ensures a consistent 
+network across countries, with the similar spatial resolution and attributes. We decided to use the Hydrological data and maps based on SHuttle Elevation Derivatives at multiple Scales (**HydroSHEDS**).
 
 ::: {.callout-note appearance="simple"}
-Some development was also done with the [EU-hydro](https://github.com/DIASPARAproject/WP3_habitat/blob/main/R/habitatdb_eu_hydro.qmd). This code relied on a lot of fixes made by Andrew French. These fixes could unfortunately be integrated by the time of finishing this report. However, that does not exclude the use of EU-Hydro (or other) data in the future. 
+Some developments were also done with the [EU-hydro](https://github.com/DIASPARAproject/WP3_habitat/blob/main/R/habitatdb_eu_hydro.qmd). This code relied on a lot of fixes made by Andrew French. These fixes could unfortunately be integrated by the time of finishing this report. However, that does not exclude the use of EU-Hydro (or other) data in the future. {>>Should we keep this into a final report?<<}
 :::
 
 ::: {.callout-warning appearance="simple"}
-The HydroSHEDS data, with a reach to the full project area, was used for creating the referential in this project. 
+The HydroSHEDS data, with a reach to the full project area, was used for creating the referential in this project. {>>I don't understand what you mean here<<}
 
-The Hydrosheds here is just used as dictionary providing consistent names about
-europe. It does not mean that other GIS will not be used by the different working groups, 
+The HydroSHEDS here is just used as dictionary providing consistent names about
+Europe. It does not mean that other GIS will not be used by the different working groups, 
 but only that in the future the names in the continental habitat will be provided
-from the area table, and some of the codes for basins will be based on hydroshed.
+from the area table, and some of the codes for basins will be based on HydroSHEDS.
+{>>Should we keep this into the final report?<<}
 :::
 
 
 # HydroSHEDS
 ## Data description
-**HydroSHEDS** is a global database providing high-resolution hydrographic data derived from NASA's Shuttle Radar Topography Mission (SRTM). Covering most land areas, it offers structured datasets for hydrological modeling, watershed analysis, and environmental research. The data is available at resolutions up to 3 arc-seconds (~90m) in raster (GeoTIFF) and vector (shapefiles,geodatabases) formats. 
+**HydroSHEDS** is a global database providing high-resolution hydrographic data derived from NASA's Shuttle Radar Topography Mission (SRTM). Covering most land areas, it offers structured datasets for hydrological modeling, watershed analysis, and environmental research. The data is available at resolutions up to 3 arc-seconds (~90m) in raster (GeoTIFF) and vector (shapefiles, geodatabases) formats. 
 We use the geodatabases format. It includes river networks, watershed boundaries, drainage directions, and flow accumulation. Core products include **HydroBASINS** for watershed boundaries, **HydroRIVERS** for river networks, **HydroLAKES** for lakes and reservoirs, and **HydroATLAS**, which adds environmental attributes.
 
 
@@ -172,11 +174,16 @@ The same process is used to insert other downloaded data to the database.
 
 
 ## Building the database{#sec-hcatch}
-Once the data are downloaded we choose to to split the database into smaller groups following ICES Areas and Ecoregions.
+{>>The heading is a bit missleading: in a way in the previous step you have already built a database by converting geodatabases objects into tables or postgis objects. Would something like: "from a hydroshed spatial layers to a diadromous habitat db" be better?<<}
 
-### Step 1 : Spliting data into smaller groups for efficiency (Europe/N.Africa)
 
-European hydrological data are extracted by first selecting large-scale catchments from `basinatlas.basinatlas_v10_lev03`, a layer representing coarse-resolution catchments at level 3. We filtered these catchments based on specific `hybas_id` values and stored them in a temporary table `tempo.hydro_large_catchments_europe`. Next, we refine our selection by extracting smaller, more detailed catchments from `basinatlas.basinatlas_v10_lev12`, which represents the most detailed level (level 12) of the HydroBASINS hierarchy. We ensure that these smaller catchments are spatially contained within the large catchments using `ST_Within`, saving them in `tempo.hydro_small_catchments_europe`, and add a GIST index on geometries to improve spatial query efficiency. Finally, we select river segments from `riveratlas.riveratlas_v10` that intersect with the chosen small catchments using `ST_Intersects`, storing the results in `tempo.hydro_riversegments_europe`.
+
+One of the objective of the habitat database is to allow to link any habitat (e.g. any river reaches, lake etc.) with any spatial/bioligcal units used by expert groups when analysing the population dynamics and assessing the species (e.g. stock unit, eel management unit, ecoregion, countries, sea basin). In this context, the main task was to build this association between HydroSHEDS spatial features of continental habitats with spatial units used by WGBAST, WGEEL and WGNAS.
+Once the data are downloaded we choose to to split the database {>>datasets?<<} into smaller groups following ICES Areas and Ecoregions.
+
+### Step 1 : Spliting data into smaller groups for computational efficiency (Europe/N.Africa)
+
+European hydrological data {>>really hydrological data or network spatial features?<<}are extracted by first selecting large-scale catchments from `basinatlas.basinatlas_v10_lev03`, a layer representing coarse-resolution catchments at level 3. We filtered these catchments based on specific `hybas_id` values and stored them in a temporary table `tempo.hydro_large_catchments_europe`. Next, we refine our selection by extracting smaller, more detailed catchments from `basinatlas.basinatlas_v10_lev12`, which represents the most detailed level (level 12) of the HydroBASINS hierarchy. We ensure that these smaller catchments are spatially contained within the large catchments using `ST_Within`, saving them in `tempo.hydro_small_catchments_europe`, and add a GIST index on geometries to improve spatial query efficiency. Finally, we select river segments from `riveratlas.riveratlas_v10` that intersect with the chosen small catchments using `ST_Intersects`, storing the results in `tempo.hydro_riversegments_europe`.
 
 ```{sql}
 #| label: smaller groups
@@ -227,7 +234,7 @@ The same method is used to select catchments and river segments in the Southern 
 
 ### Step 2 : Selecting the most downstream riversegment for each reach
 
-Next we need to extract the most downstream river segments from `tempo.hydro_riversegments_europe`. To achieve this, we filter the table to retain only the river segments where `hyriv_id` is equal to `main_riv`, which correspond to the most downstream river segment of the river basin, ensuring that for each reach, only its most downstream segment is selected. The results are then stored in `tempo.riveratlas_mds`.
+Next {>>to to link river basins with sea basins?<<} we need to extract the most downstream river segments from `tempo.hydro_riversegments_europe`. To achieve this, we filter the table to retain only the river segments where `hyriv_id` is equal to `main_riv`, which corresponds to the most downstream river segment of the river basin, ensuring that for each reach, only its most downstream segment is selected. The results are then stored in `tempo.riveratlas_mds`.
 
 ```{sql}
 #| label: most downstream rivers
@@ -284,7 +291,7 @@ The same method is used for Southern Mediterranean data.
 
 #### Baltic
 
-ICES divisions are already used in the Baltic by WGBAST thus we have kept this same structure. It is divided in three areas grouping together ICES divisions 30 & 31 ; 27,28,29 & 32 and 22,24,25 & 26.
+ICES divisions are already used in the Baltic by ICES WGBAST thus we have kept this same structure. It is divided in three areas grouping together ICES divisions 30 & 31 ; 27,28,29 & 32 and 22,24,25 & 26.
 
 ![Map of ICES fishing areas at subdivision level, source NAFO, FAO, ICES, GFCM.](images/fig-ices_baltic.png "A view of the Baltic with ICES fishing subdivision"){#fig-ices_baltic}
 
@@ -324,11 +331,11 @@ For the rest of the dataset, ICES ecoregions are used to group catchments and ri
 
 ![Map of ICES fishing ecoregions.](images/fig-ices_ecoregions.png "A view of Europe and Northern Africa with ICES fishing ecoregions"){#fig-ices_ecoregions}
 
-The most downstream points are gathered from `tempo.riveratlas_mds`, applying three filters: a country filter, an ICES ecoregion filter, and an exclusion condition.  
+The most downstream points are gathered from `tempo.riveratlas_mds`, applying three filters: a country filter, an ICES ecoregion filter, and an exclusion condition.{>>I am not clear on what you mean by filter here<<}
 
-First, we retrieve distinct downstream points that are within 0.04 degrees of the geometries in `ices_ecoregions.ices_ecoregions_20171207_erase_esri`, specifically selecting `objectid = 11`, which corresponded to the desired ICES ecoregion. Additionally, these points have to be within 0.02 degrees of the geometries in `tempo.ne_10m_admin_0_countries`, ensuring they are located in Norway or Sweden (in this case, when working on the northern part of the North Sea).  
+First, we retrieve distinct downstream points that are within 0.04 degrees of ecoregions described by the the geometries in `ices_ecoregions.ices_ecoregions_20171207_erase_esri`, specifically selecting `objectid = 11`, which corresponded to the desired ICES ecoregion. Additionally, these points have to be within 0.02 degrees of the geometries in `tempo.ne_10m_admin_0_countries`, ensuring they are located in Norway or Sweden (in this case, when working on the northern part of the North Sea).  
 
-Similarly, we selected downstream points that are within 0.04 degrees of the geometries in `ices_areas.ices_areas_20160601_cut_dense_3857`, specifically for `subdivisio = '23'`, while also ensuring they are within 0.02 degrees of Norway or Sweden. This is done because of an overlap between ICES ecoregions and ICES areas in this particular zone. 
+Similarly, we selected downstream points that are within 0.04 degrees of the ICES areas as described by geometries in `ices_areas.ices_areas_20160601_cut_dense_3857`, specifically for `subdivisio = '23'` {>>can you say in plain word which area it is?<<}, while also ensuring they are within 0.02 degrees of Norway or Sweden. This is done because of an overlap between ICES ecoregions and ICES areas in this particular zone. 
 
 Finally, we combine both sets of points while applying an exclusion condition: any points from the ICES area selection that already exist in the ICES ecoregion selection are removed, ensuring no duplicates are kept, while maintaining priority for the ecoregion-based selection. The resulting dataset `tempo.ices_ecoregions_nsea_north` contains the most downstream points filtered by ICES ecoregions, ICES areas, and country boundaries for Norway and Sweden.
 
@@ -446,8 +453,8 @@ FROM missing_points AS mp;--8
 
 
 #### Ecoregions
-
-We select distinct downstream points from `tempo.riveratlas_mds` using two spatial filters. The first selection includes points within 0.1 degrees of `ices_ecoregions.ices_ecoregions_20171207_erase_esri`, specifically for `objectid = 11`, and also within the larger buffer of 0.1 degrees of `tempo.ne_10m_admin_0_countries`, ensuring they are in Norway or Sweden.  
+{>>the content of this section looks exactly the same as for the preivous section, Baltic, I think you are illustrating a larger process with the Baltic example, but you should clarify it. Moreover since Baltic an ecoregion by itself, the heading of the previous section might be a bit missleading<<}
+We select distinct downstream points from `tempo.riveratlas_mds` using two spatial filters. The first selection includes points within 0.1 degrees of `ices_ecoregions.ices_ecoregions_20171207_erase_esri`, specifically for `objectid = 11`, and also within the larger buffer of 0.1 degrees of `tempo.ne_10m_admin_0_countries`, ensuring they are in Norway or Sweden.  {>>why do you need to ensure that they are in Norway or Sweden if we are workingg with ecoregion<<}
 
 The second selection included points within 0.1 degrees of `ices_areas.ices_areas_20160601_cut_dense_3857`, specifically for `subdivisio = '23'`, while also ensuring proximity to Norway or Sweden. Both selections are merged to form the set of filtered points.  
 
@@ -528,7 +535,7 @@ FROM missing_points AS mp;
 ```
 
 ### Step 5 : Copy all riversegments corresponding to the previously selected riversegments using the main_riv identifier
-
+{>>you need a brief paragraph at the beginning to explain the strategy: that you are building specific schema for each group/ecoregion?<<}
 A new schema `h_baltic_3229_27` is created to store the selected river segments. Within this schema, we create the `riversegments` table by selecting distinct river segments from `tempo.hydro_riversegments_europe` that match the `main_riv` values found in `tempo.ices_areas_3229_27`. This ensures that only river segments associated with the relevant ICES subdivisions are included.  
 
 To optimize the table, we add a primary key constraint on `hyriv_id`, ensuring data integrity and uniqueness. Additionally, two indexes are created: a **B-tree** index on `main_riv` to improve lookup efficiency and a **GIST** index on `geom` to speed up spatial queries.
@@ -596,11 +603,11 @@ CREATE INDEX idx_h_baltic_26_22_catchments ON h_baltic_26_22.catchments USING GI
 
 ![Map of catchments for 27, 29-32 ICES areas.](images/fig-catch_baltic2732.png "A view of the Baltic with selected catchments for 27, 29-32 ICES areas"){#fig-catch_baltic2732}
 
-### Step 7 : Retrieve all missing endorheic catchments using an evelope
+### Step 7 : Retrieve all missing endorheic catchments using a bounding hull
+{>>perhaps give a brief introduction on what is the problem here<<}
+We construct the `tempo.oneendo_bisciber` {>>what is that?<<} table by generating a concave hull around the exterior boundary of the merged catchment shapes from `h_biscay_iberian.catchments`. This process creates a generalized polygon representing the area covered by these catchments. To improve spatial query performance, we added a **GIST** index on the geometry column.  
 
-We construct the `tempo.oneendo_bisciber` table by generating a concave hull around the exterior boundary of the merged catchment shapes from `h_biscay_iberian.catchments`. This process creates a generalized polygon representing the area covered by these catchments. To improve spatial query performance, we added a **GIST** index on the geometry column.  
-
-Next, we identify endorheic basins from `basinatlas.basinatlas_v10_lev12` that intersect with `tempo.oneendo_bisciber`. To ensure only relevant basins are selected, we exclude those already present in surrounding areas (`h_biscay_iberian.catchments`, `h_med_west.catchments`, `h_nsea_south.catchments`), and specific basins defined by `main_bas` values 2120017150, 2120017480, and 2120018070 that belong to another area. The remaining filtered basins are then inserted into `h_biscay_iberian.catchments`.
+Next, we identify endorheic basins from `basinatlas.basinatlas_v10_lev12` that intersect with `tempo.oneendo_bisciber`. To ensure only relevant basins are selected, we exclude those already present in surrounding areas (`h_biscay_iberian.catchments`, `h_med_west.catchments`, `h_nsea_south.catchments`), and specific basins defined by `main_bas` values 2120017150, 2120017480, and 2120018070 that belong to another area. The remaining filtered basins are then inserted into `h_biscay_iberian.catchments`. {>>till now, you have only spoken about the Baltic so perhaps you should explain why you switch now to the Iberian peninsula<<}
 
 Finally, we populate `h_biscay_iberian.riversegments` by selecting distinct river segments from `tempo.hydro_riversegments_europe` that intersected with the newly added catchments. To prevent duplicate entries, we exclude any river segments that already existed in `h_biscay_iberian.riversegments`.
 
@@ -724,13 +731,15 @@ FROM filtered_basin;
 ![Final map of catchments from HydroSHEDS split into ICES areas and ecoregions.](images/fig-final.png "A view of Europe and Northern Africa catchments"){#fig-final}
 
 # Hierarchical structure for working groups.
+Once the hydronetwork has been build and the link with ICES areas/ecoregions defined, the next step was to make the link with working group spatial units.
+
 ## Creating a hierarchical structure for WGBAST
 
 Based on the map of catchments, a table is created
 to store the referential of habitat, both continental and marine, specific to each working group : 
 [hierarchical structure](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p7stock/midb.html#area-tr_area_are). 
 This area is meant to be a [referential tables](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p7stock/midb.html#referential-tables). 
-Several levels have been layed out (@fig-area_hierarchy_bast) depending on the needs of each working group.
+Several levels have been layed out (@fig-area_hierarchy_bast) depending on the needs of each working group.  {>>this figure is only about WGBAST, so prehaps we could avoid refering here to other working groups?<<}
 
 ![The nested structure layed out in table tr_area_area, dotted box indicate that the level 
 is optional. This table represents the structure for refbast.](images/fig-area_hierarchy_bast.svg){#fig-area_hierarchy_bast}
@@ -805,7 +814,7 @@ DT::datatable(fstock_lvl,
 The global Stock level (@fig-fullstocklvl) is then split into two lower layers. The first one is the marine Stock level (@fig-fullstocklvl).
 
 
-We insert a new spatial unit into the `refbast.tr_area_are` table to represent a marine stock area labeled **"Baltic marine"**. This unit is associated with the **"Stock"** level (`are_lev_code`) and is marked as marine (`are_ismarine = true`). 
+We insert a new spatial unit into the `refbast.tr_area_are` table to represent a marine stock area labelled **"Baltic marine"**. This unit is associated with the **"Stock"** level (`are_lev_code`) and is marked as marine (`are_ismarine = true`). 
 To define its geometry, we aggregate spatial features from the `ref.tr_fishingarea_fia` table using `ST_Union`, specifically targeting geometries where the `fia_level` is `'Division'` and the `fia_division` corresponds to either `'27.3.b, c'` or `'27.3.d'`.
 A new unique identifier is generated using the `refbast.seq` sequence for `are_id`, and the new area is linked to the global Stock level through the `are_are_id` of `1`.
 
@@ -854,7 +863,7 @@ DT::datatable(fstock_lvl,
 
 ```
 
-#### ICES division
+#### ICES divisions
 
 We insert a new level into the `refbast.tr_area_are` table, corresponding to the fishing area **"27.3.b, c"**. The level of the spatial unit is set to **"Division"**, and it is marked as marine (`are_ismarine = true`). 
 The geometry is retrieved from the `ref.tr_fishingarea_fia` table by selecting records where the `fia_level` is `'Division'` and the `fia_division` is `'27.3.b, c'`. This geometry is directly passed into the insert statement without modification. 
@@ -911,8 +920,7 @@ DT::datatable(fstock_lvl,
 ![Map of the ICES division level.](images/bast_div.png "A view of of the Baltic with polygons surrounding each ICES divisions"){#fig-marinedivlvl}
 
 #### Subdivision grouping
-
-Two subdivision groupings exist in the historical database. They are dividing the Baltic into two main areas and are structured as followed : Gulf of Bothnia 300 (`27.3.d.30`,`27.3.d.31`) and Main Baltic 200 (`27.3.d.22`,`27.3.d.23`,`27.3.d.24`,`27.3.d.25`,`27.3.d.26`,`27.3.d.27`,`27.3.d.28`,`27.3.d.29`).
+Two subdivision groupings were used in the historical WGBAST database. They are dividing the Baltic into two main areas and are structured as followed : Gulf of Bothnia 300 (`27.3.d.30`,`27.3.d.31`) and Main Baltic 200 (`27.3.d.22`,`27.3.d.23`,`27.3.d.24`,`27.3.d.25`,`27.3.d.26`,`27.3.d.27`,`27.3.d.28`,`27.3.d.29`) {>>generally the d is not displayed in the notation, but I guess you keep it for consistency with ICES vocab<<}.
 Those two areas were created by grouping ICES subdivisions together.
 
 
@@ -1090,7 +1098,7 @@ DT::datatable(fstock_lvl,
 
 
 #### Country {#sec-wgbast-country}
-
+{>>we are delivering a database, so it might seem surprising to have optional table? either we deliver it or not?<<}
 This next layer is optional, it is added here as an example to show what it could look like.
 
 A function is created here to insert the country layer into the table. 
@@ -1101,6 +1109,7 @@ The resulting area is non-marine (`are_ismarine = false`), and the function auto
  a unique `are_id` from the sequence, while setting the `are_are_id` to `3` to indicate that it
  is nested under the inland stock level (@fig-fullstocklvl).
 
+{>>is there a link between river catchments and countries?<<}
 
 ```{sql}
 #| eval: FALSE
@@ -1175,7 +1184,7 @@ DT::datatable(fstock_lvl,
 #### Assessment unit
 
 Assessment units have been created by [WGBAST](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p5/wgbast_database_description.html#assessment-units-within-the-baltic-sea-area) within the Baltic Sea area. There is six of them (@fig-assunitlvl) and they are being used to retrieve catchments and rivers that are within their areas.
-This level does not go lower than the country one but stays at the same level, assessment units stretching across several countries.
+This level does not go lower than the country one but stays at the same level, assessment units stretching across several countries {>>I don't understand what you mean here<<}.
 
 This query creates a new area at the **"Assessment_unit"** level and inserts it 
 into the `refbast.tr_area_are` table. 
@@ -1257,11 +1266,11 @@ DT::datatable(fstock_lvl,
 
 
 #### River
-Within each assessment unit, rivers are split depending on their outlet. This is used to select specific rivers within each assessment unit with ease.
+Within each assessment unit, rivers are split {>>split is missleading, it seems that is river is cut, while I think you rather mean that you classified rivers based on their outlet?<<} depending on their outlet. This is used to select specific rivers within each assessment unit with ease.
 
 The function `insert_area_are` creates entries at the **River** level in the `refbast.tr_area_are` table by aggregating catchments associated with rivers flowing through a given assessment unit. We begin by identifying all river outlet IDs (`main_riv`) from the dataset `tempo.riversegments_baltic` that intersect with the assessment unit (@fig-assunitlvl) defined by the input parameter `p_ass_unit`. Only the main stems of rivers, where `ord_clas = 1`, are considered to ensure consistent delineation.
 
-Once the relevant river outlets are selected, we retrieve all associated river segments and then determine which catchments intersect with those segments. As multiple riversegments might intersect with one catchment, we remove duplicates by selecting a single instance per `hybas_id`. The resulting geometries are grouped by river outlet ID and merged into a single polygon using `ST_Union`.
+Once the relevant river outlets are selected, we retrieve all associated river segments and then determine which catchments intersect with those segments {>>what is the difference with the step 6 from building the database?<<}. As multiple riversegments might intersect with one catchment, we remove duplicates by selecting a single instance per `hybas_id`. The resulting geometries are grouped by river outlet ID and merged into a single polygon using `ST_Union`.
 
 These merged catchments are then inserted into the target table with their corresponding `main_bas` (that corresponds to the `main_riv` outlet id) used as the `are_code`, the `are_lev_code` is set to `River`, and the marine flag (`are_ismarine`) is set to false. This ensures that each outlet is associated with a unique, non-overlapping polygon representing its own river stretch.
 Finally, `are_are_id` is linked to the corresponding `are_id` of each assessment unit.
@@ -1354,11 +1363,11 @@ DT::datatable(fstock_lvl,
 ::: {.callout-caution}
 The names of the basin are not all present, and some might be wrong. We will
 work in the future with WGBAST to fix them and release a new version of the 
-tables in Zenodo
+tables in Zenodo {>>since it is a final report and we are supposed to deliver finalised version, I would perhaps rephase and just say that some names are missing<<}
 :::
 
 #### River section
-
+{>>put a definition of river section and what it is used for by WGBAST?<<}
 This query inserts entries at the **River_section** level in the `refbast.tr_area_are` table by splitting the main river areas into smaller sections. We start by selecting all polygons corresponding to rivers (`are_lev_code = 'River'`) to define the broader river areas that will serve as the parent units.
 
 Next, river segments are selected from the `tempo.riversegments_baltic` table, focusing only on the main channels (`ord_clas = 1`). Each river segment (`hyriv_id`) is spatially matched to its parent river polygon using `ST_Intersects`, ensuring that each segment is properly linked to its broader river unit.
@@ -1514,10 +1523,13 @@ digraph {
          
 ```
 
-This structure is added into a table called `refnas.tr_area_are`.
-As for **WGBAST** hierarchy, the first layer of the structure is the global Stock level (@fig-fullnas1). It includes all catchments that have a river flowing into areas studied by WGNAS as well as all ICES Subareas corresponding to said areas of interest (@fig-stcknas1). 
 
-This query performs an update of the main **NEAC** area, corresponding to the record with the identifier (`are_id`) equal to `1`. It begins by merging (`ST_Union`) all geometries found in the `geom_polygon` column of the `refnas.tr_area_are` table, then creates a concave hull around this union using the `ST_ConcaveHull` function. The resulting geometry is filtered to retain only shapes with an area (`ST_Area`) greater than `1`, thereby eliminating artifacts or small fragments. The final `UPDATE` statement modifies the record with `are_id = 1`: the parent area reference (`are_are_id`) is set to `NULL`, the area code becomes simply `'NEAC'`, the level remains `'Stock'`, the marine status is left undefined (`are_ismarine = NULL`), the main geometry is replaced with the filtered shape converted into a multipolygon via `ST_Multi`, and the linear geometry (`geom_line`) is set to `NULL`.
+{>>I disaggree with your picture and it does not seem consistent with the terminology used by WGNAS: a stock is the lowest spatial unit, their refer to stock complexes for grouped stock units. A stock is really a closed population from a biological point of view, reference points are defined at the stock level which is the stock unit.<<}
+
+This structure is added into a table called `refnas.tr_area_are`.
+As for **WGBAST** hierarchy, the first layer of the structure is the global Stock level (@fig-fullnas1). It includes all catchments that have a river flowing into areas studied by WGNAS {>>WGNAS also includes north-america, so we do not completely cover the picture<<}as well as all ICES Subareas corresponding to said areas of interest (@fig-stcknas1) {>>west greenland is not in? that is not an issue since a mixed fishery take place there?<<}. 
+
+This query performs an update of the main **NEAC** area (North East Atlantic Commission), corresponding to the record with the identifier (`are_id`) equal to `1`. It begins by merging (`ST_Union`) all geometries found in the `geom_polygon` column of the `refnas.tr_area_are` table, then creates a concave hull around this union using the `ST_ConcaveHull` function. The resulting geometry is filtered to retain only shapes with an area (`ST_Area`) greater than `1`, thereby eliminating artifacts or small fragments. The final `UPDATE` statement modifies the record with `are_id = 1`: the parent area reference (`are_are_id`) is set to `NULL`, the area code becomes simply `'NEAC'`, the level remains `'Stock'`, the marine status is left undefined (`are_ismarine = NULL`), the main geometry is replaced with the filtered shape converted into a multipolygon via `ST_Multi`, and the linear geometry (`geom_line`) is set to `NULL`.
 
 ```{sql}
 #| eval: FALSE
@@ -1578,8 +1590,8 @@ DT::datatable(fstock_lvl,
 
 ### Marine level
 #### Stock {#sec-wgnas-mstock}
-
-The first query inserts a new record into the `refnas.tr_area_are` table representing the marine area called **NEAC marine**. It begins with a `WITH` clause named `selected_level`, which aggregates (`ST_Union`) geometries from the `ref.tr_fishingarea_fia` table where the area level (`fia_level`) is `'Division'` and the area code (`fia_area`) is `'27'`. Specific divisions — `'27.3.b, c'` and `'27.3.d'` — are explicitly excluded from the selection. The resulting geometry (`geom`) is then inserted into the `geom_polygon` column. The area identifier (`are_id`) is automatically generated using a sequence (`nextval('refnas.seq')`), the parent area (`are_are_id`) is set to `1`, the area code (`are_code`) is set to `'NEAC marine'`, the level is defined as `'Stock'` (`are_lev_code`), the area is marked as marine (`are_ismarine = true`), and the line geometry (`geom_line`) is left empty (`NULL`).
+{>>same issue with stock definition, to be checked with Etienne. I would rather refer to the NorthEastern Atlantic Stock complex<<}
+The first query inserts a new record into the `refnas.tr_area_are` table representing the marine area called **NEAC marine**. It begins with a `WITH` clause named `selected_level`, which aggregates (`ST_Union`) geometries from the `ref.tr_fishingarea_fia` table where the area level (`fia_level`) is `'Division'` and the area code (`fia_area`) is `'27'`. Specific divisions — `'27.3.b, c'` and `'27.3.d'` — are explicitly excluded from the selection. The resulting geometry (`geom`) is then inserted into the `geom_polygon` column. The area identifier (`are_id`) is automatically generated using a sequence (`nextval('refnas.seq')`), the parent area (`are_are_id`) is set to `1`, the area code (`are_code`) is set to `'NEAC marine'`, the level is defined as `'Stock'` (`are_lev_code`), the area is marked as marine (`are_ismarine = true`), and the line geometry (`geom_line`) is left empty (`NULL`). {>>to be checked with Etienne for West Greenland<<}
 
 Similarly, the second query inserts a marine area called **NAC marine** using the same structure. It also begins with a `WITH` clause named `selected_level`, which merges (`ST_Union(geom)`) geometries from the `ref.tr_fishingarea_fia` table, but this time focusing on area `'21'` at the `'Division'` level. The resulting unified geometry is used to populate the `geom_polygon` column. The area is assigned an auto-incremented `are_id`, no parent (`are_are_id = NULL`), an area code of `'NAC marine'`, a level `'Stock'`, is explicitly identified as marine (`are_ismarine = true`), and has no line geometry (`geom_line = NULL`).
 
@@ -1649,7 +1661,7 @@ DT::datatable(fstock_lvl,
 ![Map of the Marine stock level.](images/fig-stock_marine_nas.png "A view of of the North Atlantic with two polygons surrounding the marine stock hierarchical level"){#fig-stcknas1}
 
 #### Subarea
-
+{>>I am not compltely confortable with your classification since salmon from NEAC also migrate to west greenland, so within you NAC marine area<<}
 This query inserts new entries into the `refnas.tr_area_are` table, each representing a **ICES marine subarea** within the broader fishing area `'27'`. It pulls source data from the `ref.tr_fishingarea_fia` table, filtering for rows where the area level (`fia_level`) is `'Subarea'` and the main area code (`fia_area`) is `'27'`. For each matching row, it extracts the subarea code (`fia_code`) to use as the new area code (`are_code`), and inserts the associated geometry (`geom`) into the `geom_polygon` column. The `are_id` is generated dynamically using the `refnas.seq` sequence, each inserted row is assigned the parent area ID `1` (`are_are_id = 1`), the level is marked as `'Subarea'` (`are_lev_code`), and all entries are flagged as marine (`are_ismarine = true`). The linear geometry field (`geom_line`) is not used and is therefore set to `NULL`.
 
 
@@ -1762,11 +1774,12 @@ DT::datatable(fstock_lvl,
 
 
 #### Assessment unit
-After some disscussions with WGNAS, it was decided to use as Assessment units at sea postsmolt areas from [Olmos et al. (2021)](https://doi.org/10.1111/gcb.14913). Those areas where recreated as close as possible using ICES Division.
+{>>not sure what assessment unit refer to. I suspect the wording is inapproppriate: assessment unit is the scale at which the assessment is done, so it corresponds to stock unit. Olmos had looked at the potential spatial distribution of post-smolts at sea arising from different stock units. If you are refering to these ones, then they are not assessment units. Post-smolt areas?<<}
+After some discussions with WGNAS, it was decided to use as Assessment units at sea postsmolt areas from [Olmos et al. (2021)](https://doi.org/10.1111/gcb.14913). Those areas were recreated as close as possible using ICES Divisions.
 
 This query inserts a new spatial unit into the `refnas.tr_area_are` table, representing a **marine assessment unit** called **"postsmolt 1"**. It begins with a Common Table Expression (`WITH geomunion`) that selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table. The filter targets rows where the area level (`fia_level`) is `'Division'` and the division code (`fia_division`) matches one of the values in the array: `'21.4.X'`, `'21.4.W'`, or `'21.5.Y'`.
 
-The resulting unified geometry is inserted as a single polygon into the `geom_polygon` column. A new area ID (`are_id`) is automatically generated using `nextval('refnas.seq')`, the parent area is set to `2` (`are_are_id = 2`), the area code is labeled `'postsmolt 1'`, and the level is defined as `'Assessment_unit'` via `are_lev_code`. The area is explicitly marked as marine (`are_ismarine = true`), and no line geometry is provided (`geom_line = NULL`).
+The resulting unified geometry is inserted as a single polygon into the `geom_polygon` column. A new area ID (`are_id`) is automatically generated using `nextval('refnas.seq')`, the parent area is set to `2` (`are_are_id = 2`), the area code is labelled `'postsmolt 1'`, and the level is defined as `'Assessment_unit'` via `are_lev_code`. The area is explicitly marked as marine (`are_ismarine = true`), and no line geometry is provided (`geom_line = NULL`).
 
 ```{sql}
 #| eval: FALSE
@@ -1896,8 +1909,12 @@ Question to WGNAS
 ::::
 :::
 
+{>>to be removed in the latest version<<
+}
+
 ### Continental level
 #### Stock
+{>>same remark, this is not a stock<<}
 This query adds an entry named **NEAC inland** (@fig-fullstocklvl) to the same table. It retrieves data from `tempo.catchments_nas`, a temporary table containing inland hydrographic features (`shape`). It selects only the records whose source table (dynamically extracted via `tableoid`) belongs to a specific set of tables such as `'h_barents'`, `'h_biscayiberian'`, `'h_celtic'`, etc. The selected shapes are merged using `ST_Union(shape)` to create a single polygon representing the inland part of the NEAC area. As before, a new `are_id` is generated, `are_are_id` is set to `1`, `are_code` is `'NEAC inland'`, the level remains `'Stock'`, `are_ismarine` is set to `false`, the geometry is inserted into `geom_polygon`, and `geom_line` is again set to `NULL`.
 
 ```{sql}
@@ -1947,6 +1964,7 @@ DT::datatable(fstock_lvl,
 ```
 
 #### Assessment unit
+{>>rather stock unit?<<}
 Following data from [WGNAS dataset](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p4/wgnas_salmoglob_description.html#area) and geometries from [Olmos et al. 2020](https://doi.org/10.1111/gcb.14913) we created inland assessment units around Europe and North America. 
 
 This function `update_geom_from_wgnas` is designed to **update the geometry and parent area** of a specific assessment unit in the `refnas.tr_area_are` table based on data from the `janis.wgnas_su` table.
@@ -2008,7 +2026,7 @@ DT::datatable(fstock_lvl,
 
 :::{.callout-note appearance="simple"}
 ## cou_*** Assessment units
-In the dataset, assassment units (AU) that seem to refer to countries are present. We would like to merge them either inside the country layer, either with the AU that already includes areas covered by those cou_*** AU.
+In the dataset, assessment units (AU) that seem to refer to countries are present. We would like to merge them either inside the country layer, either with the AU that already includes areas covered by those cou_*** AU.
 :::
 
 ![Map of the assessment unit level.](images/fig-au_inland_nas.png "A view with polygons surrounding the assessment units spread across Europe and North America"){#fig-auinnas1}
@@ -2169,10 +2187,10 @@ DT::datatable(fstock_lvl,
 To add the country level, the same work has been done as for WGBAST (@sec-wgbast-country).
 
 ## Creating a hierarchical structure for WGEEL
-
 The hierarchical structure for WGEEL is the same as for the two other working groups. The scope of the habitat database is larger for eel since the Mediterranean Sea is part of the assessed area. Lagoons and Complex of lagoons are also part of this structure (@fig-area_hierarchy_eel).
 
 ![Hierarchical structure of WGEEL habitat database.](images/fig-area_hierarchy_wgeel.svg){#fig-area_hierarchy_eel}
+{>>just a joke: EMU is within Country... I can't wait Isabel's reaction when we will speak about the Minho :-D <<}
 
 This structure will be added into a table named `refeel.tr_area_are`. The global Stock is still the first layer and is made of a fusion between the Marine and the Inland Stock (@fig-wgeel_stock). It includes all catchments flowing into areas studied by WGEEL as well as all ICES Divisions and GFCM Subdivisions (for the Mediterranean) corresponding to said areas of interest.
 
@@ -2288,8 +2306,8 @@ DT::datatable(fstock_lvl,
 ```
 
 #### Assessment unit
-
-This query inserts a new spatial unit into the `refeel.tr_area_are` table, representing a **marine assessment unit** called **“Marine Barents”**. It selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table, restricted to fishing areas whose division code (`fia_division`) matches one of the following values: `'27.14.a'`, `'27.5.a'`, `'27.2.b'`, `'27.2.a'`, `'27.1.b'`, `'27.1.a'`, or `'27.14.b'`.
+{>>Assessment is probably not the good wording here: remember wkfea and Alain: ICES only assesses the species at the stock level, so assessment unit is missleading. refer to sub-unit?<<}
+This query inserts a new spatial unit into the `refeel.tr_area_are` table, representing a **marine assessment unit** called **“Marine Barents”** {>>as an example?<<}. It selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table, restricted to fishing areas whose division code (`fia_division`) matches one of the following values: `'27.14.a'`, `'27.5.a'`, `'27.2.b'`, `'27.2.a'`, `'27.1.b'`, `'27.1.a'`, or `'27.14.b'`.
 
 The resulting unified geometry is converted to a multi-geometry (`ST_Multi`) and inserted as a single polygon into the `geom_polygon` column. A new area ID (`are_id`) is automatically generated using `nextval('refeel.seq')`, the parent area is set to `are_are_id = 2` (`Marine Stock`), the area code is labeled `'Marine Barents'`, and the level is defined as `'Assessment_unit'` via `are_lev_code`. The area is explicitly marked as marine (`are_ismarine = true`), and no line geometry is provided (`geom_line = NULL`).
  
@@ -2344,7 +2362,7 @@ DT::datatable(fstock_lvl,
 
 
 #### Regional
-
+{>>Where do the regions come from? to my knowledge we don't use them at all in WGEEL?<<}
 This query inserts a new spatial unit into the `refeel.tr_area_are` table, representing a **marine regional unit** called **“Western Mediterranean”**.
 
 It starts with a Common Table Expression (`WITH region_selection`) that selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table at the **Subdivision** level (`fia_level = 'Subdivision'`). These fishing area geometries are spatially matched (`ST_Intersects`) with existing assessment units from the `refeel.tr_area_are` table. The selection is further restricted to subdivisions whose codes (`fia_subdivision`) belong to the specified list and to a single parent assessment unit identified by `are_id = 9`. The resulting geometries are grouped by the parent area and converted into a multi-geometry using `ST_Multi`.
@@ -2617,7 +2635,7 @@ DT::datatable(fstock_lvl,
 ```
 
 #### Assessment_unit
-
+{>>same as before, this is not the good wording for eel in my opinion<<}
 This query inserts a new spatial unit into the `refeel.tr_area_are` table, representing a **non-marine assessment unit** (@fig-wgeel_au) called **“Inland Barents”**.
 
 It selects and merges (`ST_Union`) the geometries (`shape`) from the `tempo.catchments_eel` table, restricted to catchment groups identified by their schema names. These schemas are extracted from `tableoid::regclass` and filtered to include only `'h_barents'`, `'h_iceland'`, `'h_norwegian'`, and `'h_svalbard'`.
@@ -2833,7 +2851,7 @@ DT::datatable(fstock_lvl,
 ![Map of the River section level for the WGEEL habitat database.](images/fig-wgeel_rivsec.png){#fig-wgeel_rivsec}
 
 #### Regional
-
+{>>same as for the marine part, I don't understand where those regions come from<<}
 To create the **Inland Regional level** (@fig-wgeel_reg) the same method has been used as to create the first division of catchments (@sec-hcatch). Here, all catchments flowing into the previously created **Marine Regional level** are grouped together.
 
 ```{r}
@@ -3102,7 +3120,7 @@ DT::datatable(fstock_lvl,
 
 
 #### EMU
-
+{>>no!!!! unless you know that the Eel regulation will be revised in the future, and it is very unlikely, eel management plan will remain, so as EMU and ICES will keep receiving questions by EMU in WKEMP<<}
 Even though **EMU** are to be deprecated, they have been included within the database to help with the transition from EMU to **Regional** or **Assessment units**.
 
 ```{r}
