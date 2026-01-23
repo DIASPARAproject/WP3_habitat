@@ -5052,3 +5052,26 @@ WHERE a.are_code = 'NEAC';
 SELECT * FROM refbast.tr_area_are WHERE are_lev_code='River'
 UPDATE refbast.tr_area_are   SET are_name='new name'   WHERE are_id=7777777777777777;
 
+/*
+ * Fix habitat level for salmon
+ */
+
+SELECT * FROM refnas.tr_area_are WHERE are_lev_code = 'Stock'
+UPDATE refnas.tr_area_are SET are_lev_code = 'Complex' WHERE are_lev_code = 'Stock';--4
+
+
+-- this is to remove carriage return.
+UPDATE "ref".tr_habitatlevel_lev
+  SET lev_description='Corresponds to Sub-Component of stock at which the stock is assessed, e.g. NAC NEC for WGNAST, Gulf of Bothnia for WGBAST, Mediterranean for WGEEL.'
+  WHERE lev_code='Complex';
+UPDATE "ref".tr_habitatlevel_lev
+  SET lev_description='Corresponds to one or more units, but in almost all stocks this level is relevant to split data.'
+  WHERE lev_code='Country';
+UPDATE "ref".tr_habitatlevel_lev
+  SET lev_description='Corresponds to an assessment unit in the Baltic sea, and area for WGNAS, and EMU for WGEEL.'
+  WHERE lev_code='Assessment_unit';
+UPDATE "ref".tr_habitatlevel_lev
+  SET lev_description='Corresponds to subunits of stock assessment units (substock) or basins grouping several river. Although it is not used yet for
+  some models, regional genetic difference or difference in stock dynamic support collecting a regional level.'
+  WHERE lev_code='Regional';
+
