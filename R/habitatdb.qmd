@@ -158,7 +158,7 @@ Once the data are downloaded we choose to to split the database into smaller gro
 
 
 One of the objective of the habitat database is to allow to link any habitat (e.g. any river reaches, lake etc.) with any spatial/bioligcal units used by expert groups when analysing the population dynamics and assessing the species (e.g. stock unit, eel management unit, ecoregion, countries, sea basin). In this context, the main task was to build this association between HydroSHEDS spatial features of continental habitats with spatial units used by WGBAST, WGEEL and WGNAS.
-Once the data are downloaded first split them into smaller groups following ICES Areas and Ecoregions.
+Once the data are downloaded we first split them into smaller groups following ICES Areas and Ecoregions.
 
 ### Step 1 : Spliting data into smaller groups for computational efficiency (Europe/N.Africa)
 
@@ -2296,7 +2296,7 @@ digraph {
         center=true
 
           subgraph clusterB {
-          label = Assessment_unit
+          label = "Sub Component"
           style=full
           color=lightgray
           fontcolor=lightgray
@@ -2526,17 +2526,18 @@ DT::datatable(fstock_lvl,
 
 ```
 
-#### Assessment unit
+#### Sub Component
+Sub component of the stock (substocks) are part of a whole stock but are assessed in separate models as they are geographically isolated during part of their lifecycle.
+{>>Assessment is probably not the good wording here: remember wkfea and Alain: ICES only assesses the species at the stock level, so assessment unit is missleading. refer to sub-unit?<<}
+This query inserts a new spatial unit into the `refeel.tr_area_are` table, representing a **marine Sub Component** called **“Marine Barents”** as an example. It selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table, restricted to fishing areas whose division code (`fia_division`) matches one of the following values: `'27.14.a'`, `'27.5.a'`, `'27.2.b'`, `'27.2.a'`, `'27.1.b'`, `'27.1.a'`, or `'27.14.b'`.
 
-This query inserts a new spatial unit into the `refeel.tr_area_are` table, representing a **marine assessment unit** called **“Marine Barents”**. It selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table, restricted to fishing areas whose division code (`fia_division`) matches one of the following values: `'27.14.a'`, `'27.5.a'`, `'27.2.b'`, `'27.2.a'`, `'27.1.b'`, `'27.1.a'`, or `'27.14.b'`.
-
-The resulting unified geometry is converted to a multi-geometry (`ST_Multi`) and inserted as a single polygon into the `geom_polygon` column. A new area ID (`are_id`) is automatically generated using `nextval('refeel.seq')`, the parent area is set to `are_are_id = 2` (`Marine Stock`), the area code is labeled `'Marine Barents'`, and the level is defined as `'Assessment_unit'` via `are_lev_code`. The area is explicitly marked as marine (`are_ismarine = true`), and no line geometry is provided (`geom_line = NULL`).
+The resulting unified geometry is converted to a multi-geometry (`ST_Multi`) and inserted as a single polygon into the `geom_polygon` column. A new area ID (`are_id`) is automatically generated using `nextval('refeel.seq')`, the parent area is set to `are_are_id = 2` (`Marine Stock`), the area code is labeled `'Marine Barents'`, and the level is defined as `'Substock'` via `are_lev_code`. The area is explicitly marked as marine (`are_ismarine = true`), and no line geometry is provided (`geom_line = NULL`).
  
 
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
-#| code-summary: Code to create the Marine Assessment unit level for WGEEL
+#| code-summary: Code to create the Marine Substock level for WGEEL
 #| warning: FALSE
 #| message: FALSE
 
@@ -2555,11 +2556,11 @@ WHERE fia_division IN ('27.14.a','27.5.a','27.2.b','27.2.a','27.1.b','27.1.a','2
 
 
 ```{r}
-#| label: refeel.tr_area_are Marine Assessment unit level
+#| label: refeel.tr_area_are Marine Substock level
 #| echo: FALSE
 #| warning: FALSE
 #| message: FALSE
-#| tbl-cap: Structure of the Marine Assessment unit level in the referential table
+#| tbl-cap: Structure of the Marine Substock level in the referential table
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
@@ -2579,16 +2580,18 @@ DT::datatable(fstock_lvl,
 ```
 
 
-![Map of the Assessment unit level for the WGEEL habitat database. The map is showing both inland and marine levels.](images/fig-wgeel_au.png){#fig-wgeel_au}
+![Map of the Substock level for the WGEEL habitat database. The map is showing both inland and marine levels.](images/fig-wgeel_au.png){#fig-wgeel_au}
 
 
 #### Regional
-
+Regional units were discussed during WGEEL and might mostly be used during the building of regional models. They allow
+to split Substocks into smaller parts. At this stage, the final structure of the whole stock model is not defined, so
+this intermediate hierarchy will offer flexibility when building the model.
 This query inserts a new spatial unit into the `refeel.tr_area_are` table, representing a **marine regional unit** called **“Western Mediterranean”**.
 
-It starts with a Common Table Expression (`WITH region_selection`) that selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table at the **Subdivision** level (`fia_level = 'Subdivision'`). These fishing area geometries are spatially matched (`ST_Intersects`) with existing assessment units from the `refeel.tr_area_are` table. The selection is further restricted to subdivisions whose codes (`fia_subdivision`) belong to the specified list and to a single parent assessment unit identified by `are_id = 9`. The resulting geometries are grouped by the parent area and converted into a multi-geometry using `ST_Multi`.
+It starts with a Common Table Expression (`WITH region_selection`) that selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table at the **Subdivision** level (`fia_level = 'Subdivision'`). These fishing area geometries are spatially matched (`ST_Intersects`) with existing Substocks from the `refeel.tr_area_are` table. The selection is further restricted to subdivisions whose codes (`fia_subdivision`) belong to the specified list and to a single parent Substock identified by `are_id = 9`. The resulting geometries are grouped by the parent area and converted into a multi-geometry using `ST_Multi`.
 
-The unified geometry produced by the CTE is then inserted as a single polygon into the `geom_polygon` column. A new area identifier (`are_id`) is automatically generated using `nextval('refeel.seq')`, while the parent area is set to the originating assessment unit (`are_are_id = are_id` from the CTE). The area code is defined as `'Western Mediterranean'`, the spatial level is set to `'Regional'` via `are_lev_code`, and the area is explicitly marked as marine (`are_ismarine = true`). No line geometry is provided (`geom_line = NULL`).
+The unified geometry produced by the CTE is then inserted as a single polygon into the `geom_polygon` column. A new area identifier (`are_id`) is automatically generated using `nextval('refeel.seq')`, while the parent area is set to the originating Substock (`are_are_id = are_id` from the CTE). The area code is defined as `'Western Mediterranean'`, the spatial level is set to `'Regional'` via `are_lev_code`, and the area is explicitly marked as marine (`are_ismarine = true`). No line geometry is provided (`geom_line = NULL`).
 
 
 ```{sql}
@@ -2857,7 +2860,7 @@ DT::datatable(fstock_lvl,
 
 #### Assessment_unit
 
-This query inserts a new spatial unit into the `refeel.tr_area_are` table, representing a **non-marine assessment unit** (@fig-wgeel_au) called **“Inland Barents”**.
+This query inserts a new spatial unit into the `refeel.tr_area_are` table, representing a **non-marine Substock** (@fig-wgeel_au) called **“Inland Barents”**.
 
 It selects and merges (`ST_Union`) the geometries (`shape`) from the `tempo.catchments_eel` table, restricted to catchment groups identified by their schema names. These schemas are extracted from `tableoid::regclass` and filtered to include only `'h_barents'`, `'h_iceland'`, `'h_norwegian'`, and `'h_svalbard'`.
 
@@ -2867,7 +2870,7 @@ The resulting unified geometry is inserted as a single polygon into the `geom_po
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
-#| code-summary: Code to create the Inland Assessment unit level for WGEEL
+#| code-summary: Code to create the Inland Substock level for WGEEL
 #| warning: FALSE
 #| message: FALSE
 
@@ -2887,11 +2890,11 @@ WHERE regexp_replace(tableoid::regclass::text, '\.catchments$', '') IN ('h_baren
 
 
 ```{r}
-#| label: refeel.tr_area_are Inland Assessment unit level
+#| label: refeel.tr_area_are Inland Substock level
 #| echo: FALSE
 #| warning: FALSE
 #| message: FALSE
-#| tbl-cap: Structure of the Inland Assessment unit level in the referential table
+#| tbl-cap: Structure of the Inland Substock level in the referential table
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
@@ -2916,13 +2919,13 @@ DT::datatable(fstock_lvl,
 
 This query inserts new spatial units into the `refeel.tr_area_are` table, creating **non-marine River-level areas** derived from river networks and catchment boundaries.
 
-It begins with a series of Common Table Expressions (CTEs) to progressively associate river segments with existing inland assessment units. The first CTE (`unit_riv`) identifies the main stretch of river (`main_riv`) whose first-order river segments (`ord_clas = 1`) spatially intersect (`ST_Intersects`) with non-marine assessment units (`are_lev_code = 'Assessment_unit'` and `are_ismarine = false`) in the `refeel.tr_area_are` table.
+It begins with a series of Common Table Expressions (CTEs) to progressively associate river segments with existing inland Substocks. The first CTE (`unit_riv`) identifies the main stretch of river (`main_riv`) whose first-order river segments (`ord_clas = 1`) spatially intersect (`ST_Intersects`) with non-marine Substocks (`are_lev_code = 'Assessment_unit'` and `are_ismarine = false`) in the `refeel.tr_area_are` table.
 
-The second CTE (`all_segments`) retrieves all river segments belonging to these main rivers and associates them with the corresponding parent assessment unit. The third CTE (`catchments_with_riv`) links catchment polygons from `tempo.catchments_eel` to the river network by selecting catchments that spatially intersect the river segments, retaining their basin identifier (`main_bas`), catchment identifier (`hybas_id`), and geometry.
+The second CTE (`all_segments`) retrieves all river segments belonging to these main rivers and associates them with the corresponding parent Substock. The third CTE (`catchments_with_riv`) links catchment polygons from `tempo.catchments_eel` to the river network by selecting catchments that spatially intersect the river segments, retaining their basin identifier (`main_bas`), catchment identifier (`hybas_id`), and geometry.
 
-To avoid duplicates, the `deduplicated` CTE keeps a single record per catchment (`hybas_id`). The `merged` CTE then aggregates catchments by main basin (`main_bas`), assigns them to the corresponding parent assessment unit (`are_id`), and merges their geometries using `ST_Union`.
+To avoid duplicates, the `deduplicated` CTE keeps a single record per catchment (`hybas_id`). The `merged` CTE then aggregates catchments by main basin (`main_bas`), assigns them to the corresponding parent Substock (`are_id`), and merges their geometries using `ST_Union`.
 
-Finally, for each resulting river basin, a new area is inserted with a generated identifier (`are_id` via `nextval('refeel.seq')`), the parent area set to the associated assessment unit, and the basin code (`main_bas`) used as the area code. The spatial level is defined as `'River'`, the area is marked as non-marine (`are_ismarine = false`), and the merged geometry is stored as a multi-polygon (`ST_Multi`) in the `geom_polygon` column. No line geometry is provided (`geom_line = NULL`).
+Finally, for each resulting river basin, a new area is inserted with a generated identifier (`are_id` via `nextval('refeel.seq')`), the parent area set to the associated Substock, and the basin code (`main_bas`) used as the area code. The spatial level is defined as `'River'`, the area is marked as non-marine (`are_ismarine = false`), and the merged geometry is stored as a multi-polygon (`ST_Multi`) in the `geom_polygon` column. No line geometry is provided (`geom_line = NULL`).
 
 
 ```{sql}
@@ -3000,7 +3003,7 @@ DT::datatable(fstock_lvl,
 ```
 
 
-![Map of the River level for the WGEEL habitat database. Colours are related to the higher hierarchical level (Assessment unit).](images/fig-wgeel_riv.png){#fig-wgeel_riv}
+![Map of the River level for the WGEEL habitat database. Colours are related to the higher hierarchical level (Substock).](images/fig-wgeel_riv.png){#fig-wgeel_riv}
 
 #### River_section
 
@@ -3342,7 +3345,9 @@ DT::datatable(fstock_lvl,
 
 #### EMU
 
-Even though **EMU** are to be deprecated, they have been included within the database to help with the transition from EMU to **Regional** or **Assessment units**.
+The EMU level is the spatial unit used in the eel regulation. It is nested within the country level, but the hierarchy goes not beyond that level, as some EMUs (for instance Andalusia) reports into different substocks (Mediterranean and Atlantic).
+
+
 
 ```{r}
 #| label: refeel.tr_area_are EMU level
