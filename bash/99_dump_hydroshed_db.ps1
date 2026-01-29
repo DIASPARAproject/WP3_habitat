@@ -10,7 +10,7 @@ pg_dump -U postgres -F custom -d diaspara -n h_blacksea > h_blacksea.pgc
 pg_dump -U postgres -F custom -d diaspara -n h_celtic > h_celtic.pgc
 pg_dump -U postgres -F custom -d diaspara -n h_iceland > h_iceland.pgc
 pg_dump -U postgres -F custom -d diaspara -n h_medcentral > h_medcentral.pgc
-pg_dump -U postgres -F custom -d diaspara -n h_medeast > h_medeast.pgc
+
 pg_dump -U postgres -F custom -d diaspara -n h_medwest > h_medwest.pgc
 pg_dump -U postgres -F custom -d diaspara -n h_norwegian > h_norwegian.pgc
 pg_dump -U postgres -F custom -d diaspara -n h_nseanorth > h_nseanorth.pgc

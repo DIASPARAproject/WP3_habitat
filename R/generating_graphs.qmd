@@ -14,14 +14,14 @@ digraph {
     rankdir="LR";
 
     subgraph clusterZ {
-      label = "Stock Complex"
+      label = "Stock(s)"
       style=full
       color=red
       fontcolor=red
       center=true
 
       subgraph clusterA {
-        label = "Inland Stock"
+        label = "Inland Stock(s)"
         style=full
         color=lightgray
         fontcolor=lightgray
@@ -68,7 +68,7 @@ digraph {
       }
 
       subgraph clusterF {
-      label = "Marine Stock"
+      label = "Marine Stock(s)"
       style=full
       color=lightgray
       fontcolor=lightgray
@@ -934,7 +934,7 @@ digraph {
       center=true
 
       subgraph clusterA {
-        label = "Inland Stock"
+        label = "Inland Stock Complexes"
         style=full
         color=lightgrey
         fontcolor=lightgrey
@@ -980,7 +980,7 @@ digraph {
       }
 
       subgraph clusterF {
-      label = "Marine Stock"
+      label = "Marine Stock complexes"
       style=full
       color=lightgrey
       fontcolor=lightgrey
@@ -1041,14 +1041,14 @@ digraph {
     rankdir="LR";
 
     subgraph clusterZ {
-      label = "Stock Complex"
+      label = "Stock Complexes"
       style=full
       color=lightgrey
       fontcolor=lightgrey
       center=true
 
       subgraph clusterA {
-        label = "Inland Stock"
+        label = "Inland Stock complexes"
         style=full
         color=green
         fontcolor=green
@@ -1094,7 +1094,7 @@ digraph {
       }
 
       subgraph clusterF {
-      label = "Marine Stock"
+      label = "Marine Stock complexes"
       style=full
       color=lightgrey
       fontcolor=lightgrey
