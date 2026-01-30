@@ -4,7 +4,7 @@ subtitle: "DIASPARA WP3.1 Habitat database"
 author: "Oliviéro Jules, Briand Cédric, Helminen Jani"
 date: last-modified
 date-format: "DD-MM-YYYY"
-description: "Design an international database of habitat of migratory fish, version = pre-release, for review"
+description: "Design an international database of habitat of migratory fish, version = final"
 title-block-banner: "images/diaspara_bandeau.png"
 title-block-banner-color: "white"
 format:
@@ -30,7 +30,7 @@ include-after-body: "footer.html"
 ---
 
 Diadromous species use both Marine and continental environments. They are subjected to multiple stressor acting locally or at the global scale, many of them acting in continental waters. Currently ICES has designed its databases for the marine environment, and we need an habitat referential to better account for stressor (dam, connectivity, pollution, fishery) acting at the very local scale in the continental environment. The objective is to propose a referential database of habitat
-that could be used as a vocabulary for habitat based on the HydroSHEDS database and covering all continental freshwater and transitional habitats across Europe, but also to provide a referential for units from the river, to the wider stock level, including the marine environment, and adapted to the needs of the diadromous expert groups (WGNAS, WGBAST, WGTRUTTA, WGEEL). {>>Should we define vocabulary? this is a specific work, and I have seen it used much outside ICES world<<}
+that could be used as a vocabulary for habitat based on the HydroSHEDS database and covering all continental freshwater and transitional habitats across Europe, but also to provide a referential for units from the river, to the wider stock level, including the marine environment, and adapted to the needs of the diadromous expert groups (WGNAS Working group on Atlantic Salmon, WGBAST Working group on Baltic Salmon, WKTRUTTA Working Group to Develop and Test Assessment Methods for Sea Trout Populations , WGEEL Working group on eel).
 
 # River network choice
 To create the habitat database we decided to use a single river network. This ensures a consistent 
@@ -85,8 +85,8 @@ cred <- read_yaml("../credentials.yml")
                             dbname = cred$dbnamehydro,
                             host = cred$host,
                             port = cred$port,
-                            user = cred$usersalmo,
-                            password = cred$passwordsalmo)
+                            user = cred$userdistant,
+                            password = cred$passworddistant)
          
 
 ```
@@ -832,8 +832,8 @@ digraph {
 This area is meant to be a [referential tables](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p7stock/midb.html#referential-tables). 
 Several levels have been layed out (@fig-area_hierarchy_bast).
 
-![The nested structure layed out in table tr_area_area, dotted box indicate that the level 
-is optional. This table represents the structure for refbast.](images/fig-area_hierarchy_bast.svg){#fig-area_hierarchy_bast}
+<!--![The nested structure layed out in table tr_area_area, dotted box indicate that the level 
+is optional. This table represents the structure for refbast.](images/fig-area_hierarchy_bast.svg){#fig-area_hierarchy_bast}-->
 
 The first layer of the structure is the global Stock level (@fig-fullstocklvl). 
 It includes all catchments that have a river flowing into the Baltic as well as all ICES subdivisions
@@ -1012,7 +1012,8 @@ DT::datatable(fstock_lvl,
 
 #### Subdivision grouping
 
-Two subdivision groupings are in use in the WGBAST database to store some historical data. They are dividing the Baltic into two main areas and are structured as followed : Gulf of Bothnia 300 (`27.3.d.30`,`27.3.d.31`) and Main Baltic 200 (`27.3.d.22`,`27.3.d.23`,`27.3.d.24`,`27.3.d.25`,`27.3.d.26`,`27.3.d.27`,`27.3.d.28`,`27.3.d.29`).{>>Hilaire : generally the d is not displayed in the notation, but I guess you keep it for consistency with ICES vocab. Cédric Yes it's consistent with table content<<}
+Two subdivision groupings are in use in the WGBAST database to store some historical data. They are dividing the Baltic into two main areas and are structured as followed : Gulf of Bothnia 300 (`27.3.d.30`,`27.3.d.31`) and Main Baltic 200 (`27.3.d.22`,`27.3.d.23`,`27.3.d.24`,`27.3.d.25`,`27.3.d.26`,`27.3.d.27`,`27.3.d.28`,`27.3.d.29`).
+<!--Hilaire : generally the d is not displayed in the notation, but I guess you keep it for consistency with ICES vocab. Cédric Yes it's consistent with table content-->
 Those two areas were created by grouping ICES subdivisions together.
 
 
@@ -1452,7 +1453,7 @@ DT::datatable(fstock_lvl,
 ![Map of reaches composing WGBAST first assessment units level.](images/bast_river.png "A view of the Bothian bay with polygons surrounding each reach within the first assessment unit"){#fig-riverlvl}
 
 ::: {.callout-caution}
-Some names for the smallest rives are missing. Further improvement in the Vocabulary will be done by ICES.
+Some names for the smallest rivers are missing. Further improvement in the Vocabulary will be done by ICES.
 :::
 
 #### River section
@@ -1499,7 +1500,9 @@ SELECT DISTINCT ON (are_code) * FROM river_segments;
 ![Map of main stretch of rivers in the Baltic area.](images/bast_rs.png "A view of Scandinavia with lines representing main stretch of rivers that flow into the Baltic"){#fig-riverseclvl}
 
 ## Creating a hierarchical structure for WGNAS {#sec-wgnas-stock}
-The work done on the structural hierarchy for WGNAS follows what has been done for WGBAST, although there is some differences in the layers used. Futhermore, in parallel of the Assessment Unit level, a Fisheries level has been added (@fig-area_hierarchy_nas).
+
+
+The work done on the structural hierarchy for WGNAS follows what has been done for WGBAST, although there are some differences in the layers used. Futhermore, in parallel of the Assessment Unit (stock unit) level, Fisheries level, and post-smolt areas have been added (@fig-area_hierarchy_nas).
 ```{dot}
 //| label: fig-area_hierarchy_nas
 //| fig-cap: Hierarchical structure of WGNAS habitat database
@@ -1510,7 +1513,7 @@ digraph {
     rankdir="LR";
 
     subgraph clusterZ {
-      label = Stock(s)
+      label = "Stock(s)"
       style=full
       color=red
       fontcolor=red
@@ -1584,7 +1587,7 @@ digraph {
           center=true
                 
             subgraph clusterI {
-            label = Assessment_unit
+            label = "Post_smolt_area"
             style=full
             color=royalblue
             fontcolor=royalblue
@@ -1860,17 +1863,17 @@ DT::datatable(fstock_lvl,
 ![Map of the ICES division level. Colours correspond to the higher hierarchical level of Subarea.](images/fig-division_nas.png "A view of the European side of the North Atlantic with polygons surrounding the ICES division level"){#fig-divnas1}
 
 
-#### Assessment unit
-After some disscussions with WGNAS, it was decided to use as Assessment units at sea postsmolt areas from [Olmos et al. (2021)](https://doi.org/10.1111/gcb.14913). Those areas where recreated as close as possible using ICES Division.
+#### Post smolt areas
+After some disscussions with WGNAS, it was decided to use postsmolt areas from [Olmos et al. (2021)](https://doi.org/10.1111/gcb.14913). Those areas where recreated as close as possible using ICES Divisions.
 
-This query inserts a new spatial unit into the `refnas.tr_area_are` table, representing a **marine assessment unit** called **"postsmolt 1"**. It begins with a Common Table Expression (`WITH geomunion`) that selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table. The filter targets rows where the area level (`fia_level`) is `'Division'` and the division code (`fia_division`) matches one of the values in the array: `'21.4.X'`, `'21.4.W'`, or `'21.5.Y'`.
+This query inserts a new spatial unit into the `refnas.tr_area_are` table, representing a **marine post smolt area** called **"postsmolt 1"**. It begins with a Common Table Expression (`WITH geomunion`) that selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table. The filter targets rows where the area level (`fia_level`) is `'Division'` and the division code (`fia_division`) matches one of the values in the array: `'21.4.X'`, `'21.4.W'`, or `'21.5.Y'`.
 
-The resulting unified geometry is inserted as a single polygon into the `geom_polygon` column. A new area ID (`are_id`) is automatically generated using `nextval('refnas.seq')`, the parent area is set to `2` (`are_are_id = 2`), the area code is labeled `'postsmolt 1'`, and the level is defined as `'Assessment_unit'` via `are_lev_code`. The area is explicitly marked as marine (`are_ismarine = true`), and no line geometry is provided (`geom_line = NULL`).
+The resulting unified geometry is inserted as a single polygon into the `geom_polygon` column. A new area ID (`are_id`) is automatically generated using `nextval('refnas.seq')`, the parent area is set to `2` (`are_are_id = 2`), the area code is labelled `'postsmolt 1'`, and the level is defined as `'Post_smolt_area'` via `are_lev_code`. The area is explicitly marked as marine (`are_ismarine = true`), and no line geometry is provided (`geom_line = NULL`).
 
 ```{sql}
 #| eval: FALSE
 #| echo: TRUE
-#| code-summary: Code to create the assessment unit 1 level for WGNAS
+#| code-summary: Code to create the post smolt area 1 level for WGNAS
 #| warning: FALSE
 #| message: FALSE
 
@@ -1882,7 +1885,7 @@ WITH geomunion AS(
 SELECT nextval('refnas.seq') AS are_id,
        2 AS are_are_id,
        'postsmolt 1' AS are_code,
-       'Assessment_unit' AS are_lev_code,
+       'Post_smolt_area' AS are_lev_code,
         true AS are_ismarine,
         geom AS geom_polygon,
 		NULL AS geom_line
@@ -1892,16 +1895,16 @@ SELECT nextval('refnas.seq') AS are_id,
 
 
 ```{r}
-#| label: refnas.tr_area_are marine assessment unit level
+#| label: refnas.tr_area_are marine Post smolt area level
 #| echo: FALSE
 #| warning: FALSE
 #| message: FALSE
-#| tbl-cap: Structure of the marine assessment unit in the referential table
+#| tbl-cap: Structure of the marine post smolt area in the referential table
 
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
   "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refnas.tr_area_are
-  WHERE are_id = ANY(ARRAY[1,2,4]) OR are_lev_code = 'Assessment_unit'
+  WHERE are_id = ANY(ARRAY[1,2,4]) OR are_lev_code = 'Post_smolt_area'
   AND are_ismarine = 'true'
   ORDER BY are_id;")
 
@@ -1918,7 +1921,7 @@ DT::datatable(fstock_lvl,
 
 
 
-![Map of WGNAS Assessment unit level.](images/fig-postsmolt.png "A view of of the North Atlantic with polygons surrounding the assessment unit level"){#fig-psnas10}
+![Map of WGNAS post smolt area level.](images/fig-postsmolt.png "A view of of the North Atlantic with polygons surrounding the Post smolt area level"){#fig-psnas10}
 
 :::{.questionbox}
 ::::{.questionbox-header}
@@ -1983,20 +1986,10 @@ DT::datatable(fstock_lvl,
 ![Map of the fisheries level.](images/fig-fisheries_nas.png "A view of of the North Atlantic with three polygons surrounding the fisheries level"){#fig-fishnas10}
 
 
-:::{.questionbox}
-::::{.questionbox-header}
-::::{.questionbox-icon}
-::::
-Question to WGNAS
-::::
-::::{.questionbox-body}
-- Here we only created fisheries for 3 out of 5 fisheries present in the dataset (GLD, LB/SPM/swNF and FAR). We are missing some informations on where the two remaining ones would need to be (LB & neNF). 
-- Is the overall level of details for the marine hierarchical structure working for the WG needs ?  
-::::
-:::
+
 
 ### Continental level
-#### Stock
+#### Stock(s)
 This query adds an entry named **NEAC inland** (@fig-fullstocklvl) to the same table. It retrieves data from `tempo.catchments_nas`, a temporary table containing inland hydrographic features (`shape`). It selects only the records whose source table (dynamically extracted via `tableoid`) belongs to a specific set of tables such as `'h_barents'`, `'h_biscayiberian'`, `'h_celtic'`, etc. The selected shapes are merged using `ST_Union(shape)` to create a single polygon representing the inland part of the NEAC area. As before, a new `are_id` is generated, `are_are_id` is set to `1`, `are_code` is `'NEAC inland'`, the level remains `'Stock'`, `are_ismarine` is set to `false`, the geometry is inserted into `geom_polygon`, and `geom_line` is again set to `NULL`.
 
 ```{sql}
@@ -2045,7 +2038,10 @@ DT::datatable(fstock_lvl,
 
 ```
 
-#### Assessment unit
+#### Assessment unit (or stock unit)
+A stock unit for Atlantic salmon in the North Atlantic refers to a group of salmon that originates from a specific river or set of rivers, shares biological characteristics, and is treated as a distinct unit for assessment and management. This concept reflects both biological population structure and management boundaries, and is central to ICES and NASCO stock assessments.
+It is used in the North Atlantic salmon model (Salmoglob) to separate different units of stock during the continental part of their life.
+Assessment units are the term used by WGBAST to refer to a similar grouping of basins in the Baltic, it has been used here for consistency.
 Following data from [WGNAS dataset](https://diaspara.bordeaux-aquitaine.inrae.fr/deliverables/wp3/p4/wgnas_salmoglob_description.html#area) and geometries from [Olmos et al. 2020](https://doi.org/10.1111/gcb.14913) we created inland assessment units around Europe and North America. 
 
 This function `update_geom_from_wgnas` is designed to **update the geometry and parent area** of a specific assessment unit in the `refnas.tr_area_are` table based on data from the `janis.wgnas_su` table.
@@ -2081,7 +2077,7 @@ $$ LANGUAGE plpgsql;
 
 
 ```{r}
-#| label: refnas.tr_area_are inland assessment unit level
+#| label: refnas.tr_area_are inland assessment unit (stock unit) level
 #| echo: FALSE
 #| warning: FALSE
 #| message: FALSE
@@ -2105,12 +2101,9 @@ DT::datatable(fstock_lvl,
 
 ```
 
-:::{.callout-note appearance="simple"}
-## cou_*** Assessment units
-In the dataset, assassment units (AU) that seem to refer to countries are present. We would like to merge them either inside the country layer, either with the AU that already includes areas covered by those cou_*** AU.
-:::
 
-![Map of the assessment unit level.](images/fig-au_inland_nas.png "A view with polygons surrounding the assessment units spread across Europe and North America"){#fig-auinnas1}
+
+![Map of the assessment unit (stock unit) level.](images/fig-au_inland_nas.png "A view with polygons surrounding the assessment units spread across Europe and North America"){#fig-auinnas1}
 
 
 #### River
@@ -2272,8 +2265,8 @@ To add the country level, the same work has been done as for WGBAST (@sec-wgbast
 The hierarchical structure for WGEEL is the same as for the two other working groups. The scope of the habitat database is larger for eel since the Mediterranean Sea is part of the assessed area. Lagoons and Complex of lagoons are also part of this structure (@fig-area_hierarchy_eel).
 
 ```{dot}
-//| label: fig-area_hierarchy_wgeel
-//| fig-cap: Hierarchical structure of WGEEL habitat database
+//| label: fig-area_hierarchy_eel
+//| fig-cap: Hierarchical structure of WGEEL habitat database, dotted lines indicate that the element might not be used in some regions. Substocks and regional levels will only be finalised during model building and benchmarking, but lay out the ground for work.
 
 
 digraph {
@@ -2284,70 +2277,71 @@ digraph {
     subgraph clusterZ {
       label = Stock
       style=full
-      color=red
-      fontcolor=red
+      color=black
+      fontcolor=black
       center=true
 
       subgraph clusterA {
         label = "Inland Stock"
         style=full
-        color=lightgray
-        fontcolor=lightgray
+        color=darkgreen
+        fontcolor=darkgreen
         center=true
 
           subgraph clusterB {
-          label = "Sub Component"
+          label = "Sub Component(substock)"
           style=full
-          color=lightgray
-          fontcolor=lightgray
+          color=green4
+          fontcolor=green4
           center=true
 
             subgraph clusterX {
             label = Regional
-            style=full
-            color=lightgray
-            fontcolor=lightgray
+            style=dashed
+            color=green3
+            fontcolor=green3
             center=true
 
               subgraph clusterY {
               label = Complex
               style = full
-              color = lightgray
-              fontcolor = lightgray
+              color = green2
+              fontcolor = green2
               center = true
 
               subgraph clusterV {
               label = Lagoons
               style = full
-              color = lightgray
-              fontcolor = lightgray
+              color = green1
+              fontcolor = green1
               center = true
                 inland [
                   label=data,
                   shape=box, 
                   style =invis
                  ] 
-                }
+                
               }
             }
 
             subgraph clusterC {
             label = River
             style=full
-            color=lightgray
-            fontcolor=lightgray
+            color=green2
+            fontcolor=green2
             center=true
                   
               subgraph clusterD {
               label = River_section
               style=full
-              color=lightgray
-              fontcolor=lightgray
+              color=green1
+              fontcolor=green1
                 section [
                 label=data,
                 shape=box, 
                 style =invis
                 ]  
+            }
           }
         }
       }
@@ -2355,13 +2349,14 @@ digraph {
         subgraph clusterE{
         label=Country
         style=dashed
-        color=lightgray
-        fontcolor=lightgray
+        color=firebrick4
+        fontcolor=firebrick4
+
           subgraph clusterW{
           label=EMU
           style=full
-          color=lightgray
-          fontcolor=lightgray
+          color=firebrick
+          fontcolor=firebrick
           Fishing [
           style=invis
           shape=square
@@ -2372,29 +2367,36 @@ digraph {
       subgraph clusterF {
       label = "Marine Stock"
       style=full
-      color=lightgray
-      fontcolor=lightgray
-      center=true
+      color=darkblue
+      fontcolor=darkblue
+      center=true 
 
+      subgraph clusterZ {
+      label = "Sub Component(substock)"
+      style=full
+      color=royalblue4
+      fontcolor=royalblue4
+      center=true
+      
         subgraph clusterG {
           label = Regional
-          style=full
-          color=lightgray
-          fontcolor=lightgray
+          style=dashed
+          color=royalblue3
+          fontcolor=royalblue3
           center=true
 
           subgraph clusterG {
           label = Division
           style=full
-          color=lightgray
-          fontcolor=lightgray
+          color=royalblue2
+          fontcolor=royalblue2
           center=true
 
             subgraph clusterH {
             label = Subdivision
             style=full
-            color=lightgray
-            fontcolor=lightgray
+            color=royalblue1
+            fontcolor=royalblue1
             center=true
               here [
               label=data1,
@@ -2405,15 +2407,16 @@ digraph {
             }
           }   
         }
+       } 
       }
       section -> Fishing -> here [style=invis];
 }
 
 ```
 
-![Hierarchical structure of WGEEL habitat database.](images/fig-area_hierarchy_wgeel.svg){#fig-area_hierarchy_eel}
+<!-- ![Hierarchical structure of WGEEL habitat database.](images/fig-area_hierarchy_wgeel.png){#fig-area_hierarchy_eel) -->
 
-This structure will be added into a table named `refeel.tr_area_are`. The global Stock is still the first layer and is made of a fusion between the Marine and the Inland Stock (@fig-wgeel_stock). It includes all catchments flowing into areas studied by WGEEL as well as all ICES Divisions and GFCM Subdivisions (for the Mediterranean) corresponding to said areas of interest.
+This structure will be added into a table named `refeel.tr_area_are`. The global Stock is still the first layer and is made of a fusion between the Marine and the Inland Stock (@fig-wgeel_stock). It includes all catchments flowing into areas studied by WGEEL as well as all ICES Divisions and GFCM Subdivisions (for the Mediterranean).
 
 To create this layer the same approach has been used as for WGNAS (@sec-wgnas-stock).
 
@@ -2526,9 +2529,9 @@ DT::datatable(fstock_lvl,
 
 ```
 
-#### Sub Component
-Sub component of the stock (substocks) are part of a whole stock but are assessed in separate models as they are geographically isolated during part of their lifecycle.
-{>>Assessment is probably not the good wording here: remember wkfea and Alain: ICES only assesses the species at the stock level, so assessment unit is missleading. refer to sub-unit?<<}
+#### Sub Component of the stock (Substock)
+Sub components of the stock (substocks) are part of a whole stock but are assessed in separate models as they are geographically isolated during part of their lifecycle.
+<!--Hilaire : Assessment is probably not the good wording here: remember wkfea and Alain: ICES only assesses the species at the stock level, so assessment unit is missleading. refer to sub-unit?-->
 This query inserts a new spatial unit into the `refeel.tr_area_are` table, representing a **marine Sub Component** called **“Marine Barents”** as an example. It selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table, restricted to fishing areas whose division code (`fia_division`) matches one of the following values: `'27.14.a'`, `'27.5.a'`, `'27.2.b'`, `'27.2.a'`, `'27.1.b'`, `'27.1.a'`, or `'27.14.b'`.
 
 The resulting unified geometry is converted to a multi-geometry (`ST_Multi`) and inserted as a single polygon into the `geom_polygon` column. A new area ID (`are_id`) is automatically generated using `nextval('refeel.seq')`, the parent area is set to `are_are_id = 2` (`Marine Stock`), the area code is labeled `'Marine Barents'`, and the level is defined as `'Substock'` via `are_lev_code`. The area is explicitly marked as marine (`are_ismarine = true`), and no line geometry is provided (`geom_line = NULL`).
@@ -2545,7 +2548,7 @@ INSERT INTO refeel.tr_area_are (are_id, are_are_id, are_code, are_lev_code, are_
 SELECT nextval('refeel.seq') AS are_id,
 	2 AS are_are_id,
 	'Marine Barents' AS are_code,
-	'Assessment_unit' AS are_lev_code,
+	'Substock' AS are_lev_code,
 	true AS are_ismarine,
 	ST_Multi(ST_Union(geom)) AS geom_polygon,
 	NULL AS geom_line
@@ -2565,7 +2568,7 @@ WHERE fia_division IN ('27.14.a','27.5.a','27.2.b','27.2.a','27.1.b','27.1.a','2
 
 fstock_lvl <- dbGetQuery(con_diaspara, 
   "SELECT are_id, are_are_id, are_code, are_lev_code, are_wkg_code, are_ismarine FROM refeel.tr_area_are
-  WHERE are_id IN (1,2) OR are_lev_code = 'Assessment_unit' AND are_ismarine = true
+  WHERE are_id IN (1,2) OR are_lev_code = 'Substock' AND are_ismarine = true
   ORDER BY are_id;")
 
 DT::datatable(fstock_lvl,
@@ -2584,14 +2587,12 @@ DT::datatable(fstock_lvl,
 
 
 #### Regional
-Regional units were discussed during WGEEL and might mostly be used during the building of regional models. They allow
-to split Substocks into smaller parts. At this stage, the final structure of the whole stock model is not defined, so
-this intermediate hierarchy will offer flexibility when building the model.
+Regional units were discussed during WGEEL and might mostly be used during the building of regional models. They allow to split Substocks into smaller parts. At this stage, the final structure of the whole stock model is not defined, so this intermediate hierarchy will offer flexibility when building the model, and also when working on the regional models, which will require a finer spatial structure.
 This query inserts a new spatial unit into the `refeel.tr_area_are` table, representing a **marine regional unit** called **“Western Mediterranean”**.
 
 It starts with a Common Table Expression (`WITH region_selection`) that selects and merges (`ST_Union`) the geometries (`geom`) from the `ref.tr_fishingarea_fia` table at the **Subdivision** level (`fia_level = 'Subdivision'`). These fishing area geometries are spatially matched (`ST_Intersects`) with existing Substocks from the `refeel.tr_area_are` table. The selection is further restricted to subdivisions whose codes (`fia_subdivision`) belong to the specified list and to a single parent Substock identified by `are_id = 9`. The resulting geometries are grouped by the parent area and converted into a multi-geometry using `ST_Multi`.
 
-The unified geometry produced by the CTE is then inserted as a single polygon into the `geom_polygon` column. A new area identifier (`are_id`) is automatically generated using `nextval('refeel.seq')`, while the parent area is set to the originating Substock (`are_are_id = are_id` from the CTE). The area code is defined as `'Western Mediterranean'`, the spatial level is set to `'Regional'` via `are_lev_code`, and the area is explicitly marked as marine (`are_ismarine = true`). No line geometry is provided (`geom_line = NULL`).
+The unified geometry produced by the CTE (common table expression) is then inserted as a single polygon into the `geom_polygon` column. A new area identifier (`are_id`) is automatically generated using `nextval('refeel.seq')`, while the parent area is set to the originating Substock (`are_are_id = are_id` from the CTE). The area code is defined as `'Western Mediterranean'`, the spatial level is set to `'Regional'` via `are_lev_code`, and the area is explicitly marked as marine (`are_ismarine = true`). No line geometry is provided (`geom_line = NULL`).
 
 
 ```{sql}
@@ -2858,7 +2859,7 @@ DT::datatable(fstock_lvl,
 
 ```
 
-#### Assessment_unit
+#### Substock
 
 This query inserts a new spatial unit into the `refeel.tr_area_are` table, representing a **non-marine Substock** (@fig-wgeel_au) called **“Inland Barents”**.
 
@@ -2942,7 +2943,7 @@ WITH unit_riv AS (
     JOIN refeel.tr_area_are taa
       ON ST_Intersects(re.geom, taa.geom_polygon)
     WHERE re.ord_clas = 1
-      AND taa.are_lev_code = 'Assessment_unit'
+      AND taa.are_lev_code = 'Substock'
       AND taa.are_ismarine = false
 ),
 all_segments AS (
@@ -3345,7 +3346,8 @@ DT::datatable(fstock_lvl,
 
 #### EMU
 
-The EMU level is the spatial unit used in the eel regulation. It is nested within the country level, but the hierarchy goes not beyond that level, as some EMUs (for instance Andalusia) reports into different substocks (Mediterranean and Atlantic).
+The EMU level is the spatial unit used in the eel regulation. It is nested within the country level. Some EMUs (for instance Andalusia) reports into different substocks (Mediterranean and Atlantic).
+In the hierarchy, the substock hierarchical level is similar to the country (both have inland stock as a parent), but the hierarchical unit progress below substock to the river or lagoons while country is further divided into EMU but there is no lower hierarchy (@fig-area_hierarchy_bast)
 
 
 
