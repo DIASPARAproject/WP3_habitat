@@ -5053,7 +5053,7 @@ SELECT * FROM refbast.tr_area_are WHERE are_lev_code='River'
 UPDATE refbast.tr_area_are   SET are_name='new name'   WHERE are_id=7777777777777777;
 
 /*
- * Fix habitat level for salmon
+ * Fix habitat level after Hilaire review
  */
 
 SELECT * FROM refnas.tr_area_are WHERE are_lev_code = 'Stock'
@@ -5079,7 +5079,6 @@ UPDATE "ref".tr_habitatlevel_lev
   WHERE lev_code='Regional';
 
 
--- TODO
 UPDATE refnas.tr_area_are
   SET are_name='NorthEastern Atlantic Stock complex (NEAC)'
   WHERE are_id=1;
@@ -5091,14 +5090,25 @@ UPDATE refnas.tr_area_are
 
 INSERT INTO "ref".tr_habitatlevel_lev(lev_code,lev_description)  VALUES ('Post_smolt_area', 'Postsmolt areas from Olmos et al. (2021)') 
 
-INSERT INTO "ref".tr_habitatlevel_lev(lev_code,lev_description)  VALUES ('Substock_unit', 'Sub component of the stock, assessed in separate models as they are geographically isolated during part of their lifecycle') 
+INSERT INTO "ref".tr_habitatlevel_lev(lev_code,lev_description)  VALUES ('Substock', 'Sub component of the stock, assessed in separate models as they are geographically isolated during part of their lifecycle') 
 
 UPDATE refnas.tr_area_are
   SET are_lev_code = 'Post_smolt_area' 
   WHERE are_lev_code='Assessment unit' AND
-   are_ismarine =TRUE;
+   are_ismarine =TRUE; --17
 
 
 UPDATE refeel.tr_area_are
-  SET are_lev_code = 'Substock_unit' 
-  WHERE are_lev_code='Assessment unit' 
+  SET are_lev_code = 'Substock' 
+  WHERE are_lev_code='Assessment_unit' ; --12
+  
+  
+SELECT are_id,are_are_id, are_code,are_lev_code,are_ismarine, are_name FROM  refeel.tr_area_are 
+  where are_lev_code = 'Substock' ;
+
+UPDATE refeel.tr_area_are SET are_name = are_code WHERE are_lev_code = 'Substock';
+
+SELECT are_id,are_are_id, are_code,are_lev_code,are_ismarine, are_name FROM  refeel.tr_area_are 
+  where are_lev_code = 'Regional' ;  
+
+UPDATE refeel.tr_area_are SET are_name = are_code WHERE are_lev_code = 'Regional';

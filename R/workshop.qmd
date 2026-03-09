@@ -348,6 +348,96 @@ res <- dbGetQuery(con, "
 
 ```
 
+## working straight in R to get the data from Zenodo.
+
+
+Here is a query for some spatial units : do you have a .shp file of the ecoregions defined in DIASPARA I can use to create a map in R (adriatic, the 3 baltic regions, nsnorth, nssouth etc.)? 
+These files are in fact summarized in each working group.
+They can be downloaded from ICES
+
+```{r }
+#| label: extract ecosystem
+#| echo: TRUE
+#| eval: FALSE
+#| warning: FALSE
+#| message: FALSE
+#| code-summary: Example of use of Arrow
+
+# install packages (uncomment to use)
+#install.packages("zen4R")
+#install.packages("purrr")
+#install.packages("arrow")
+#install.packages("sfarrow")
+library(zen4R)
+library(arrow)
+library(sfarrow)
+library(purrr)
+library(ggplot2)
+
+# this will create a directory, use setwd() if you want to 
+# change the directory to put the files
+dir.create("download_zenodo")
+# you can list the files in Zenodo using the following script
+# z <- get_zenodo(doi= "10.5281/zenodo.18155125")
+#names(z$files)
+# download the reference files containing the structure for eel and salmon
+download_zenodo(doi= "10.5281/zenodo.18155125",
+path = "download_zenodo", 
+files = c("refbast.zip", "refnas.zip", "refeel.zip"))
+downloaded_files <- list.files("download_zenodo")
+downloaded_path <- file.path(getwd(),"download_zenodo")
+# sequentially unzip all files in the same folder
+downloaded_files |> purrr::map(\(x)unzip(zipfile=x, exdir ="download_zenodo"))  
+# Open with arrow
+ds <- arrow::open_dataset("download_zenodo/refeel_tr_area_are_polygon.parquet")
+# you need to use collect() at the end of the query to put the data to memory.
+# here I want to know which level will be used. Assessment unit will change to substock
+# in the next zenodo version.
+ds |> select(are_lev_code) |> unique() |> collect()
+
+mymap <- ds|> 
+  filter(are_lev_code == "Assessment_unit") |>
+  collect()
+mymap$geometry <-  sf::st_as_sfc(mymap$geom_polygon, crs = 4326)
+ggplot(mymap) + geom_sf(aes(geometry = geometry, fill =are_code),color="white",size=.2)+
+  scale_fill_viridis_d()+
+  theme_minimal()+
+  theme(panel.background = element_rect(fill = "light blue"))
+
+
+
+# Packages
+library(httr2)   # or use download.file if you prefer base R
+library(sf)      # to read the shapefile or GeoPackage
+library(fs)
+
+
+ecoregions_url <- "https://gis.ices.dk/shapefiles/ICES_ecoregions.zip"   # common historical location
+
+out_dir <- path_temp("ices_ecoregions_dl")
+dir_create(out_dir, recurse = TRUE)
+zip_path <- path(out_dir, "ICES_ecoregions.zip")
+unzip_dir <- path(out_dir, "unzipped")
+
+
+req <- request(ecoregions_url) |>
+  req_user_agent("R (httr2) - ICES ecoregions download") |>
+  req_timeout(120)
+resp <- req_perform(req, path = zip_path)
+
+dir_create(unzip_dir, recurse = TRUE)
+unzipped_files <- unzip(zipfile = zip_path, exdir = unzip_dir)
+shp  <- unzipped_files[grepl("\\.shp$",  unzipped_files, ignore.case = TRUE)]
+
+# Read with sf
+ecoregions_sf <- sf::st_read(shp, quiet = TRUE)
+plot(ecoregions_sf["Ecoregion"], main = "ICES Ecoregions")
+
+
+```
+
+
+
 # Need help ? Have a feedback ?
 Please feel free to contact us if you encounter any issue during this process. Morever, to give us your feedback, questions and remarks, send us mails, we’ll answer promptly.
 Jules Oliviéro [jules.oliviero@inrae.fr](jules.oliviero@inrae.fr) Cedric Briand [cedric.briand@eaux-et-vilaine.bzh](cedric.briand@eaux-et-vilaine.bzh) Jani Helminen [jani.helminen@luke.fi](jani.helminen@luke.fi) 

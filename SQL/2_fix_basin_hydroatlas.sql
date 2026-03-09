@@ -3749,12 +3749,12 @@ ALTER TABLE h_baltic27to29_32.riversegments INHERIT tempo.riversegments_baltic;
 CREATE INDEX idx_tempo_balt_riversegments ON tempo.riversegments_baltic USING GIST(geom);
 
 
-DROP TABLE IF EXISTS tempo.catchments_baltic;
-CREATE TABLE tempo.catchments_baltic (LIKE h_baltic30to31.catchments);
-ALTER TABLE h_baltic30to31.catchments INHERIT tempo.catchments_baltic;
-ALTER TABLE h_baltic22to26.catchments INHERIT tempo.catchments_baltic;
-ALTER TABLE h_baltic27to29_32.catchments INHERIT tempo.catchments_baltic;
-CREATE INDEX idx_tempo_balt_catchments ON tempo.catchments_baltic USING GIST(shape);
+DROP TABLE IF EXISTS habitat.catchments_baltic;
+CREATE TABLE habitat.catchments_baltic (LIKE h_baltic30to31.catchments);
+ALTER TABLE h_baltic30to31.catchments INHERIT habitat.catchments_baltic;
+ALTER TABLE h_baltic22to26.catchments INHERIT habitat.catchments_baltic;
+ALTER TABLE h_baltic27to29_32.catchments INHERIT habitat.catchments_baltic;
+CREATE INDEX idx_tempo_balt_catchments ON habitat.catchments_baltic USING GIST(shape);
 
 DROP TABLE IF EXISTS tempo.riversegments_nas;
 CREATE TABLE tempo.riversegments_nas (LIKE h_barents.riversegments);
@@ -3768,20 +3768,20 @@ ALTER TABLE h_nseasouth.riversegments INHERIT tempo.riversegments_nas;
 ALTER TABLE h_nseauk.riversegments INHERIT tempo.riversegments_nas;
 ALTER TABLE h_svalbard.riversegments INHERIT tempo.riversegments_nas;
 
-DROP TABLE IF EXISTS tempo.catchments_nas;
-CREATE TABLE tempo.catchments_nas (LIKE h_barents.catchments);
-ALTER TABLE h_barents.catchments INHERIT tempo.catchments_nas;
-ALTER TABLE h_biscayiberian.catchments INHERIT tempo.catchments_nas;
-ALTER TABLE h_celtic.catchments INHERIT tempo.catchments_nas;
-ALTER TABLE h_iceland.catchments INHERIT tempo.catchments_nas;
-ALTER TABLE h_norwegian.catchments INHERIT tempo.catchments_nas;
-ALTER TABLE h_nseanorth.catchments INHERIT tempo.catchments_nas;
-ALTER TABLE h_nseasouth.catchments INHERIT tempo.catchments_nas;
-ALTER TABLE h_nseauk.catchments INHERIT tempo.catchments_nas;
-ALTER TABLE h_svalbard.catchments INHERIT tempo.catchments_nas;
+DROP TABLE IF EXISTS habitat.catchments_nas;
+CREATE TABLE habitat.catchments_nas (LIKE h_barents.catchments);
+ALTER TABLE h_barents.catchments INHERIT habitat.catchments_nas;
+ALTER TABLE h_biscayiberian.catchments INHERIT habitat.catchments_nas;
+ALTER TABLE h_celtic.catchments INHERIT habitat.catchments_nas;
+ALTER TABLE h_iceland.catchments INHERIT habitat.catchments_nas;
+ALTER TABLE h_norwegian.catchments INHERIT habitat.catchments_nas;
+ALTER TABLE h_nseanorth.catchments INHERIT habitat.catchments_nas;
+ALTER TABLE h_nseasouth.catchments INHERIT habitat.catchments_nas;
+ALTER TABLE h_nseauk.catchments INHERIT habitat.catchments_nas;
+ALTER TABLE h_svalbard.catchments INHERIT habitat.catchments_nas;
 
-DROP TABLE IF EXISTS tempo.catchments_nac;
-CREATE TABLE tempo.catchments_nac AS(
+DROP TABLE IF EXISTS habitat.catchments_nac;
+CREATE TABLE habitat.catchments_nac AS(
 WITH selectlarge AS (
 SELECT shape FROM basinatlas.basinatlas_v10_lev02
 WHERE hybas_id = ANY(ARRAY[7020024600,7020038340])),
@@ -3796,14 +3796,14 @@ WHERE EXISTS (
 )
 SELECT * FROM selectsmall
 );--30504
-CREATE INDEX idx_tempo_nac_catchments ON tempo.catchments_nac USING GIST(shape);
+CREATE INDEX idx_tempo_nac_catchments ON habitat.catchments_nac USING GIST(shape);
 
 DROP TABLE IF EXISTS tempo.riversegments_nac;
 CREATE TABLE tempo.riversegments_nac AS(
 	SELECT * FROM riveratlas.riveratlas_v10 r
 	WHERE EXISTS (
 		SELECT 1
-		FROM tempo.catchments_nac e
+		FROM habitat.catchments_nac e
 		WHERE ST_Intersects(r.geom,e.shape)
 	)
 );--434740
@@ -3836,30 +3836,30 @@ ALTER TABLE h_svalbard.riversegments INHERIT tempo.riversegments_eel;
 CREATE INDEX idx_tempo_eel_riv ON tempo.riversegments_eel USING GIST(geom);
 
 
-DROP TABLE IF EXISTS tempo.catchments_eel;
-CREATE TABLE tempo.catchments_eel (LIKE h_baltic30to31.catchments);
-ALTER TABLE h_adriatic.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_baltic30to31.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_baltic22to26.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_baltic27to29_32.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_barents.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_biscayiberian.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_blacksea.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_celtic.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_iceland.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_medcentral.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_medeast.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_medwest.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_norwegian.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_nseanorth.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_nseasouth.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_nseauk.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_southatlantic.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_southmedcentral.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_southmedeast.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_southmedwest.catchments INHERIT tempo.catchments_eel;
-ALTER TABLE h_svalbard.catchments INHERIT tempo.catchments_eel;
-CREATE INDEX idx_tempo_eel_catchments ON tempo.catchments_eel USING GIST(shape);
+DROP TABLE IF EXISTS habitat.catchments_eel;
+CREATE TABLE habitat.catchments_eel (LIKE h_baltic30to31.catchments);
+ALTER TABLE h_adriatic.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_baltic30to31.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_baltic22to26.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_baltic27to29_32.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_barents.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_biscayiberian.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_blacksea.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_celtic.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_iceland.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_medcentral.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_medeast.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_medwest.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_norwegian.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_nseanorth.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_nseasouth.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_nseauk.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_southatlantic.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_southmedcentral.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_southmedeast.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_southmedwest.catchments INHERIT habitat.catchments_eel;
+ALTER TABLE h_svalbard.catchments INHERIT habitat.catchments_eel;
+CREATE INDEX idx_tempo_eel_catchments ON habitat.catchments_eel USING GIST(shape);
 
 
 

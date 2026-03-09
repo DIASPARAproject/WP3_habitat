@@ -43,7 +43,7 @@ ALTER ROLE jani WITH password '*****************'; --c
 
 
 
---- GRANT DBEel_DBManager TO lbeaulaton WITH ADMIN OPTION;
+--- GRANT DBEel_DBManager ADMIN OPTION;
 GRANT diaspara_admin TO jules ;
 GRANT diaspara_admin TO cedric ;
 GRANT diaspara_admin TO jani ;

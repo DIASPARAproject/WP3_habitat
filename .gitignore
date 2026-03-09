@@ -77,3 +77,8 @@ data/*.dump
 bash/jani_variables_do_not_commit.ps1
 data/area.Rdata
 *.zip
+
+download_zenodo/
+h_norwegian_catchments.parquet
+h_norwegian_lakes.parquet
+h_norwegian_riversegments.parquet
