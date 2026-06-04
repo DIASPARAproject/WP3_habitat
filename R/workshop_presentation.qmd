@@ -44,71 +44,77 @@ editor: visual
 ---
 
 ## Habitat DB
+
 HydroSHEDS data forming the basis of the habitat database
 
-- HydroBASIN
-- HydroRIVERS
-- HydroLAKES (to be included)
+-   HydroBASIN
+-   HydroRIVERS
+-   HydroLAKES (to be included)
 
-
-::: {.notes}
-To be able to create this habitat database, we decided to use data from HydroSHEDS.
-HydroSHEDS is a global database providing high-resolution hydrographic data. We will be using three of its components : HydroBASIN for catchments and HydroRIVERS for the river network.
-HydroLAKES will be added later on.
+::: notes
+To be able to create this habitat database, we decided to use data from HydroSHEDS. HydroSHEDS is a global database providing high-resolution hydrographic data. We will be using three of its components : HydroBASIN for catchments and HydroRIVERS for the river network. HydroLAKES will be added later on.
 :::
 
 ## Habitat DB
+
 ![Final map of catchments from HydroSHEDS split into ICES areas and ecoregions.](images/fig-final.png "A view of Europe and Northern Africa catchments"){#fig-final}
 
-::: {.notes}
+::: notes
 The first work that needed to be done was to split those catchments and river segments into smaller groups. We did this for efficiency reasons. To create those we decided to make them fit with ICES Areas and Ecoregions. Basically, all reach that are flowing into a same ICES Area have been grouped together. More details on that work is available on DIASPARA website.
 :::
 
 ## What data is available ?
+
 ![Description of natural discharge variable](images/fig-h_nat_dis.png){#fig-natdis}
 
-::: {.notes}
-Alongside the geometries, environmental data comes with HydroSHEDS. For instance, the natural discharge is available. Its estimation is  based on long term average with annual average, min and max.
+::: notes
+Alongside the geometries, environmental data comes with HydroSHEDS. For instance, the natural discharge is available. Its estimation is based on long term average with annual average, min and max.
 :::
 
 ## What data is available ?
+
 ![Description of river area variable](images/fig-h_riv_are.png){#fig-rivare}
 
-::: {.notes}
+::: notes
 The river area is also a data within HydroSHEDS. Either for the selected river segment or for the total watershed upstream of the reach pour point.
 :::
 
 ## What data is available ?
+
 ![Description of elevation variable](images/fig-h_elev.png){#fig-elev}
 
-::: {.notes}
+::: notes
 You can also find elevation values
 :::
 
 ## What data is available ?
+
 ![Description of terrain slope variable](images/fig-h_ter_slp.png){#fig-terslp}
 
-::: {.notes}
+::: notes
 Terrain slope
 :::
 
 ## What data is available ?
+
 ![Description of stream gradient variable](images/fig-h_st_gra.png){#fig-st_gra}
 
-::: {.notes}
+::: notes
 Or the average stream gradient along the reach segments.
 :::
 
 ## What data is available ?
-- Temperature
-- Precipitation
-- River class order and Strahler number
 
-::: {.notes}
+-   Temperature
+-   Precipitation
+-   River class order and Strahler number
+
+::: notes
 Informations like temp, precipitaion, river class order or Strahler number are also available within the dataset.
 :::
 
 ## Structuring the database with referentials
+
 ```{dot}
 #| label: fig-ref-hierarchy
 #| fig-align: center
@@ -131,23 +137,23 @@ graph {
 
 ```
 
-::: {.notes}
+::: notes
 Once we gathered the data we needed we now had to create a structure within it, so it would be easier to use. To do so we decided to use referential tables with inheritance. Basically, we have a main ref table that dictates the structure of the referentials. This structure is inherited by our working group referential tables, which are here named refbast, refnas and refeel.
 :::
 
 ## Structure of the referential tables
 
-- are_id
-- are_are_id
-- are_code
-- are_lev_code
-- are_wkg_code
-- are_ismarine
-- geom (polygon & line)
+-   are_id
+-   are_are_id
+-   are_code
+-   are_lev_code
+-   are_wkg_code
+-   are_ismarine
+-   geom (polygon & line)
 
 ![Structure of the ref table.](images/fig-ref_structure.png "A view of the ref table"){#fig-refstr}
 
-::: {.notes}
+::: notes
 The referential table is structured like this. First you have a are_id for each line, then a are_are_id that makes said line reference to its higher hierarchical level (more on this a bit later), then the are_code that is like the name of the data, the are_lev_code which corresponds to the hierarchical level, are_wkg_code for the working group, are_ismarine which is a boolean value to know weither the data is marine or continental and finally geometries.
 :::
 
@@ -252,156 +258,151 @@ digraph {
 
 ```
 
-::: {.notes}
-First I going to show you the hierarchical structure we chose for WGBAST, then I'll move on to WGNAS and finally Cedric will go on about WGEEL.
-So, as stated before, each data will be referencing a level a hierarchy and also to its higher level if it exists. For WGBAST we will be following this graph
+::: notes
+First I going to show you the hierarchical structure we chose for WGBAST, then I'll move on to WGNAS and finally Cedric will go on about WGEEL. So, as stated before, each data will be referencing a level a hierarchy and also to its higher level if it exists. For WGBAST we will be following this graph
 :::
 
 ## Stock
 
-:::::: columns
-:::: column
-
+::::: columns
+::: column
 ![Stock level](images/fig-area_hierarchy_bast1.svg "A graph representing the hierarchical structure. The Stock level is highlited in red"){#fig-hierbast1}
+:::
 
-::::
-:::: column
-
+::: column
 ![Map of the full stock level.](images/fig-full_stock_level.png "A view of of the Baltic with a polygon surrounding the stock hierarchical level"){#fig-fullstocklvl}
+:::
+:::::
 
-::::
-::::::
-
-::: {.notes}
-Fisrt, The full stock level is the highest level. Thus it doesn't references to any other level.
-As you can see it is composed of all areas covered by the wg, being at inland or at sea.
+::: notes
+Fisrt, The full stock level is the highest level. Thus it doesn't references to any other level. As you can see it is composed of all areas covered by the wg, being at inland or at sea.
 :::
 
 ## Inland Stock
-:::::: columns
-:::: column
 
+::::: columns
+::: column
 ![Inland stock level](images/fig-area_hierarchy_bast2.svg "A graph representing the hierarchical structure. The Inland Stock level is highlited in green"){#fig-hierbast2}
+:::
 
-::::
-:::: column
+::: column
 ![Map of the inland stock level.](images/fig-inland_stock_level.png "A view of Scandinavia with a polygon surrounding the inland stock hierarchical level"){#fig-inlandstocklvl}
-::::
-::::::
+:::
+:::::
 
-::: {.notes}
-So I'm moving on to the inland part. First is the stock level for the inland area. It represents a merge of all catchments that are flowing into the Baltic Sea. 
+::: notes
+So I'm moving on to the inland part. First is the stock level for the inland area. It represents a merge of all catchments that are flowing into the Baltic Sea.
 :::
 
 ## Assessment unit
-:::::: columns
-:::: column
 
+::::: columns
+::: column
 ![Assessment unit level](images/fig-area_hierarchy_bast3.svg "A graph representing the hierarchical structure. The Assessment Unit level is highlited in green"){#fig-hierbast3}
+:::
 
-::::
-:::: column
+::: column
 ![Map of WGBAST assessment units level.](images/fig-assunit_level.png "A view of the Baltic Sea with polygons surrounding all catchments that belongs to all 6 WGBAST assessment units"){#fig-assunitlvl}
-::::
-::::::
+:::
+:::::
 
-::: {.notes}
+::: notes
 Assessment units were given to us by WGBAST. Thanks to that we were able to integrate them into the structure. Here 6 assessment units are included.
 :::
 
 ## River
-:::::: columns
-:::: column
 
+::::: columns
+::: column
 ![River level](images/fig-area_hierarchy_bast4.svg "A graph representing the hierarchical structure. The River level is highlited in light green"){#fig-hierbast4}
+:::
 
-::::
-:::: column
+::: column
 ![Map of reaches composing WGBAST first assessment units level.](images/fig-riverlevel.png "A view of the Bothian bay with polygons surrounding each reach within the first assessment unit"){#fig-riverlvl}
-::::
-::::::
+:::
+:::::
 
-::: {.notes}
-Within each of those assessment units, the main river stretch have been gathered into polygons. What you see here are reaches for the Assessment Unit numer 1. All of them thus are referencing to said AU. 
+::: notes
+Within each of those assessment units, the main river stretch have been gathered into polygons. What you see here are reaches for the Assessment Unit numer 1. All of them thus are referencing to said AU.
 :::
 
 ## River section
-:::::: columns
-:::: column
 
+::::: columns
+::: column
 ![River section level](images/fig-area_hierarchy_bast5.svg "A graph representing the hierarchical structure. The River Section level is highlited in light green"){#fig-hierbast5}
+:::
 
-::::
-:::: column
+::: column
 ![Map of main stretch of rivers in the Baltic area.](images/fig-River_section_level.png "A view of Scandinavia with lines representing main stretch of rivers that flow into the Baltic"){#fig-riverseclvl}
-::::
-::::::
+:::
+:::::
 
-::: {.notes}
-Now we have the river section level. It is made of the actual river segments. We only kept the main stretch of river. Each river section is referencing to its right River level that I just showed you. If tributaries were to be needed, they can easily be retrieved from the dataset and selected using the river section id of choice.
-Moreover, I am currently finalising some work on the river section level. Depending on data availability, river names will be link to each river sections. Some fiedeling might be needed later on, but most of the work should be done. Note that ICES vocab already exists for the names and that it is what we are using. It will allow us all to be consistent without having issues with accents for instance.
+::: notes
+Now we have the river section level. It is made of the actual river segments. We only kept the main stretch of river. Each river section is referencing to its right River level that I just showed you. If tributaries were to be needed, they can easily be retrieved from the dataset and selected using the river section id of choice. Moreover, I am currently finalising some work on the river section level. Depending on data availability, river names will be link to each river sections. Some fiedeling might be needed later on, but most of the work should be done. Note that ICES vocab already exists for the names and that it is what we are using. It will allow us all to be consistent without having issues with accents for instance.
 :::
 
 ## Country
-:::::: columns
-:::: column
 
+::::: columns
+::: column
 ![Country level](images/fig-area_hierarchy_bast6.svg "A graph representing the hierarchical structure. The Country level is highlited in firebrick red"){#fig-hierbast6}
+:::
 
-::::
-:::: column
+::: column
 ![Map of the country level.](images/fig-country_level.png "A view of Scandinavia with polygons surrounding each countries that has a catchment flowing into the Baltic"){#fig-countrylvl}
-::::
-::::::
+:::
+:::::
 
-::: {.notes}
+::: notes
 Now the country level is not linked to the levels I just presented but goes back as high as the Inland Stock level. It is just a layer with the countries that are within reach of the Baltic. It could help you to select only data that you might need while working at a national level.
 :::
 
 ## Marine stock
-:::::: columns
-:::: column
 
+::::: columns
+::: column
 ![Marine stock level](images/fig-area_hierarchy_bast7.svg "A graph representing the hierarchical structure. The Marine Stock level is highlited in deep blue"){#fig-hierbast7}
+:::
 
-::::
-:::: column
+::: column
 ![Map of the marine stock level.](images/fig-marine_stock_level.png "A view of of the Baltic with a polygon surrounding the Baltic Sea, Bothian Sea and Finland Gulf"){#fig-marinestocklvl}
-::::
-::::::
+:::
+:::::
 
-::: {.notes}
+::: notes
 After that, we can move on to the Marine part. First is the Marine stock level, that is basically all the Baltic Sea.
 :::
 
 ## Division
-:::::: columns
-:::: column
+
+::::: columns
+::: column
 ![ICES Division level](images/fig-area_hierarchy_bast8.svg "A graph representing the hierarchical structure. The ICES division level is highlited in blue"){#fig-hierbast8}
+:::
 
-::::
-:::: column
+::: column
 ![Map of the ICES division level.](images/fig-marine_division_level.png "A view of of the Baltic with polygons surrounding each ICES divisions"){#fig-marinedivlvl}
-::::
-::::::
+:::
+:::::
 
-::: {.notes}
+::: notes
 Then we have the ICES Division level, that takes most of the Baltic as one Unit and the part around Denmark as another Unit.
 :::
 
 ## Subdivision
-:::::: columns
-:::: column
 
+::::: columns
+::: column
 ![ICES subdivision level](images/fig-area_hierarchy_bast9.svg "A graph representing the hierarchical structure. The ICES Subdivision level is highlited in blue"){#fig-hierbast9}
+:::
 
-::::
-:::: column
+::: column
 ![Map of the ICES subdivision level.](images/fig-marine_subdivision_level.png "A view of of the Baltic with polygons surrounding each ICES subdivisions"){#fig-marinesubdivlvl}
-::::
-::::::
+:::
+:::::
 
-::: {.notes}
+::: notes
 And finally we used the ICES subdivision level, that I believe was already kind of used by WGBAST. You can see the split of it on this image and we would need some feedback from you to know if this would be of use for you, if the level of detail is enough, or things like that ?
 :::
 
@@ -521,8 +522,8 @@ digraph {
          
 ```
 
-::: {.notes}
-Now moving on to WGNAS. The structure is just slightly different as you can see here. 
+::: notes
+Now moving on to WGNAS. The structure is just slightly different as you can see here.
 :::
 
 ## Stock
@@ -530,135 +531,152 @@ Now moving on to WGNAS. The structure is just slightly different as you can see 
 ![Stock level](images/fig-area_hierarchy_nas1.svg "A graph representing the hierarchical structure. The Stock level is highlited in red"){#fig-hiernas1}
 
 ## Stock
+
 ![Map of the full stock level.](images/fig-full_stock_nas.png "A view of of the Europe with a polygon surrounding the stock hierarchical level"){#fig-fullnas1}
 
-::: {.notes}
+::: notes
 As for WGBAST the full stock level consists of a merge between inland and marine areas of interest for the wg.
 :::
 
 ## Inland stock
+
 ![Inland stock level](images/fig-area_hierarchy_nas2.svg "A graph representing the hierarchical structure. The Inland stock level is highlited in deep green"){#fig-hiernas2}
 
 ## Inland stock
+
 ![Map of the inland stock level.](images/fig-stock_inland_nas.png "A view of Europe with a polygon surrounding the inland stock hierarchical level"){#fig-inlandnas1}
 
-::: {.notes}
+::: notes
 Then inland stock.
 :::
 
 ## Assessment unit
+
 ![Assessment unit level](images/fig-area_hierarchy_nas3.svg "A graph representing the hierarchical structure. The Assessment unit level is highlited in deep green"){#fig-hiernas3}
 
-::: {.notes}
+::: notes
 Now for assessment unit we had some talks with some of you within WGNAS. We ended up using AUs that were present within Olmos et al. paper from 2020
 :::
 
 ## Assessment unit
+
 ![Map of the assessment unit level.](images/fig-au_inland_nas.png "A view with polygons surrounding the assessment units spread across Europe and North America"){#fig-auinnas1}
 
-::: {.notes}
-Those assessment units were reaching as far as nothern america so we added them to the database. 
+::: notes
+Those assessment units were reaching as far as nothern america so we added them to the database.
 :::
 
 ## River
+
 ![River level](images/fig-area_hierarchy_nas4.svg "A graph representing the hierarchical structure. The River level is highlited in green"){#fig-hiernas4}
 
-::: {.notes}
+::: notes
 Since the river layer references to the assessment unit one, we gathered main river reach for all areas concered by the AUs.
 :::
 
 ## River
+
 ![Map of the River level.](images/fig-river_nas.png "A view with polygons surrounding the river level spread across Europe and North America"){#fig-rivnas1}
 
-::: {.notes}
+::: notes
 The same method has been used here as for WGBAST. All rivers flowing into the same pour point are grouped together.
 :::
 
 ## River section
+
 ![River section level](images/fig-area_hierarchy_nas5.svg "A graph representing the hierarchical structure. The River section level is highlited in light green"){#fig-hiernas5}
 
 ## River section
+
 ![Map of the river section level.](images/fig-River_section_nas.png "A view with lines representing the river sections spread across Europe and North America"){#fig-rivsecnas1}
 
-::: {.notes}
+::: notes
 Same goes here with the river section level. Work on names is also done and will be released soon. As for WGBAST, ICES vocab is being used.
 :::
 
 ## Country
+
 ![Country level](images/fig-area_hierarchy_nas6.svg "A graph representing the hierarchical structure. The Country level is highlited in firebrick red"){#fig-hiernas6}
 
-::: {.notes}
+::: notes
 This layer is the same as for WGBAST
 :::
 
 ## Marine stock
+
 ![Marine stock level](images/fig-area_hierarchy_nas7.svg "A graph representing the hierarchical structure. The Marine stock level is highlited in deep blue"){#fig-hiernas7}
 
 ## Marine stock
+
 ![Map of the full stock level.](images/fig-stock_marine_nas.png "A view of of the North Atlantic with two polygons surrounding the marine stock hierarchical level"){#fig-stcknas1}
 
-::: {.notes}
+::: notes
 This time the Marine Stock consists of two polygons, one with the European part and one with the NA one. The lines that you see there are just artifacts, they will be delt with later on.
 :::
 
 ## Subarea
+
 ![ICES Subarea level](images/fig-area_hierarchy_nas8.svg "A graph representing the hierarchical structure. The ICES Subarea level is highlited in blue"){#fig-hiernas8}
 
 ## Subarea
+
 ![Map of the full stock level.](images/fig-subarea_nas.png "A view of the European side of the North Atlantic with polygons surrounding the ICES subarea level"){#fig-subnas1}
 
-::: {.notes}
+::: notes
 We are then using ICES Subareas
 :::
 
 ## Division
+
 ![ICES Division level](images/fig-area_hierarchy_nas9.svg "A graph representing the hierarchical structure. The ICES Division level is highlited in blue"){#fig-hiernas9}
 
 ## Division
+
 ![Map of the full stock level.](images/fig-division_nas.png "A view of the European side of the North Atlantic with polygons surrounding the ICES division level"){#fig-divnas1}
 
-::: {.notes}
-ICES Divison which is slightly more detailed. Here, same as for WGBAST we are wondering if this level of detail is satisfying for you ? 
+::: notes
+ICES Divison which is slightly more detailed. Here, same as for WGBAST we are wondering if this level of detail is satisfying for you ?
 :::
 
 ## Assessment unit
+
 ![Assessment unit level](images/fig-area_hierarchy_nas10.svg "A graph representing the hierarchical structure. The Assessment unit level is highlited in light blue"){#fig-hiernas10}
 
-::: {.notes}
-As for assessment units we are also using the AUs used in Olmos et al. paper from 2020 as close as we can following ICES layout. 
+::: notes
+As for assessment units we are also using the AUs used in Olmos et al. paper from 2020 as close as we can following ICES layout.
 :::
 
 ## Assessment unit
+
 ![Map of the Assessment unit level.](images/fig-postsmolt.png "A view of of the North Atlantic with polygons surrounding the assessment unit level"){#fig-psnas10}
 
-::: {.notes}
+::: notes
 Don't hesitate to make comments on this or raise any issue that you might have.
 :::
 
 ## Fisheries
+
 ![Fisheries level](images/fig-area_hierarchy_nas11.svg "A graph representing the hierarchical structure. The fisheries level is highlited in light blue"){#fig-hiernas11}
 
-::: {.notes}
+::: notes
 And to finish with WGNAS structure we've added Fisheries as they were present in WGNAS database.
 :::
 
 ## Fisheries
+
 ![Map of the fisheries level.](images/fig-fisheries_nas.png "A view of of the North Atlantic with three polygons surrounding the fisheries level"){#fig-fishnas10}
 
-::: {.notes}
-On this slide there is only 3 of the 5 fisheries present in the data. We would need some more precise information on the last two to be able to add them in.
-Here we can see the GLD fishery, then the LB/SPM/swNF fishery and the FAR fishery. LB and neNF fisheries are missing.
-If any of you have information on this, or can look into it, I'd be glad to retrieve them so I can add those two last fisheries.
+::: notes
+On this slide there is only 3 of the 5 fisheries present in the data. We would need some more precise information on the last two to be able to add them in. Here we can see the GLD fishery, then the LB/SPM/swNF fishery and the FAR fishery. LB and neNF fisheries are missing. If any of you have information on this, or can look into it, I'd be glad to retrieve them so I can add those two last fisheries.
 :::
 
 ## Why is this useful ?
-- Grouping data quickly
-- Keeping consistency throughout the data
 
+-   Grouping data quickly
+-   Keeping consistency throughout the data
 
-::: {.notes}
+::: notes
 if you want to group things using this ref you can do it very quickly because the relationship between the different levels are already created. Like you could just gather all catch data from a AU directly.
 :::
-
 
 # Now it's time for a coffee break !

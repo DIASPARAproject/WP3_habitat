@@ -41,6 +41,13 @@ schemas = {
     #"refeel": ["tr_area_are"]
 }
 
+schemas = { 
+  "ref": ["tr_habitatlevel_lev", "tr_icworkinggroup_wkg"],
+  "refnas": ["tr_area_are", "tr_rivernames_riv"],
+  "refbast": ["tr_area_are", "tr_rivernames_riv", "landings_wbast_river_names"],
+  "refeel": ["tr_area_are"]}
+
+
 def convert_uuids_to_str(df):
     for col in df.columns:
         if df[col].dtype == 'object':
