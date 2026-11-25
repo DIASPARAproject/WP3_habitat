@@ -27,9 +27,9 @@ pg_dump -U postgres -F custom -d diaspara -n h_svalbard > h_svalbard.pgc
 
 pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara -F custom -t ref.tr_habitatlevel_lev -t ref.tr_icworkinggroup_wkg > ref.pgc
 
-pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara -F custom -t refnas.tr_area_are -t refnas.tr_rivernames_riv > refnas.pgc
+pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercureinternal}/diaspara -F custom -t refnas.tr_area_are -t refnas.tr_rivernames_riv > refnas.pgc
 
-pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercure}/diaspara -F custom -t refbast.tr_area_are -t refbast.landings_wbast_river_names -t refbast.tr_rivernames_riv > refbast.pgc
+pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercureinternal}/diaspara -F custom -t refbast.tr_area_are -t refbast.landings_wbast_river_names -t refbast.tr_rivernames_riv > refbast.pgc
 
 pg_dump --dbname=postgresql://${env:usermercure}:${env:passmercure}@${env:hostmercureinternal}/diaspara -F custom -t refeel.tr_area_are > refeel.pgc
 

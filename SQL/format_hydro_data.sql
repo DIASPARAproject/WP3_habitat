@@ -956,3 +956,294 @@ COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."FNODE" IS 'Upstrea
 COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."CatchID" IS 'Number indicating a Catchment ID';
 COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."Shape_Length" IS 'Feature length in meters in case of line geometries';
 COMMENT ON COLUMN e_gota."euhydro_gota_v013 — River_Net_l"."PFAFSTETTER" IS 'Pfafstetter indicator';
+
+
+CREATE OR REPLACE FUNCTION public.comment_hydro_schemas(
+    p_schemas text[] DEFAULT ARRAY[
+        'h_adriatic','h_baltic22to26','h_baltic27to29_32','h_baltic30to31','h_barents',
+        'h_biscayiberian','h_blacksea','h_celtic','h_iceland','h_medcentral','h_medeast',
+        'h_medwest','h_norwegian','h_nseanorth','h_nseasouth','h_nseauk','h_southatlantic',
+        'h_southmedcentral','h_southmedeast','h_southmedwest','h_svalbard'
+    ]
+)
+RETURNS void
+LANGUAGE plpgsql
+AS $fn$
+DECLARE
+    m       text[] := ARRAY['January','February','March','April','May','June','July',
+                            'August','September','October','November','December'];
+    s       text;
+    t       text;
+    t_comm  text;
+    r       record;
+    n_ok    int := 0;
+BEGIN
+    -- Dictionary of comments: tab = 'common' applies to all three tables
+    DROP TABLE IF EXISTS tmp_def;
+    CREATE TEMP TABLE tmp_def (tab text, col text, comm text) ON COMMIT DROP;
+
+    -- ---------- riversegments only ----------
+    INSERT INTO tmp_def VALUES
+    ('riversegments','hyriv_id','Identifier of the segment'),
+    ('riversegments','next_down','Identifier of the next downstream river segment'),
+    ('riversegments','main_riv','Identifier of the most downstream river segment of the river basin'),
+    ('riversegments','length_km','Length of the river segment'),
+    ('riversegments','dist_dn_km','Distance from the most downstream part of the segment to the most downstream part of the river network'),
+    ('riversegments','dist_up_km','Distance from the most downstream part of the segment to the most upstream part of the river network'),
+    ('riversegments','endorheic','Indicator for presence (1) or absence (0) of an endorheic basin downstream of the segment'),
+    ('riversegments','dis_av_cms','Average long-term discharge estimate for river reach, in m3 s-1'),
+    ('riversegments','ord_stra','Strahler rank'),
+    ('riversegments','ord_clas','Classic stream rank'),
+    ('riversegments','ord_flow','River order using average river discharge');
+
+    -- ---------- catchments only ----------
+    INSERT INTO tmp_def VALUES
+    ('catchments','HYBAS_ID','Identifier of the basin'),
+    ('catchments','next_down','Identifier of the next downstream basin'),
+    ('catchments','NEXT_SINK','Identifier of the next downstream sink, either endorheic sink or most downstream basin'),
+    ('catchments','MAIN_BAS','Identifier of the most downstream basin'),
+    ('catchments','DIST_SINK','Distance from basin outlet to the next downstream sink'),
+    ('catchments','DIST_MAIN','Distance from basin outlet to the most downstream sink'),
+    ('catchments','SUB_AREA','Area of the basin in km2'),
+    ('catchments','UP_AREA','Total upstream area in km2'),
+    ('catchments','PFAF_ID','Pfafstetter code'),
+    ('catchments','ENDO','Indicator for presence (1) or absence (0) of an endorheic basin downstream of the basin. 2 if sink of endorheic basin'),
+    ('catchments','ORDER_','Classic stream order'),
+    ('catchments','SORT','Shapefile storage order');
+
+    -- ---------- lakes only ----------
+    INSERT INTO tmp_def VALUES
+    ('lakes','Hylak_id','Identifier of the lake'),
+    ('lakes','Lake_name','Name of lake or reservoir'),
+    ('lakes','Poly_src','Source of original lake polygon'),
+    ('lakes','Lake_type','Indicator for lake type : 1 for Lake, 2 for Reservoir 3, for Lake control'),
+    ('lakes','Grand_id','Identifier of the corresponding reservoir in the GRanD database'),
+    ('lakes','Lake_area','Lake surface area in km2'),
+    ('lakes','Shore_len','Length of shoreline in km'),
+    ('lakes','Shore_dev','Ratio between shoreline length and the circumference of a circle with the same area'),
+    ('lakes','Vol_total','Total volume in million m3'),
+    ('lakes','Vol_res','Reported reservoir volume in million m3'),
+    ('lakes','Vol_src','Source for Vol_total 1 and 2 are GRanD or literature, 3 is estimated'),
+    ('lakes','Depth_avg','Average depth in m'),
+    ('lakes','Dis_avg','Average discharge in m3 s-1'),
+    ('lakes','Res_time','Average residence time of the lake water in days'),
+    ('lakes','Elevation','Elevation of lake surface, in m above sea level'),
+    ('lakes','Slope_100','Average slope within a 100 meter buffer around the lake polygon in degrees'),
+    ('lakes','Wshd_area','Area of the watershed associated with the lake in km2'),
+    ('lakes','Pour_long','Longitude of the lake pour point, in decimal degrees'),
+    ('lakes','Pour_lat','Latitude of the lake pour point, in decimal degrees'),
+    ('lakes','HYRIV_RCH','Identifier of the corresponding HydroRIVERS stream reach into which the lake drains at its pour point location'),
+    ('lakes','HYRIV_CAT','Identifier of the corresponding HydroRIVERS reach catchment in which the lake''s pour point resides');
+
+    -- ---------- common HydroATLAS attributes (same on all 3 tables) ----------
+    INSERT INTO tmp_def VALUES
+    ('common','hybas_l12','Identifier of the HydroBASINS river basin level 12'),
+    ('common','dis_m3_pyr','Annual average of the natural discharge in m3'),
+    ('common','dis_m3_pmn','Annual minimum of the natural discharge in m3'),
+    ('common','dis_m3_pmx','Annual maximum of the natural discharge in m3'),
+    ('common','run_mm_cyr','Annual average land surface runoff in reach catchment'),
+    ('common','inu_pc_cmn','Annual minimum Inundation Extent in reach catchment'),
+    ('common','inu_pc_umn','Annual minimum Inundation Extent in total watershed upstream'),
+    ('common','inu_pc_cmx','Annual maximum Inundation Extent in reach catchment'),
+    ('common','inu_pc_umx','Annual maximum Inundation Extent in total watershed upstream'),
+    ('common','inu_pc_clt','Long-term maximum Inundation Extent in reach catchment'),
+    ('common','inu_pc_ult','Long-term maximum Inundation Extent in total watershed upstream'),
+    ('common','lka_pc_cse','Limnicity (Percent Lake Area) spatial extent (%) in reach catchment'),
+    ('common','lka_pc_use','Limnicity (Percent Lake Area) spatial extent (%) in total watershed upstream'),
+    ('common','lkv_mc_usu','Sum of lake volume in total watershed upstream'),
+    ('common','rev_mc_usu','Sum of reservoir volume in total watershed upstream'),
+    ('common','dor_pc_pva','Degree of regulation at pour point of river reach'),
+    ('common','ria_ha_csu','Sum of river area in reach catchment'),
+    ('common','ria_ha_usu','Sum of river area in total watershed upstream'),
+    ('common','riv_tc_csu','Sum of river volume in reach catchment'),
+    ('common','riv_tc_usu','Sum of river volume in total watershed upstream'),
+    ('common','gwt_cm_cav','Average Groundwater Table Depth in reach catchment'),
+    ('common','ele_mt_cav','Average elevation in reach catchment'),
+    ('common','ele_mt_uav','Average elevation in total watershed upstream'),
+    ('common','ele_mt_cmn','Minimum elevation in reach catchment'),
+    ('common','ele_mt_cmx','Maximum elevation in reach catchment'),
+    ('common','slp_dg_cav','Terrain slope in reach catchment'),
+    ('common','slp_dg_uav','Terrain slope in total watershed upstream'),
+    ('common','sgr_dk_rav','Average stream gradient along reach segment'),
+    ('common','clz_cl_cmj','Spatial majority of climate zone in reach catchment'),
+    ('common','cls_cl_cmj','Spatial majority of climate strata in reach catchment'),
+    ('common','tmp_dc_cyr','Annual average of air temperature in reach catchment'),
+    ('common','tmp_dc_uyr','Annual average of air temperature in total watershed upstream'),
+    ('common','tmp_dc_cmn','Annual minimum of air temperature in reach catchment'),
+    ('common','tmp_dc_cmx','Annual maximum of air temperature in reach catchment'),
+    ('common','pre_mm_cyr','Annual average of precipitation in reach catchment in mm'),
+    ('common','pre_mm_uyr','Annual average of precipitation in total watershed upstream in mm'),
+    ('common','pet_mm_cyr','Annual average of potential evapotranspiration in reach catchment in mm'),
+    ('common','pet_mm_uyr','Annual average of potential evapotranspiration in total watershed upstream in mm'),
+    ('common','aet_mm_cyr','Annual average of actual evapotranspiration in reach catchment in mm'),
+    ('common','aet_mm_uyr','Annual average of actual evapotranspiration in total watershed upstream in mm'),
+    ('common','ari_ix_cav','Average global aridity index in reach catchment'),
+    ('common','ari_ix_uav','Average global aridity index in total watershed upstream'),
+    ('common','cmi_ix_cyr','Annual average climate moisture index in reach catchment'),
+    ('common','cmi_ix_uyr','Annual average climate moisture index in total watershed upstream'),
+    ('common','snw_pc_cyr','Annual average snow cover extent in reach catchment'),
+    ('common','snw_pc_uyr','Annual average snow cover extent in total watershed upstream'),
+    ('common','snw_pc_cmx','Annual maximum snow cover extent in reach catchment'),
+    ('common','glc_cl_cmj','Spatial majority of land cover class in reach catchment'),
+    ('common','pnv_cl_cmj','Spatial majority of potential natural vegetation classes in reach catchment'),
+    ('common','wet_cl_cmj','Spatial majority wetland class in reach catchment'),
+    ('common','wet_pc_cg1','Wetland extent class group 1 in reach catchment'),
+    ('common','wet_pc_ug1','Wetland extent class group 1 in total watershed upstream'),
+    ('common','wet_pc_cg2','Wetland extent class group 2 in reach catchment'),
+    ('common','wet_pc_ug2','Wetland extent class group 2 in total watershed upstream'),
+    ('common','for_pc_cse','Spatial extent (%) of forest cover in reach catchment'),
+    ('common','for_pc_use','Spatial extent (%) of forest cover in total watershed upstream'),
+    ('common','crp_pc_cse','Spatial extent (%) of cropland in reach catchment'),
+    ('common','crp_pc_use','Spatial extent (%) of cropland in total watershed upstream'),
+    ('common','pst_pc_cse','Spatial extent (%) of pasture in reach catchment'),
+    ('common','pst_pc_use','Spatial extent (%) of pasture in total watershed upstream'),
+    ('common','ire_pc_cse','Spatial extent (%) of irrigated area in reach catchment'),
+    ('common','ire_pc_use','Spatial extent (%) of irrigated area in total watershed upstream'),
+    ('common','gla_pc_cse','Spatial extent (%) of glacier in reach catchment'),
+    ('common','gla_pc_use','Spatial extent (%) of glacier in total watershed upstream'),
+    ('common','prm_pc_cse','Spatial extent (%) of permafrost in reach catchment'),
+    ('common','prm_pc_use','Spatial extent (%) of permafrost in total watershed upstream'),
+    ('common','pac_pc_cse','Spatial extent (%) of protected area in reach catchment'),
+    ('common','pac_pc_use','Spatial extent (%) of protected area in total watershed upstream'),
+    ('common','tbi_cl_cmj','Spatial majority of terrestrial biomes in reach catchment'),
+    ('common','tec_cl_cmj','Spatial majority of terrestrial ecoregions in reach catchment'),
+    ('common','fmh_cl_cmj','Spatial majority of freshwater major habitat types in reach catchment'),
+    ('common','fec_cl_cmj','Spatial majority of freshwater ecoregions in reach catchment'),
+    ('common','cly_pc_cav','Average clay fraction in soil in reach catchment'),
+    ('common','cly_pc_uav','Average clay fraction in soil in total watershed upstream'),
+    ('common','slt_pc_cav','Average silt fraction in soil in reach catchment'),
+    ('common','slt_pc_uav','Average silt fraction in soil in total watershed upstream'),
+    ('common','snd_pc_cav','Average sand fraction in soil in reach catchment'),
+    ('common','snd_pc_uav','Average sand fraction in soil in total watershed upstream'),
+    ('common','soc_th_cav','Average organic carbon content in soil in reach catchment'),
+    ('common','soc_th_uav','Average organic carbon content fraction in soil in total watershed upstream'),
+    ('common','swc_pc_cyr','Annual average soil water content in reach catchment'),
+    ('common','swc_pc_uyr','Annual average soil water content in total watershed upstream'),
+    ('common','lit_cl_cmj','Spatial majority of lithological classes in reach catchment'),
+    ('common','kar_pc_cse','Spatial extent (%) of Karst area in reach catchment'),
+    ('common','kar_pc_use','Spatial extent (%) of Karst area in total watershed upstream'),
+    ('common','ero_kh_cav','Average soil erosion in reach catchment'),
+    ('common','ero_kh_uav','Average soil erosion in total watershed upstream'),
+    ('common','pop_ct_csu','Population count in reach catchment'),
+    ('common','pop_ct_usu','Population count in total watershed upstream'),
+    ('common','ppd_pk_cav','Average population density in reach catchment'),
+    ('common','ppd_pk_uav','Average population density in total watershed upstream'),
+    ('common','urb_pc_cse','Spatial extent (%) of urban area in reach catchment'),
+    ('common','urb_pc_use','Spatial extent (%) of urban area in total watershed upstream'),
+    ('common','nli_ix_cav','Average nighttime lights in reach catchment'),
+    ('common','nli_ix_uav','Average nighttime lights in total watershed upstream'),
+    ('common','rdd_mk_cav','Average road density in reach catchment'),
+    ('common','rdd_mk_uav','Average road density in total watershed upstream'),
+    ('common','hft_ix_c93','Human footprint in reach catchment in 1993'),
+    ('common','hft_ix_u93','Human footprint in total watershed upstream in 1993'),
+    ('common','hft_ix_c09','Human footprint in reach catchment in 2009'),
+    ('common','hft_ix_u09','Human footprint in total watershed upstream in 2009'),
+    ('common','gad_id_cmj','Spatial majority of global administrative area in reach catchment'),
+    ('common','gdp_ud_cav','Average gross domestic product in reach catchment'),
+    ('common','gdp_ud_csu','Sum of gross domestic product in reach catchment'),
+    ('common','gdp_ud_usu','Sum of gross domestic product in total watershed upstream'),
+    ('common','hdi_ix_cav','Average human development index in reach catchment');
+
+    -- Monthly series (c01..c12)
+    INSERT INTO tmp_def
+    SELECT 'common', 'tmp_dc_c'||lpad(i::text,2,'0'), 'Average '||m[i]||' air temperature in reach catchment' FROM generate_series(1,12) i
+    UNION ALL
+    SELECT 'common', 'pre_mm_c'||lpad(i::text,2,'0'), 'Average '||m[i]||' precipitation in reach catchment in mm' FROM generate_series(1,12) i
+    UNION ALL
+    SELECT 'common', 'pet_mm_c'||lpad(i::text,2,'0'), m[i]||' potential evapotranspiration in reach catchment in mm' FROM generate_series(1,12) i
+    UNION ALL
+    SELECT 'common', 'aet_mm_c'||lpad(i::text,2,'0'), m[i]||' actual evapotranspiration in reach catchment in mm' FROM generate_series(1,12) i
+    UNION ALL
+    SELECT 'common', 'cmi_ix_c'||lpad(i::text,2,'0'), m[i]||' climate moisture index in reach catchment' FROM generate_series(1,12) i
+    UNION ALL
+    SELECT 'common', 'snw_pc_c'||lpad(i::text,2,'0'), m[i]||' snow cover extent in reach catchment' FROM generate_series(1,12) i
+    UNION ALL
+    SELECT 'common', 'swc_pc_c'||lpad(i::text,2,'0'), m[i]||' soil water content in reach catchment' FROM generate_series(1,12) i;
+
+    -- Class series (reach catchment "c" / upstream watershed "u")
+    INSERT INTO tmp_def
+    SELECT 'common', 'glc_pc_c'||lpad(i::text,2,'0'), 'Land Cover Extent class '||i||' in reach catchment' FROM generate_series(1,22) i
+    UNION ALL
+    SELECT 'common', 'glc_pc_u'||lpad(i::text,2,'0'), 'Land Cover Extent class '||i||' in total watershed upstream' FROM generate_series(1,22) i
+    UNION ALL
+    SELECT 'common', 'pnv_pc_c'||lpad(i::text,2,'0'), 'Potential natural vegetation extent class '||i||' in reach catchment' FROM generate_series(1,15) i
+    UNION ALL
+    SELECT 'common', 'pnv_pc_u'||lpad(i::text,2,'0'), 'Potential natural vegetation extent class '||i||' in total watershed upstream' FROM generate_series(1,15) i
+    UNION ALL
+    SELECT 'common', 'wet_pc_c'||lpad(i::text,2,'0'), 'Wetland extent class '||i||' in reach catchment' FROM generate_series(1,9) i
+    UNION ALL
+    SELECT 'common', 'wet_pc_u'||lpad(i::text,2,'0'), 'Wetland extent class '||i||' in total watershed upstream' FROM generate_series(1,9) i;
+
+    -- ---------- Loop on schemas and tables ----------
+    FOREACH s IN ARRAY p_schemas LOOP
+        FOREACH t IN ARRAY ARRAY['riversegments','catchments','lakes'] LOOP
+
+            IF to_regclass(format('%I.%I', s, t)) IS NULL THEN
+                RAISE NOTICE 'Table %.% not found, skipped', s, t;
+                CONTINUE;
+            END IF;
+
+            t_comm := CASE t
+                WHEN 'riversegments' THEN 'Table of river network data from HydroSHEDS (source = riveratlas_v10)'
+                WHEN 'catchments'    THEN 'Table of HydroATLAS basins level 12'
+                WHEN 'lakes'         THEN 'Table of HydroATLAS lake data'
+            END;
+            EXECUTE format('COMMENT ON TABLE %I.%I IS %L', s, t, t_comm);
+
+            FOR r IN
+                SELECT d.col, d.comm
+                FROM tmp_def d
+                JOIN information_schema.columns c
+                  ON c.table_schema = s
+                 AND c.table_name   = t
+                 AND c.column_name  = d.col
+                WHERE d.tab IN ('common', t)
+            LOOP
+                EXECUTE format('COMMENT ON COLUMN %I.%I.%I IS %L', s, t, r.col, r.comm);
+                n_ok := n_ok + 1;
+            END LOOP;
+
+        END LOOP;
+    END LOOP;
+
+    RAISE NOTICE '% column comments written', n_ok;
+END;
+$fn$;
+
+
+-- all 21 schemas
+SELECT public.comment_hydro_schemas(); -- 10017 column comments
+
+
+
+SELECT cols.column_name AS var_name, 
+        pgd.description AS description
+  FROM information_schema.columns cols
+  LEFT JOIN pg_catalog.pg_statio_all_tables st 
+      ON st.schemaname = cols.table_schema AND st.relname = cols.table_name
+  LEFT JOIN pg_catalog.pg_description pgd 
+      ON pgd.objoid = st.relid AND pgd.objsubid = cols.ordinal_position
+  WHERE cols.table_schema = 'h_adriatic'
+  AND cols.table_name = 'riversegments';
+
+
+SELECT cols.column_name AS var_name, 
+        pgd.description AS description
+  FROM information_schema.columns cols
+  LEFT JOIN pg_catalog.pg_statio_all_tables st 
+      ON st.schemaname = cols.table_schema AND st.relname = cols.table_name
+  LEFT JOIN pg_catalog.pg_description pgd 
+      ON pgd.objoid = st.relid AND pgd.objsubid = cols.ordinal_position
+  WHERE cols.table_schema = 'h_adriatic'
+  AND cols.table_name = 'catchments';
+
+
+SELECT cols.column_name AS var_name, 
+        pgd.description AS description
+  FROM information_schema.columns cols
+  INNER JOIN pg_catalog.pg_statio_all_tables st 
+      ON st.schemaname = cols.table_schema AND st.relname = cols.table_name
+  INNER JOIN pg_catalog.pg_description pgd 
+      ON pgd.objoid = st.relid AND pgd.objsubid = cols.ordinal_position
+  WHERE cols.table_schema = 'h_adriatic'
+  AND cols.table_name = 'lakes';
